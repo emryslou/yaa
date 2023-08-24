@@ -1,5 +1,5 @@
-from .datastructures import StrDict, StrPairs
-from .datastructures import MutableHeaders, StrDict, StrPairs
+from .datastructures import MutableHeaders
+from .types import Recevie, Send, StrDict, StrPairs
 import json
 import typing
 
@@ -23,7 +23,7 @@ class Response:
         self.set_content_type()
         self.set_content_length()
 
-    async def __call__(self, receive, send):
+    async def __call__(self, receive: Recevie, send: Send) -> None:
         await send(
             {
                 "type": "http.response.start",
@@ -40,11 +40,11 @@ class Response:
             return content
         return content.encode(self.charset)
 
-    def set_content_length(self):
+    def set_content_length(self) -> None:
         if "content-length" not in self.headers:
             self.headers["content-length"] = str(len(self.body))
 
-    def set_content_type(self):
+    def set_content_type(self) -> None:
         if "content-type" not in self.headers and self.media_type is not None:
             content_type = self.media_type
             if content_type.startswith("text/") and self.charset is not None:
@@ -63,7 +63,7 @@ class JSONResponse(Response):
         "allow_nan": False,
         "indent": None,
         "separators": (",", ":"),
-    }
+    } # type: typing.Dict[str, typing.Any]
 
     def render(self, content: typing.Any) -> bytes:
         return json.dumps(content, **self.options).encode("utf-8")
@@ -85,7 +85,7 @@ class StreamingResponse(Response):
 
         self.set_content_type()
 
-    async def __call__(self, receive, send):
+    async def __call__(self, receive: Recevie, send: Send):
         await send(
             {
                 "type": "http.response.start",
