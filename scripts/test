@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+export PREFIX="python3 -m "
+if [ -d 'venv' ] ; then
+    export PREFIX="python3 -m "
+fi
+
+set -x
+
+PYTHONPATH=. ${PREFIX}pytest --ignore venv --cov=yast --cov=tests --cov-fail-under=100 --cov-report=term-missing ${@}
