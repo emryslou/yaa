@@ -1,16 +1,14 @@
 from .request import Request
 from .response import Response
+from .types import ASGIInstance, Recevie, Send, Scope
 from asyncio.coroutines import iscoroutine
 
 def AsgiApp(func):
-    def app(scope):
-        async def awaitable(recv, send):
+    def app(scope: Scope) -> ASGIInstance:
+        async def awaitable(recv: Recevie, send: Send) -> None:
             req = Request(scope, recv)
+            res = func(req)
             
-            res = func(req)    
-
-            assert isinstance(res, Response)
-
             await res(recv, send)
 
         return awaitable
