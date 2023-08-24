@@ -1,0 +1,2 @@
+# yast
+yet another startlette
