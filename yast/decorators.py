@@ -5,8 +5,9 @@ from asyncio.coroutines import iscoroutine
 
 def AsgiApp(func):
     def app(scope: Scope) -> ASGIInstance:
+        req = Request(scope)
         async def awaitable(recv: Recevie, send: Send) -> None:
-            req = Request(scope, recv)
+            req.set_recevie_channel(recv)
             res = func(req)
             
             await res(recv, send)
