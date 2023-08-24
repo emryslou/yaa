@@ -1,18 +1,36 @@
+from typing import Iterator
 from .datastructures import QueryParams, Headers, URL
+from .types import Scope, Recevie
+
+from collections.abc import Mapping
 import json
+import typing
 
 
-class Request:
-    def __init__(self, scope, receive):
+class Request(Mapping):
+    def __init__(self, scope: Scope, receive: Recevie = None):
         self._scope = scope
+        self._receive = receive
+        self._stream_consumed = False
+
+    def __getitem__(self, __key: typing.Any) -> typing.Any:
+        return self._scope[__key]
+    
+    def __iter__(self) -> Iterator:
+        return iter(self._scope)
+    
+    def __len__(self) -> int:
+        return len(self._scope)
+    
+    def set_recevie_channel(self, receive: Recevie):
         self._receive = receive
 
     @property
-    def method(self):
+    def method(self) -> str:
         return self._scope["method"]
 
     @property
-    def url(self):
+    def url(self) -> URL:
         if not hasattr(self, "_url"):
             scheme = self._scope["scheme"]
             host, port = self._scope["server"]
@@ -31,7 +49,7 @@ class Request:
         return self._url
 
     @property
-    def headers(self):
+    def headers(self) -> Headers:
         if not hasattr(self, "_headers"):
             self._headers = Headers(
                 [
@@ -42,21 +60,33 @@ class Request:
         return self._headers
 
     @property
-    def query_params(self):
+    def query_params(self) -> QueryParams:
         if not hasattr(self, "_query_params"):
             query_string = self._scope["query_string"].decode()
             self._query_params = QueryParams(query_string)
         return self._query_params
 
+    async def stream(self):
+        if hasattr(self, "_body"):
+            yield self._body
+            return
+        
+        if self._stream_consumed:
+            raise RuntimeError('Stream consumed')
+        
+        self._stream_consumed = True
+        while True:
+            message = await self._receive()
+            if message['type'] == 'http.request':
+                yield message.get('body', b'')
+                if not message.get('more_body', False):
+                    break
+
     async def body(self):
         if not hasattr(self, "_body"):
             body = b""
-            while True:
-                message = await self._receive()
-                if message["type"] == "http.request":
-                    body += message.get("body", b"")
-                    if not message.get("more_body", False):
-                        break
+            async for chunk in self.stream():
+                body += chunk
             self._body = body
         return self._body
 
