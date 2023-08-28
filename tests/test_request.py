@@ -154,3 +154,25 @@ def test_request_body_then_stream():
     client = TestClient(app)
     res = client.post('/', data="1234")
     assert res.json() == {'body': '<stream consumed>', 'stream': '1234'}
+
+
+def test_quest_relative_url():
+
+    def app(scope):
+        async def asgi(recv, send):
+            req = Request(scope, recv)
+            data = {'method': req.method, 'relative_url': req.relative_url}
+            res = JSONResponse(data)
+            await res(recv, send)
+
+        return asgi
+
+
+    client = TestClient(app)
+
+    res = client.get('/123?a=abc')
+    assert res.json() == {'method': 'GET', 'relative_url': '/123?a=abc'} 
+
+
+    res = client.get('https://exmaple.org:123/')
+    assert res.json() == {'method': 'GET', 'relative_url': '/'} 

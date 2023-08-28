@@ -5,7 +5,7 @@ from .types import Scope, Recevie
 from collections.abc import Mapping
 import json
 import typing
-
+from urllib.parse import quote, unquote
 
 class Request(Mapping):
     def __init__(self, scope: Scope, receive: Recevie = None):
@@ -43,10 +43,24 @@ class Request(Mapping):
                 url = "%s://%s%s" % (scheme, host, path)
 
             if query_string:
-                url += "?" + query_string.decode()
+                url += "?" + quote(query_string.decode())
 
             self._url = URL(url)
         return self._url
+    
+
+    @property
+    def relative_url(self) -> URL:
+        if not hasattr(self, '_relative_url'):
+            url = self._scope['path']
+            query_str = self._scope['query_string']
+
+            if query_str:
+                url += '?' + unquote(query_str.decode())
+            
+            self._relative_url = url
+        
+        return self._relative_url
 
     @property
     def headers(self) -> Headers:
