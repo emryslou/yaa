@@ -1,7 +1,12 @@
 import aiofiles
 import json
 import typing
+import os
+import stat
+import hashlib
 
+from aiofiles.os import stat as aio_stat
+from email.utils import formatdate
 from mimetypes import guess_type
 from yast.types import Recevie, Send
 from yast.datastructures import MutableHeaders
@@ -79,6 +84,10 @@ class HTMLResponse(Response):
     media_type = "text/html"
 
 
+class PlainTextResponse(Response):
+    media_type = 'text/plain'
+
+
 class JSONResponse(Response):
     media_type = "application/json"
     options = {
@@ -134,7 +143,8 @@ class FileResponse(Response):
             path: str,
             headers: dict = None,
             media_type: str = None,
-            filename: str = None
+            filename: str = None,
+            stat_result: os.stat_result = None
         ) -> None:
         """ init """
         self.path = path
@@ -148,9 +158,26 @@ class FileResponse(Response):
         if self.filename is not None:
             content_disposition = f'attachment; filename="{self.filename}"'
             self.headers.setdefault('content-disposition', content_disposition)
+        
+        self.stat_result = stat_result
+        if stat_result is not None:
+            self.set_stat_headers(stat_result)
     
+    def set_stat_headers(self, stat_result: os.stat_result):
+        content_length = str(stat_result.st_size)
+        last_modified = formatdate(stat_result.st_mtime, usegmt=True)
+        etag_base = str(stat_result.st_mtime) + '-' + str(stat_result.st_size)
+        etag = hashlib.md5(etag_base.encode()).hexdigest()
+
+        self.headers.setdefault("content-length", content_length)
+        self.headers.setdefault("last-modified", last_modified)
+        self.headers.setdefault("etag", etag)
 
     async def __call__(self, receive: Recevie, send: Send) -> None:
+        if self.stat_result is None:
+            stat_result = await aio_stat(self.path)
+            self.set_stat_headers(stat_result)
+            
         await send({
             'type': 'http.response.start',
             'status': self.status_code,
