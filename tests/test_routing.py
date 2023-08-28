@@ -82,7 +82,7 @@ def test_demo(tmpdir):
     with open(ex_file, 'wb') as file:
         file.write(b'<ex_file content>')
     
-    app = app = Router([
+    app = Router([
         Path('/', app=home, methods=['GET']),
         PathPrefix(
             '/user',

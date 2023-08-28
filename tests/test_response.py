@@ -1,5 +1,8 @@
 import pytest
+import os
+
 from yast import Response, StreamingResponse, FileResponse, TestClient
+
 
 def test_response_text():
     def app(scope):
@@ -83,12 +86,13 @@ def test_streaming_response_headers():
 
 
 def test_file_response(tmpdir):
-    with open('xyz', 'wb') as file:
+    path = os.path.join(tmpdir, 'xyz')
+    with open(path, 'wb') as file:
         file.write(b'<file content>')
 
     
     def app(scope):
-        return FileResponse(path='xyz', filename='example.png')
+        return FileResponse(path=path, filename='example.png')
     
     client = TestClient(app)
 
