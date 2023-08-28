@@ -48,3 +48,10 @@ def test_headers():
     assert h != [(b"a", b"123"), (b"A", b"456"), (b"b", b"789")]
     h = Headers()
     assert not h.items()
+
+def test_headers_mutablecopy():
+    h = Headers([(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
+    c = h.mutablecopy()
+    assert c.items() == [("a", "123"), ("a", "456"), ("b", "789")]
+    c["a"] = "abc"
+    assert c.items() == [("a", "abc"), ("b", "789")]

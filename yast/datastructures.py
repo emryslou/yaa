@@ -143,6 +143,9 @@ class Headers(typing.Mapping[str, str]):
             if ik == h_k
         ]
 
+    def mutablecopy(self):
+        return MutableHeaders(self._list[:])
+
     def __getitem__(self, key: str):
         h_k = key.lower().encode('latin-1')
         for ik, iv in self._list:
@@ -178,11 +181,17 @@ class MutableHeaders(Headers):
         for idx, (ik, _) in enumerate(self._list):
             if ik == set_key:
                 pop_indexes.append(idx)
-
-        for idx in reversed(pop_indexes):
+        
+        """
+        retain insertion order .
+        """
+        for idx in reversed(pop_indexes[1:]):
             del self._list[idx]
 
-        self._list.append((set_key, set_value))
+        if pop_indexes:
+            self._list[pop_indexes[0]] = (set_key, set_value)
+        else:
+            self._list.append((set_key, set_value))
 
     def __delitem__(self, key: str):
         del_key = key.lower().encode('latin-1')
