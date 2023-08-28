@@ -1,7 +1,7 @@
 from yast import TestClient, Request, JSONResponse
 
 def test_request_url():
-    
+    """ test """
     def app(scope):
         async def asgi(recv, send):
             request = Request(scope, recv)
@@ -10,7 +10,8 @@ def test_request_url():
             await response(recv, send)
 
         return asgi
-    
+
+   
     client = TestClient(app)
     res = client.get('/path/to/page?a=abc')
     assert res.json() == {'method': 'GET', 'url': 'http://testserver/path/to/page?a=abc'}
@@ -35,8 +36,7 @@ def test_request_headers():
     def app(scope):
         async def asgi(recv, send):
             request = Request(scope, recv)
-            data = {'headers': dict(request.headers)}
-            response = JSONResponse(data)
+            response = JSONResponse({'headers': dict(request.headers)})
             await response(recv, send)
 
         return asgi
@@ -135,6 +135,7 @@ def test_request_body_then_stream():
 
 
 def test_request_body_then_stream():
+    """ """
     def app(scope):
         async def asgi(recv, send):
             request = Request(scope, recv)

@@ -1,5 +1,5 @@
 from .datastructures import MutableHeaders
-from .types import Recevie, Send, StrDict, StrPairs
+from .types import Recevie, Send
 import json
 import typing
 
@@ -12,16 +12,14 @@ class Response:
         self,
         content: typing.Any,
         status_code: int = 200,
-        headers: typing.Union[StrDict, StrPairs] = None,
+        headers: dict = None, # todo
         media_type: str = None,
     ) -> None:
         self.body = self.render(content)
         self.status_code = status_code
-        self.headers = MutableHeaders(headers)
         if media_type is not None:
             self.media_type = media_type
-        self.set_content_type()
-        self.set_content_length()
+        self.set_default_headers(headers)
 
     async def __call__(self, receive: Recevie, send: Send) -> None:
         await send(
@@ -40,17 +38,36 @@ class Response:
             return content
         return content.encode(self.charset)
 
-    def set_content_length(self) -> None:
-        if "content-length" not in self.headers:
-            self.headers["content-length"] = str(len(self.body))
-
-    def set_content_type(self) -> None:
-        if "content-type" not in self.headers and self.media_type is not None:
+    def set_default_headers(self, headers: dict = None):
+        if headers is None:
+            raw_headers = []
+            missing_content_length = True
+            missing_content_type = True
+        else:
+            raw_headers = [
+                (h_k.lower().encode('latin-1'), h_v.encode('latin-1'))
+                for h_k, h_v in headers.items()
+            ]
+            missing_content_length = 'content-length' not in headers
+            missing_content_type = 'content-type' not in headers
+        
+        if missing_content_length:
+            raw_headers.append((b'content-length', str(len(self.body)).encode()))
+        
+        if self.media_type is not None and missing_content_type:
             content_type = self.media_type
-            if content_type.startswith("text/") and self.charset is not None:
-                content_type += "; charset=%s" % self.charset
-            self.headers["content-type"] = content_type
+            if content_type.startswith('text/') and self.charset is not None:
+                content_type += '; charset=%s' % self.charset
+            
+            raw_headers.append((b'content-type', content_type.encode('latin-1')))
 
+        self.raw_headers = raw_headers
+
+    @property
+    def headers(self):
+        if not hasattr(self, '_headers'):
+            self._headers = MutableHeaders(self.raw_headers)
+        return self._headers
 
 class HTMLResponse(Response):
     media_type = "text/html"
@@ -74,16 +91,15 @@ class StreamingResponse(Response):
         self,
         content: typing.Any,
         status_code: int = 200,
-        headers: StrDict | StrPairs = None,
+        headers: dict = None,
         media_type: str = None,
     ) -> None:
         self.body_iter = content
         self.status_code = status_code
-        self.headers = MutableHeaders(headers)
         if media_type:
             self.media_type = media_type
 
-        self.set_content_type()
+        self.set_default_headers(headers)
 
     async def __call__(self, receive: Recevie, send: Send):
         await send(
@@ -99,17 +115,25 @@ class StreamingResponse(Response):
         async for chunk in self.body_iter:
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode(self.charset)
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": chunk,
-                    "more_body": True,
-                }
-            )
-        await send(
-            {
-                "type": "http.response.body",
-                "body": b"",
-                "more_body": False,
-            }
-        )
+            await send({ "type": "http.response.body", "body": chunk, "more_body": True })
+        await send({ "type": "http.response.body", "body": b"", "more_body": False })
+
+    def set_default_headers(self, headers: dict = None):
+        if headers is None:
+            raw_headers = []
+            missing_content_type = True
+        else:
+            raw_headers = [
+                (h_k.lower().encode('latin-1'), h_v.encode('latin-1'))
+                for h_k, h_v in headers.items()
+            ]
+            missing_content_type = 'content-type' not in headers
+        
+        if self.media_type is not None and missing_content_type:
+            content_type = self.media_type
+            if content_type.startswith('text/') and self.charset is not None:
+                content_type += '; charset=%s' % self.charset
+            
+            raw_headers.append((b'content-type', content_type.encode('latin-1')))
+
+        self.raw_headers = raw_headers

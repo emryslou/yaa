@@ -108,72 +108,86 @@ class QueryParams(typing.Mapping[str, str]):
 
 
 class Headers(typing.Mapping[str, str]):
+    """ headers  """
     def __init__(self, value: typing.Union[StrDict, StrPairs] = None) -> None:
         if value is None:
-            value = []
-        if hasattr(value, "items"):
-            items = list(typing.cast(StrDict, value).items())
+            self._list = []
         else:
-            items = list(typing.cast(StrPairs, value))
-        
-        items = [(k.lower(), str(v)) for k, v in items]
-        self._dict = {k: v for k, v in reversed(items)}
-        self._list = items
-
-    def get_list(self, key: str) -> typing.List[str]:
-        key_lower = key.lower()
-        return [
-            item_value for item_key, item_value in self._list if item_key == key_lower
-        ]
+            assert isinstance(value, list)
+            for h_k, h_v in value:
+                assert isinstance(h_k, bytes)
+                assert isinstance(h_v, bytes)
+                assert h_k == h_k.lower()
+            self._list = value
+            # _items = []
+            # # something to check
+            # for h_k, h_v in value:
+            #     if isinstance(h_k, str) and isinstance(h_v, str):
+            #         _items.append((h_k.lower().encode('latin-1'), h_v.lower().encode('latin-1')))
+            #     else:
+            #         _items.append((h_k, h_v))
+            # self._list = _items
 
     def keys(self):
-        return [key for key, value in self._list]
+        return [key.decode('latin-1') for key, _ in self._list]
 
     def values(self):
-        return [value for key, value in self._list]
+        return [value.decode('latin-1') for _, value in self._list]
 
     def items(self):
-        return list(self._list)
+        return [(k.decode('latin-1'), v.decode('latin-1')) for k, v in self._list]
 
     def get(self, key: str, default: str = None):
-        key = key.lower()
-        if key in self._dict:
-            return self._dict[key]
-        else:
+        try:
+            return self[key]
+        except KeyError:
             return default
 
+    def get_list(self, key: str) -> typing.List[str]:
+        h_k = key.lower().encode('latin-1')
+        return [
+            iv.decode('latin-1')
+            for ik, iv in self._list
+            if ik == h_k
+        ]
+
     def __getitem__(self, key: str):
-        return self._dict[key.lower()]
+        h_k = key.lower().encode('latin-1')
+        for ik, iv in self._list:
+            if h_k == ik:
+                return iv.decode('latin-1')
+
+        raise KeyError(key)
 
     def __contains__(self, key: str):
-        return key.lower() in self._dict
+        return key.lower() in self.keys()
 
     def __iter__(self):
-        return iter(self._list)
+        return iter(self.items())
 
     def __len__(self):
         return len(self._list)
 
     def __eq__(self, other):
         if not isinstance(other, Headers):
-            other = Headers(other)
+            return False
         return sorted(self._list) == sorted(other._list)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, repr(self._list))
+        return "%s(%s)" % (self.__class__.__name__, repr(self.items()))
 
 
 class MutableHeaders(Headers):
     def __setitem__(self, key: str, value: str):
-        key = key.lower()
-        value = str(value)
+        set_key = key.lower().encode('latin-1')
+        set_value = value.encode('latin-1')
 
-        if key not in self._dict:
-            self._dict[key] = value
-            self._list.append((key, value))
-        else:
-            self._dict[key] = value
-            self._list = [
-                (item_key, value) if item_key == key else (item_key, item_value)
-                for item_key, item_value in self._list
-            ]
+        pop_indexes = []
+        for idx, (ik, _) in enumerate(self._list):
+            if ik == set_key:
+                pop_indexes.append(idx)
+
+        for idx in reversed(pop_indexes):
+            del self._list[idx]
+
+        self._list.append((set_key, set_value))

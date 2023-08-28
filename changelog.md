@@ -1,4 +1,7 @@
 # v0.1.1
+1. descorators can aysnc func
+2. response stream
+
 
 # v0.1.0
 1. typing checking
