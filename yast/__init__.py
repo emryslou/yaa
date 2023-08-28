@@ -5,7 +5,7 @@ __all__ = [
     "AsgiApp",
     "TestClient",
     "Request", "Response",
-    "HTMLResponse", "JSONResponse", "StreamingResponse",
+    "HTMLResponse", "JSONResponse", "StreamingResponse", "FileResponse",
     "URL", "QueryParams", "Headers",
     "Route", "Path", "PathPrefix", "Router"
 ]
@@ -14,6 +14,6 @@ __all__ = [
 from .decorators import AsgiApp
 from .testclient import TestClient
 from .request import Request
-from .response import Response, HTMLResponse, JSONResponse, StreamingResponse
+from .response import Response, HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from .datastructures import URL, QueryParams, Headers
 from .routing import Route, Path, PathPrefix, Router

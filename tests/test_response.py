@@ -1,5 +1,5 @@
 import pytest
-from yast import Response, StreamingResponse, TestClient
+from yast import Response, StreamingResponse, FileResponse, TestClient
 
 def test_response_text():
     def app(scope):
@@ -80,3 +80,20 @@ def test_streaming_response_headers():
     response = client.get("/")
     assert response.headers["x-header-1"] == "123"
     assert response.headers["x-header-2"] == "789"
+
+
+def test_file_response(tmpdir):
+    with open('xyz', 'wb') as file:
+        file.write(b'<file content>')
+
+    
+    def app(scope):
+        return FileResponse(path='xyz', filename='example.png')
+    
+    client = TestClient(app)
+
+    res = client.get('/')
+    assert res.status_code == 200
+    assert res.content == b'<file content>'
+    assert res.headers['content-type'] == 'image/png'
+    assert res.headers['content-disposition'] == 'attachment; filename="example.png"'

@@ -23,7 +23,7 @@ def test_query_params():
     assert qry_prm['a'] == '123'
     assert qry_prm.get('a') == '123'
     assert qry_prm.get('??', default=None) == None
-    assert qry_prm.get_list('a') == ['123', '456']
+    assert qry_prm.getlist('a') == ['123', '456']
     assert QueryParams() == {}
 
 
@@ -37,7 +37,7 @@ def test_headers():
     assert h["a"] == "123"
     assert h.get("a") == "123"
     assert h.get("nope", default=None) is None
-    assert h.get_list("a") == ["123", "456"]
+    assert h.getlist("a") == ["123", "456"]
     assert h.keys() == ["a", "a", "b"]
     assert h.values() == ["123", "456", "789"]
     assert h.items() == [("a", "123"), ("a", "456"), ("b", "789")]

@@ -68,7 +68,7 @@ class QueryParams(typing.Mapping[str, str]):
         self._dict = {k: v for k, v in reversed(items)}
         self._list = items
 
-    def get_list(self, key: str) -> typing.List[str]:
+    def getlist(self, key: str) -> typing.List[str]:
         return [item_value for item_key, item_value in self._list if item_key == key]
 
     def keys(self):
@@ -119,14 +119,6 @@ class Headers(typing.Mapping[str, str]):
                 assert isinstance(h_v, bytes)
                 assert h_k == h_k.lower()
             self._list = value
-            # _items = []
-            # # something to check
-            # for h_k, h_v in value:
-            #     if isinstance(h_k, str) and isinstance(h_v, str):
-            #         _items.append((h_k.lower().encode('latin-1'), h_v.lower().encode('latin-1')))
-            #     else:
-            #         _items.append((h_k, h_v))
-            # self._list = _items
 
     def keys(self):
         return [key.decode('latin-1') for key, _ in self._list]
@@ -143,7 +135,7 @@ class Headers(typing.Mapping[str, str]):
         except KeyError:
             return default
 
-    def get_list(self, key: str) -> typing.List[str]:
+    def getlist(self, key: str) -> typing.List[str]:
         h_k = key.lower().encode('latin-1')
         return [
             iv.decode('latin-1')
@@ -191,3 +183,24 @@ class MutableHeaders(Headers):
             del self._list[idx]
 
         self._list.append((set_key, set_value))
+
+    def __delitem__(self, key: str):
+        del_key = key.lower().encode('latin-1')
+        pop_indexes = []
+        for idx, (ik, _) in enumerate(self._list):
+            if ik == del_key:
+                pop_indexes.append(idx)
+        
+        for idx in reversed(pop_indexes):
+            del self._list[idx]
+    
+    def setdefault(self, key: str, value: str):
+        set_key = key.lower().encode('latin-1')
+        set_value = value.encode('latin-1')
+
+        for _, (itm_key, itm_val) in enumerate(self._list):
+            if itm_key == set_key:
+                return itm_val.decode('latin-1')
+        
+        self._list.append((set_key, set_value))
+        return value
