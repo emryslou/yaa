@@ -2,6 +2,7 @@
 1. async file & response
 2. static files
 3. relative_url
+4. handle: http.disconnect
 
 # v0.1.1
 1. descorators can aysnc func

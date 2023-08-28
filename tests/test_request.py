@@ -1,4 +1,8 @@
+import asyncio
+import pytest
+
 from yast import TestClient, Request, JSONResponse
+from yast.request import ClientDisconnect
 
 def test_request_url():
     """ test """
@@ -176,3 +180,26 @@ def test_quest_relative_url():
 
     res = client.get('https://exmaple.org:123/')
     assert res.json() == {'method': 'GET', 'relative_url': '/'} 
+
+
+def test_request_disconnect():
+
+    def app(scope):
+        async def asgi(recv, send):
+            req = Request(scope, recv)
+            await req.body()
+
+        return asgi
+
+    async def rev(*args, **kwargs):
+        print('debug -- 003 ', args, kwargs)
+        return {'type': 'http.disconnect'}
+    
+    scope = {'method': 'POST', 'path': '/'}
+
+    asgi_call = app(scope)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(ClientDisconnect):
+        loop.run_until_complete(asgi_call(rev, None))
+        assert True == 1
