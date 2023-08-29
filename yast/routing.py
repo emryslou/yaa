@@ -93,3 +93,11 @@ class Router(object):
     
     def not_found(self, scope: Scope) -> ASGIInstance:
         return Response('Not found', 404, media_type='text/plain')
+
+
+class ProtocalRouter(object):
+    def __init__(self, protocals: typing.Dict[str, ASGIApp]):
+        self.protocals = protocals
+    
+    def __call__(self, scope: Scope) -> ASGIInstance:
+        return self.protocals[scope['type']](scope)
