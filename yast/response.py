@@ -192,5 +192,5 @@ class FileResponse(Response):
                 await send({
                     'type': 'http.response.body',
                     'body': chunk,
-                    'more_body': False, # todo: why
+                    'more_body': more_body,
                 })

@@ -86,9 +86,10 @@ def test_streaming_response_headers():
 
 
 def test_file_response(tmpdir):
+    content = b'<file content>' * 1000
     path = os.path.join(tmpdir, 'xyz')
     with open(path, 'wb') as file:
-        file.write(b'<file content>')
+        file.write(content)
 
     
     def app(scope):
@@ -98,6 +99,7 @@ def test_file_response(tmpdir):
 
     res = client.get('/')
     assert res.status_code == 200
-    assert res.content == b'<file content>'
+    assert res.content == content
     assert res.headers['content-type'] == 'image/png'
     assert res.headers['content-disposition'] == 'attachment; filename="example.png"'
+    assert 'content-length' in res.headers
