@@ -1,5 +1,6 @@
 from yast import TestClient, Response, JSONResponse, StaticFiles
-from yast.routing import Router, Path, PathPrefix
+from yast.routing import Router, Path, PathPrefix, ProtocalRouter
+from yast.websockets import WebSocketSession
 
 import os
 
@@ -18,6 +19,18 @@ def user(scope):
 def staticfiles(scope):
     return Response('xxxx', media_type='image/ping')
 
+
+def http_endpoint(scope):
+    return Response('Hello, Http', media_type='text/plain')
+
+def websocket_endpoint(scope):
+    async def asgi(recevie, send):
+        session = WebSocketSession(scope, recevie, send)
+        await session.accept()
+        await session.send_json({"hello": "websocket"})
+        await session.close()
+    
+    return asgi
 
 def test_routing_not_found():
     
@@ -103,4 +116,21 @@ def test_demo(tmpdir):
     res = client.get('/')
     assert res.status_code == 200
     assert res.content == b'Hello Home'
-    
+
+
+mixed_protocal_app = ProtocalRouter({
+        'http': http_endpoint,
+        'websocket': websocket_endpoint,
+    })
+def test_protocal_switch():
+    client = TestClient(mixed_protocal_app)
+    res = client.get('/')
+    assert res.status_code == 200
+    assert res.text == 'Hello, Http'
+
+    with client.wsconnect('/') as session:
+        assert session.recevie_json() == {"hello": 'websocket'}
+
+
+if __name__ == '__main__':
+    test_protocal_switch()
