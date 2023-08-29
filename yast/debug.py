@@ -16,13 +16,13 @@ class DebugMiddleware(object):
 class _DebuggerResponser(object):
     def __init__(self, app: ASGIApp, scope: Scope):               
         self.scope = scope
-        self.asgi_instance = app(scope)
+        self.app = app
         self.response_started = False
 
     async def __call__(self, receive, send):
         self.raw_send = send
         try:
-            await self.asgi_instance(receive, self.send)
+            await self.app(self.scope)(receive, self.send)
         except:
             if self.response_started:
                 raise

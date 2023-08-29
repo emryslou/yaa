@@ -1,5 +1,5 @@
 # v0.1.3
-1. debug middle
+1. debug middleware
 2. [TODO]
 
 # v0.1.2
