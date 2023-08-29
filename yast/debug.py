@@ -10,6 +10,9 @@ class DebugMiddleware(object):
         self.app = app
     
     def __call__(self, scope: Scope):
+        if scope['type'] != 'http':
+            return self.app(scope)
+            
         return _DebuggerResponser(self.app, scope)
 
 
