@@ -1,11 +1,11 @@
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __description__ = "yet another startlette as yast"
 
 __all__ = [
     "AsgiApp",
     "TestClient",
     "Request", "Response",
-    "HTMLResponse", "JSONResponse", "StreamingResponse", "FileResponse", "PlainTextResponse",
+    "HTMLResponse", "JSONResponse", "StreamingResponse", "FileResponse", "PlainTextResponse", "RedirectResponse"
     "URL", "QueryParams", "Headers",
     "StaticFile", "StaticFiles"
 ]
@@ -14,6 +14,10 @@ __all__ = [
 from .decorators import AsgiApp
 from .testclient import TestClient
 from .request import Request
-from .response import Response, HTMLResponse, JSONResponse, StreamingResponse, FileResponse, PlainTextResponse
+from .response import (
+    Response, HTMLResponse, JSONResponse,
+    StreamingResponse, FileResponse, PlainTextResponse,
+    RedirectResponse
+)
 from .datastructures import URL, QueryParams, Headers
 from .staticfiles import StaticFile, StaticFiles
