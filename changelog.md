@@ -1,4 +1,5 @@
 # v0.1.5
+1. fix: type expose
 
 # v0.1.4
 1. websocket
