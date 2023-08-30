@@ -1,4 +1,6 @@
 from asyncio import iscoroutinefunction
+import inspect
+
 from yast.request import Request
 from yast.response import Response
 from yast.routing import Router, Path, PathPrefix
@@ -42,25 +44,32 @@ class App(object):
         self.router.routes.append(prefix)
     
     def add_route(self, path: str, route, methods: list[str] = None):
-        if methods is None:
-            methods = ['GET']
-        
-        route = Path(path, req_res(route), protocol='http', methods=methods)
-        self.router.routes.append(route)
+        if not inspect.isclass(route):
+            route = req_res(route)
+            if methods is None:
+                methods = ['GET']
+            
+        self.router.routes.append(
+            Path(path, route, protocol='http', methods=methods)
+        )
     
     def add_route_ws(self, path: str, route):
-        router = Path(path, ws_session(route), protocol='websocket')
-        self.router.routes.append(router)
+        if not inspect.isclass(route):
+            route = ws_session(route)
+        instance = Path(path, route, protocol='websocket')
+        self.router.routes.append(instance)
     
     def route(self, path: str, methods: list[str] = None):
         def decorator(func):
             self.add_route(path, func, methods)
+            return func
         
         return decorator
     
     def ws_route(self, path: str):
         def decorator(func):
             self.add_route_ws(path, func)
+            return func
         
         return decorator
 
