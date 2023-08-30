@@ -1,8 +1,10 @@
+import os
+import pytest
+
 from yast import TestClient, Response, JSONResponse, StaticFiles
 from yast.routing import Router, Path, PathPrefix, ProtocalRouter
-from yast.websockets import WebSocketSession
+from yast.websockets import WebSocketSession, WebSocketDisconnect
 
-import os
 
 def home(scope):
     return Response('Hello Home', media_type='text/plain')
@@ -118,11 +120,12 @@ def test_demo(tmpdir):
     assert res.content == b'Hello Home'
 
 
-mixed_protocal_app = ProtocalRouter({
-        'http': http_endpoint,
-        'websocket': websocket_endpoint,
-    })
 def test_protocal_switch():
+    mixed_protocal_app = ProtocalRouter({
+        'http': Router([Path('/', app=http_endpoint)]),
+        'websocket': Router([Path('/', app=websocket_endpoint)]),
+    })
+
     client = TestClient(mixed_protocal_app)
     res = client.get('/')
     assert res.status_code == 200
@@ -130,7 +133,6 @@ def test_protocal_switch():
 
     with client.wsconnect('/') as session:
         assert session.recevie_json() == {"hello": 'websocket'}
-
-
-if __name__ == '__main__':
-    test_protocal_switch()
+    
+    with pytest.raises(WebSocketDisconnect):
+        client.wsconnect('/404')

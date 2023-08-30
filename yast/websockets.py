@@ -74,7 +74,6 @@ class WebSocketSession(Mapping):
             message = await self._recevie()
             assert message['type'] == 'websocket.connect'
             self.client_state = WebSocketState.CONNECTED
-            print('debug -- 014', message)
             return message
         elif self.client_state == WebSocketState.CONNECTED:
             message = await self._recevie()

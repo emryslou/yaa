@@ -1,8 +1,10 @@
-from typing import Any
-from yast.types import Scope, ASGIApp, ASGIInstance
-from yast import Response
 import typing
 import re
+from typing import Any
+
+from yast.types import Scope, ASGIApp, ASGIInstance
+from yast.response import Response
+
 
 class Route(object):
     def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
@@ -17,11 +19,13 @@ class Path(Route):
         self,
         path: str,
         app: ASGIApp,
-        methods: typing.Sequence[str] = ()
+        methods: typing.Sequence[str] = (),
+        protocol: str = None
     ) -> None:
         self.path = path
         self.app = app
         self.methods = methods
+        self.protocol = protocol
 
         regex = '^' + path + '$'
         regex = re.sub('{([a-zA-Z_][a-zA-Z0-9_]*)}', r"(?P<\1>[^/]+)", regex)
@@ -29,13 +33,14 @@ class Path(Route):
         self.path_regex = re.compile(regex)
     
     def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
-        match = self.path_regex.match(scope['path'])
-        if match:
-            kwargs = dict(scope.get('kwargs', {}))
-            kwargs.update(match.groupdict())
-            child_scope = dict(scope)
-            child_scope['kwargs'] = kwargs
-            return True, child_scope
+        if self.protocol is None or scope['type'] == self.protocol:
+            match = self.path_regex.match(scope['path'])
+            if match:
+                kwargs = dict(scope.get('kwargs', {}))
+                kwargs.update(match.groupdict())
+                child_scope = dict(scope)
+                child_scope['kwargs'] = kwargs
+                return True, child_scope
         return False, {}
     
     def __call__(self, scope: Scope) -> ASGIInstance:
@@ -92,6 +97,10 @@ class Router(object):
         return self.not_found(scope)
     
     def not_found(self, scope: Scope) -> ASGIInstance:
+        if scope['type'] == 'websocket':
+            async def close(receive, send):
+                await send({'type': 'websocket.close', 'code': 1001})
+            return close
         return Response('Not found', 404, media_type='text/plain')
 
 
