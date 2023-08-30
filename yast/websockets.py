@@ -107,11 +107,11 @@ class WebSocketSession(Mapping):
         else:
             raise RuntimeError('Cannot call "send" once a close message has been sent.')
     
-    async def accept(self, subprotocal=None):
+    async def accept(self, subprotocol=None):
         if self.client_state == WebSocketState.CONNECTING:
             await self.recevie()
         await self.send(
-                {'type': 'websocket.accept', 'subprotocal': subprotocal}
+                {'type': 'websocket.accept', 'subprotocol': subprotocol}
             )
     
     def _raise_on_disconnect(self, message):

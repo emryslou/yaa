@@ -88,3 +88,131 @@ def test_session_send_and_receive_text():
         session.send_text("Hello, world!")
         data = session.recevie_text()
         assert data == "Message was: Hello, world!"
+
+def test_session_send_and_receive_bytes():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            await session.accept()
+            data = await session.recevie_bytes()
+            await session.send_bytes(b"Message was: " + data)
+            await session.close()
+        return asgi
+    client = TestClient(app)
+    with client.wsconnect("/") as session:
+        session.send_bytes(b"Hello, bytes!")
+        data = session.recevie_bytes()
+        assert data == b"Message was: Hello, bytes!"
+
+
+def test_session_send_and_receive_json():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            await session.accept()
+            data = await session.recevie_json()
+            await session.send_bytes({'json': data})
+            await session.close()
+        return asgi
+    client = TestClient(app)
+    with client.wsconnect("/") as session:
+        session.send_json({"hello": "json"})
+        data = session.recevie_bytes()
+        assert data == {"json":{"hello": "json"}}
+
+def test_client_close():
+    close_code = None
+    def app(scope):
+        async def asgi(receive, send):
+            nonlocal close_code
+            session = WebSocketSession(scope, receive, send)
+            await session.accept()
+            try:
+                data = await session.recevie_text()
+            except WebSocketDisconnect as exc:
+                close_code = exc.code
+        return asgi
+    client = TestClient(app)
+    with client.wsconnect("/") as session:
+        session.close(code=1001)
+    assert close_code == 1001
+
+def test_application_close():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            await session.accept()
+            await session.close(1001)
+        return asgi
+    client = TestClient(app)
+    with client.wsconnect("/") as session:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            session.recevie_text()
+        assert exc.value.code == 1001
+
+
+def test_rejected_connection():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            await session.close(1008)
+        return asgi
+    client = TestClient(app)
+    with pytest.raises(WebSocketDisconnect) as exc:
+        client.wsconnect("/")
+    assert exc.value.code == 1008
+
+def test_subprotocol():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            assert session["subprotocols"] == ["soap", "wamp"]
+            await session.accept(subprotocol="wamp")
+            await session.close()
+        return asgi
+    client = TestClient(app)
+    with client.wsconnect("/", subprotocols=["soap", "wamp"]) as session:
+        assert session.accepted_subprotocol == "wamp"
+
+def test_session_exception():
+    def app(scope):
+        async def asgi(receive, send):
+            assert False
+        return asgi
+    client = TestClient(app)
+    with pytest.raises(AssertionError):
+        client.wsconnect("/123?a=abc")
+def test_duplicate_close():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            await session.accept()
+            await session.close()
+            await session.close()
+        return asgi
+    client = TestClient(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/") as session:
+            pass
+def test_duplicate_disconnect():
+    def app(scope):
+        async def asgi(receive, send):
+            session = WebSocketSession(scope, receive, send)
+            await session.accept()
+            message = await session.recevie()
+            assert message["type"] == "websocket.disconnect"
+            message = await session.recevie()
+        return asgi
+    client = TestClient(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/") as session:
+            session.close()
+def test_session_scope_interface():
+    """
+    A WebSocketSession can be instantiated with a scope, and presents a `Mapping`
+    interface.
+    """
+    session = WebSocketSession({"type": "websocket", "path": "/abc/", "headers": []})
+    assert session["type"] == "websocket"
+    assert dict(session) == {"type": "websocket", "path": "/abc/", "headers": []}
+    assert len(session) == 3

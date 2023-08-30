@@ -61,12 +61,12 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         ]
 
         if scheme in {'ws', 'wss'}:
-            subprotocal = request.headers.get('sec-websocket-protocal', None)
+            subprotocol = request.headers.get('sec-websocket-protocal', None)
 
-            if subprotocal is None:
-                subprotocals = []
+            if subprotocol is None:
+                subprotocols = []
             else:
-                subprotocals = [val.strip() for val in subprotocal.split(',')]
+                subprotocols = [val.strip() for val in subprotocol.split(',')]
             
             scope = {
                 'type': 'websocket',
@@ -77,7 +77,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 'headers': headers,
                 'client': ['testclient', 50000],
                 'server': [host, port],
-                'subprotocals': subprotocals,
+                'subprotocols': subprotocols,
             }
             session = WebSocketTestSession(self.app, scope)
             raise _Upgrade(session)
@@ -135,7 +135,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
 class WebSocketTestSession(object):
     def __init__(self, app, scope):
-        self.accept_subprotocal = None
+        self.accepted_subprotocol = None
         self._loop = asyncio.new_event_loop()
         self._instance = app(scope)
         self._recevie_queue = queue.Queue()
@@ -146,7 +146,8 @@ class WebSocketTestSession(object):
         
         message = self.__sget()
         self._raise_on_close_or_exception(message)
-        self.accept_subprotocal = message['subprotocal'] or []
+        print('debug -- 005 - 01', message)
+        self.accepted_subprotocol = message['subprotocol'] or []
     
     def __enter__(self):
         return self
@@ -240,14 +241,14 @@ class _TestClient(requests.Session):
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
-    def wsconnect(self, url: str, subprotocals=None, **kwargs) -> WebSocketTestSession:
+    def wsconnect(self, url: str, subprotocols=None, **kwargs) -> WebSocketTestSession:
         url = urljoin('ws://testserver', url)
         headers = kwargs.get('headers', {})
         headers.setdefault('connection', 'upgrade')
         headers.setdefault('sec-websocket-key', 'testserver==')
         headers.setdefault('sec-websocket-version', '13')
-        if subprotocals is not None:
-            headers.setdefault('sec-websocket-protocal', ','.join(subprotocals))
+        if subprotocols is not None:
+            headers.setdefault('sec-websocket-protocal', ','.join(subprotocols))
         
         kwargs['headers'] = headers
 
