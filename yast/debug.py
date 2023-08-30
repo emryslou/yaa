@@ -1,8 +1,23 @@
 import traceback
 import html
 
+from yast.datastructures import Headers
+from yast.request import Request
+from yast.response import PlainTextResponse, HTMLResponse
 from yast.types import ASGIApp, ASGIInstance, Scope, Recevie, Send
-from yast import Headers, PlainTextResponse, HTMLResponse
+
+def get_debug_response(request:Request, exc):
+    accept = request.headers.get('accept', '')
+    content = ''.join(traceback.format_tb(exc.__traceback__))
+    if 'text/html' in accept:
+        content = html.escape(content)
+        content = (
+            '<html><body><h1>500 Server Error</h1>'
+            f'<pre>{content}</pre></body></html>'
+        )
+        return HTMLResponse(content, status_code=500)
+    else:
+        return PlainTextResponse(content, status_code=500)
 
 
 class DebugMiddleware(object):
@@ -26,20 +41,12 @@ class _DebuggerResponser(object):
         self.raw_send = send
         try:
             await self.app(self.scope)(receive, self.send)
-        except:
-            if self.response_started:
-                raise
-            headers = Headers(self.scope.get('headers', []))
-            accept = headers.get('accept', '')
-            if 'text/html' in accept:
-                exc_html = html.escape(traceback.format_exc())
-                content = f'<html><body><h1>500 Server Error</h1><pre>{exc_html}</pre></body></html>'
-                res = HTMLResponse(content, status_code=500)
-            else:
-                content = traceback.format_exc()
-                res = PlainTextResponse(content, status_code=500)
-        
-            await res(Recevie, send)
+        except BaseException as exc:
+            if not self.response_started:
+                req = Request(self.scope, receive)
+                res = get_debug_response(req, exc)
+                await res(receive, send)
+            raise exc from None
     
     async def send(self, message):
         if message['type'] == 'http.response.start':
