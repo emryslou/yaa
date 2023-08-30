@@ -1,7 +1,10 @@
-from yast import AsgiApp, Response, Request
+from yast import App, Response, Request
 
-@AsgiApp
-def app(request: Request) -> Response: 
+app = App()
+
+
+@app.route('/')
+def home(request: Request) -> Response: 
     return Response('<h1>Hello</h1>', media_type='text/html')
 
 """
