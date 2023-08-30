@@ -1,14 +1,12 @@
 import pytest
 
-from yast import App, TestClient
-from yast.views import View
 from yast.request import Request
 from yast.response import PlainTextResponse
+from yast.routing import Router, Path
+from yast.testclient import TestClient
+from yast.views import View
 
-app = App()
 
-@app.route('/')
-@app.route('/{username}')
 class HomePage(View):
     async def get(self, req: Request, username: str =None):
         if username is None:
@@ -17,6 +15,10 @@ class HomePage(View):
             return PlainTextResponse(f'Hello, {username}')
 
 
+app = Router(routes=[
+    Path('/', HomePage),
+    Path('/{username}', HomePage),
+])
 client = TestClient(app)
 
 def test_view_route():

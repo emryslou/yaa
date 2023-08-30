@@ -1,3 +1,6 @@
+import asyncio
+
+from yast.exceptions import HttpException
 from yast.request import Request
 from yast.response import Response, PlainTextResponse
 from yast.types import Scope, Recevie, Send
@@ -17,7 +20,13 @@ class View(object):
         handler_name = 'get' if req.method == 'HEAD' else req.method.lower()
         handler = getattr(self, handler_name, self.method_not_allowed)
 
-        return await handler(req, **kwargs)
+        if asyncio.iscoroutinefunction(handler):
+            res = await handler(req, **kwargs)
+        else:
+            res = handler(req, **kwargs)
+        return res
     
     async def method_not_allowed(self, req: Request, **kwargs):
+        if 'app' in self.scope:
+            raise HttpException(status_code=405)
         return PlainTextResponse('Method Not Allowed', 405)
