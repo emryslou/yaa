@@ -70,7 +70,6 @@ class WebSocketSession(Mapping):
     
 
     async def recevie(self):
-        print('debug -- 013')
         if self.client_state == WebSocketState.CONNECTING:
             message = await self._recevie()
             assert message['type'] == 'websocket.connect'
@@ -82,8 +81,7 @@ class WebSocketSession(Mapping):
             assert message['type'] in {'websocket.recevie', 'websocket.disconnect'}
             if message['type'] == 'websocket.disconnect':
                 self.client_state = WebSocketState.DISCONNECTED
-                print('debug -- 015', message)
-                return message
+            return message
         else:
             raise RuntimeError(
                 'Cannot call "recevie" once a disconnect message has been recevied'
@@ -119,7 +117,6 @@ class WebSocketSession(Mapping):
     def _raise_on_disconnect(self, message):
         if message is None:
             raise RuntimeError('Message is None')
-        print('debug -- 004', message)
         if message['type'] == 'websocket.disconnect':
             raise WebSocketDisconnect(message['code'])
     
@@ -127,7 +124,6 @@ class WebSocketSession(Mapping):
         assert self.application_state == WebSocketState.CONNECTED
 
         message = await self.recevie()
-        print('debug -- 012', message)
         self._raise_on_disconnect(message)
         return message['text']
     

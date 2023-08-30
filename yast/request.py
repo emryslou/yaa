@@ -47,7 +47,7 @@ class Request(Mapping):
                 url = "%s://%s%s" % (scheme, host, path)
 
             if query_string:
-                url += "?" + quote(query_string.decode())
+                url += "?" + query_string.decode()
 
             self._url = URL(url)
         return self._url

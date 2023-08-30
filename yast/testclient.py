@@ -141,11 +141,10 @@ class WebSocketTestSession(object):
         self._recevie_queue = queue.Queue()
         self._send_queue = queue.Queue()
         self._thread = threading.Thread(target=self._run)
-        self._recevie_queue.put({'type': 'websocket.connect'})
+        self.__rput({'type': 'websocket.connect'})
         self._thread.start()
         
-        message = self._send_queue.get()
-        print('debug -- 008', message)
+        message = self.__sget()
         self._raise_on_close_or_exception(message)
         self.accept_subprotocal = message['subprotocal'] or []
     
@@ -156,7 +155,7 @@ class WebSocketTestSession(object):
         self.close(1000)
         self._thread.join()
         while not self._send_queue.empty():
-            message = self._send_queue.get()
+            message = self.__sget()
             if isinstance(message, BaseException):
                 raise message
     
@@ -166,17 +165,14 @@ class WebSocketTestSession(object):
             task = self._loop.create_task(asgi)
             self._loop.run_until_complete(task)
         except BaseException as exc:
-            print('debug -- 020', exc)
-            self._send_queue.put(exc)
+            self.__sput(exc)
     
     async def _asgi_recevie(self):
-        msg = self._recevie_queue.get()
-        print('debug -- 010', msg)
+        msg = self.__rget()
         return msg
     
     async def _asgi_send(self, message):
-        print('debug -- 009', message)
-        self._send_queue.put(message)
+        self.__sput(message)
     
     def _raise_on_close_or_exception(self, message):
         if isinstance(message, BaseException):
@@ -185,12 +181,11 @@ class WebSocketTestSession(object):
             raise WebSocketDisconnect(message['code'])
     
     def send_text(self, data: str):
-        print('debug -- 016', data)
-        self._recevie_queue.put({'type': 'websocket.recevie', 'text': data})
+        self.__rput({'type': 'websocket.recevie', 'text': data})
     
 
     def send_bytes(self, data: bytes):
-        self._recevie_queue.put({'type': 'websocket.recevie', 'bytes': data})
+        self.__rput({'type': 'websocket.recevie', 'bytes': data})
     
 
     def send_json(self, data):
@@ -198,11 +193,10 @@ class WebSocketTestSession(object):
         self.send_bytes(_j)
 
     def close(self, code=1000):
-        self._recevie_queue.put({'type': 'websocket.disconnect', 'code': code}) 
+        self.__rput({'type': 'websocket.disconnect', 'code': code}) 
 
     def recevie_text(self):
-        message = self._send_queue.get()
-        print('debug -- 007', message)
+        message = self.__sget()
         self._raise_on_close_or_exception(message)
         return message['text']
     
@@ -213,6 +207,22 @@ class WebSocketTestSession(object):
     
     def recevie_json(self):
         return json.loads(self.recevie_bytes().decode('utf-8'))
+    
+    def __sget(self):
+        return self._send_queue.get()
+    
+    def __sput(self, value):
+        if value is None:
+            raise RuntimeError('value is None')
+        self._send_queue.put(value)
+    
+    def __rget(self):
+        return self._recevie_queue.get()
+    
+    def __rput(self, value):
+        if value is None:
+            raise RuntimeError('value is None')
+        self._recevie_queue.put(value)
     
 
 class _TestClient(requests.Session):
