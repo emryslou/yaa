@@ -73,10 +73,13 @@ def test_not_modified():
     assert res.status_code == 304
     assert "" == res.text
 
-@pytest.mark.skip('reason need to resolve')
 def test_websockets_should_raise():
     with pytest.raises(RuntimeError):
-        client.wsconnect('/runtime_error')
+        with client.wsconnect('/runtime_error') as _:
+            pass
+            
+    # with pytest.raises(RuntimeError):
+    #     client.wsconnect('/runtime_error')
 
 def test_handled_exc_after_response():
     with pytest.raises(RuntimeError):

@@ -41,7 +41,7 @@ def test_routing_not_found():
 
     res = client.get('/')
     assert res.status_code == 404
-    assert res.text == 'Not found'
+    assert res.text == 'Not Found'
 
 
 def test_routing_path():
@@ -60,11 +60,11 @@ def test_routing_path():
 
     res = client.post('/')
     assert res.status_code == 405
-    assert res.text == 'Method not allowed'
+    assert res.text == 'Method Not Allowed'
 
     res = client.get('/nope')
     assert res.status_code == 404
-    assert res.text == 'Not found'
+    assert res.text == 'Not Found'
 
 def test_routing_pathprefix():
     app = Router([
@@ -88,7 +88,7 @@ def test_routing_pathprefix():
 
     res = client.post('/static/123')
     assert res.status_code == 405
-    assert res.text == 'Method not allowed'
+    assert res.text == 'Method Not Allowed'
 
 
 def test_demo(tmpdir):

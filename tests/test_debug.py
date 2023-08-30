@@ -45,7 +45,6 @@ def test_debug_after_response_sent():
     with pytest.raises(RuntimeError):
         res = client.get('/', headers={'accept': 'text/html, */*'})
 
-@pytest.mark.skip('solve it next')
 def test_debug_error_during_scope():
     def app(scope):
         async def asgi(recevie, send):
@@ -53,7 +52,7 @@ def test_debug_error_during_scope():
         
         return asgi
     
-    client = TestClient(DebugMiddleware(DebugMiddleware(app)))
+    client = TestClient(DebugMiddleware(DebugMiddleware(app)), raise_server_exceptions=False)
     
     res = client.get('/', headers={'accept': 'text/html, */*'})
     assert res.status_code == 500

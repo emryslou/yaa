@@ -20,4 +20,4 @@ class View(object):
         return await handler(req, **kwargs)
     
     async def method_not_allowed(self, req: Request, **kwargs):
-        return PlainTextResponse('Method not allowed', 405)
+        return PlainTextResponse('Method Not Allowed', 405)

@@ -66,7 +66,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         ]
 
         if scheme in {'ws', 'wss'}:
-            subprotocol = request.headers.get('sec-websocket-protocal', None)
+            subprotocol = request.headers.get('sec-websocket-protocol', None)
 
             if subprotocol is None:
                 subprotocols = []
@@ -163,12 +163,12 @@ class WebSocketTestSession(object):
         self._recevie_queue = queue.Queue()
         self._send_queue = queue.Queue()
         self._thread = threading.Thread(target=self._run)
-        self.__rput({'type': 'websocket.connect'})
+        self.send({'type': 'websocket.connect'})
         self._thread.start()
         
-        message = self.__sget()
-        self._raise_on_close_or_exception(message)
-        self.accepted_subprotocol = message.get('subprotocol', [])
+        message = self.recevie()
+        self._raise_on_close(message)
+        self.accepted_subprotocol = message.get('subprotocol', None)
     
     def __enter__(self):
         return self
@@ -177,7 +177,7 @@ class WebSocketTestSession(object):
         self.close(1000)
         self._thread.join()
         while not self._send_queue.empty():
-            message = self.__sget()
+            message = self.recevie()
             if isinstance(message, BaseException):
                 raise message
     
@@ -190,24 +190,27 @@ class WebSocketTestSession(object):
             self.__sput(exc)
     
     async def _asgi_recevie(self):
-        msg = self.__rget()
+        msg = self._recevie_queue.get()
         return msg
     
     async def _asgi_send(self, message):
         self.__sput(message)
     
-    def _raise_on_close_or_exception(self, message):
-        if isinstance(message, BaseException):
-            raise message
+    def _raise_on_close(self, message):
         if message['type'] == 'websocket.close':
-            raise WebSocketDisconnect(message['code'])
+            raise WebSocketDisconnect(message.get('code', 1000))
+    
+    def send(self, value):
+        if value is None:
+            raise RuntimeError('value is None')
+        self._recevie_queue.put(value)
     
     def send_text(self, data: str):
-        self.__rput({'type': 'websocket.recevie', 'text': data})
+        self.send({'type': 'websocket.recevie', 'text': data})
     
 
     def send_bytes(self, data: bytes):
-        self.__rput({'type': 'websocket.recevie', 'bytes': data})
+        self.send({'type': 'websocket.recevie', 'bytes': data})
     
 
     def send_json(self, data):
@@ -215,36 +218,31 @@ class WebSocketTestSession(object):
         self.send_bytes(_j)
 
     def close(self, code=1000):
-        self.__rput({'type': 'websocket.disconnect', 'code': code}) 
+        self.send({'type': 'websocket.disconnect', 'code': code})
+
+    def recevie(self):
+        message = self._send_queue.get()
+        if isinstance(message, BaseException):
+            raise message
+        return message
 
     def recevie_text(self):
-        message = self.__sget()
-        self._raise_on_close_or_exception(message)
+        message = self.recevie()
+        self._raise_on_close(message)
         return message['text']
     
     def recevie_bytes(self) -> bytes:
-        message = self._send_queue.get()
-        self._raise_on_close_or_exception(message)
+        message = self.recevie()
+        self._raise_on_close(message)
         return message['bytes']
     
     def recevie_json(self):
         return json.loads(self.recevie_bytes().decode('utf-8'))
     
-    def __sget(self):
-        return self._send_queue.get()
-    
-    def __sput(self, value):
-        if value is None:
+    def __sput(self, message):
+        if message is None:
             raise RuntimeError('value is None')
-        self._send_queue.put(value)
-    
-    def __rget(self):
-        return self._recevie_queue.get()
-    
-    def __rput(self, value):
-        if value is None:
-            raise RuntimeError('value is None')
-        self._recevie_queue.put(value)
+        self._send_queue.put(message)
     
 
 class _TestClient(requests.Session):
@@ -254,7 +252,7 @@ class _TestClient(requests.Session):
             base_url: str,
             raise_server_exceptions = True
         ) -> None:
-        super(_TestClient, self).__init__()
+        super().__init__()
         adapter = _ASGIAdapter(app, raise_server_exceptions)
         self.mount("http://", adapter)
         self.mount("https://", adapter)
@@ -267,19 +265,23 @@ class _TestClient(requests.Session):
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
-    def wsconnect(self, url: str, subprotocols=None, **kwargs) -> WebSocketTestSession:
+    def wsconnect(
+            self,url: str,
+            subprotocols=None,
+            **kwargs
+        ) -> WebSocketTestSession:
         url = urljoin('ws://testserver', url)
         headers = kwargs.get('headers', {})
         headers.setdefault('connection', 'upgrade')
         headers.setdefault('sec-websocket-key', 'testserver==')
         headers.setdefault('sec-websocket-version', '13')
         if subprotocols is not None:
-            headers.setdefault('sec-websocket-protocal', ','.join(subprotocols))
+            headers.setdefault('sec-websocket-protocol', ','.join(subprotocols))
         
         kwargs['headers'] = headers
 
         try:
-            super().request('GET', url, **kwargs)
+            self.request('GET', url, **kwargs)
         except _Upgrade as exc:
             return exc.session
         

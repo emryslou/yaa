@@ -2,8 +2,11 @@ import typing
 import re
 from typing import Any
 
+from yast.exceptions import HttpException
+from yast.response import Response, PlainTextResponse
 from yast.types import Scope, ASGIApp, ASGIInstance
-from yast.response import Response
+from yast.websockets import WebSocketClose
+
 
 
 class Route(object):
@@ -45,7 +48,9 @@ class Path(Route):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         if self.methods and scope['method'] not in self.methods:
-            return Response('Method not allowed', 405, media_type='text/plain')
+            if 'app' in scope:
+                raise HttpException(status_code=405)
+            return PlainTextResponse('Method Not Allowed', 405)
         return self.app(scope)
 
 class PathPrefix(Route):
@@ -78,7 +83,9 @@ class PathPrefix(Route):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         if self.methods and scope['method'] not in self.methods:
-            return Response('Method not allowed', 405, media_type='text/plain')
+            if 'app' in scope:
+                raise HttpException(status_code=405)
+            return PlainTextResponse('Method Not Allowed', 405)
         return self.app(scope)
 
 
@@ -98,10 +105,11 @@ class Router(object):
     
     def not_found(self, scope: Scope) -> ASGIInstance:
         if scope['type'] == 'websocket':
-            async def close(receive, send):
-                await send({'type': 'websocket.close', 'code': 1001})
-            return close
-        return Response('Not found', 404, media_type='text/plain')
+            return WebSocketClose()
+        
+        if 'app' in scope:
+            raise HttpException(status_code=404)
+        return PlainTextResponse('Not Found', 404)
 
 
 class ProtocalRouter(object):
