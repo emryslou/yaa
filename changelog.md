@@ -1,4 +1,5 @@
 # v0.2.0
+1. add object App & remove decorator AsgiApp
 
 # v0.1.5
 1. fix: type expose

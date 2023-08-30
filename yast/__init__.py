@@ -2,7 +2,7 @@ __version__ = "0.2.0"
 __description__ = "yet another startlette as yast"
 
 __all__ = [
-    "AsgiApp",
+    "App",
     "TestClient",
     "Request", "Response",
     "HTMLResponse", "JSONResponse", "StreamingResponse", "FileResponse", "PlainTextResponse", "RedirectResponse"
@@ -10,8 +10,7 @@ __all__ = [
     "StaticFile", "StaticFiles"
 ]
 
-
-from .decorators import AsgiApp
+from .app import App
 from .testclient import TestClient
 from .request import Request
 from .response import (
