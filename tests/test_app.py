@@ -1,6 +1,7 @@
 import os
 
 from yast.app import App
+from yast.request import Request
 from yast.response import PlainTextResponse, JSONResponse
 from yast.routing import Router
 from yast.staticfiles import StaticFiles
@@ -8,6 +9,10 @@ from yast.testclient import TestClient
 
 app = App()
 client = TestClient(app)
+
+@app.exception_handle(Exception)
+async def error_500(req: Request, exc):
+    return JSONResponse({'detail': 'oo....ooo'}, status_code=500)
 
 def _add_router():
     @app.route('/')
@@ -77,3 +82,18 @@ def test_app_mount(tmpdir):
 
     res = client.get('/static/nop.txt')
     assert res.status_code == 404
+
+
+def test_app_error():
+    client = TestClient(app, raise_server_exceptions=False)
+    @app.route('/err_500')
+    def _tmp(request: Request):
+        raise Exception()
+
+    res = client.get('/err_500')
+    assert res.status_code == 500
+    assert res.json() == {'detail': 'oo....ooo'}
+
+    res = client.post('/err_500')
+    assert res.status_code == 405
+    assert res.text ==  'Method Not Allowed'
