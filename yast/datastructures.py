@@ -51,6 +51,9 @@ class URL(str):
     def port(self):
         return self.components.port
 
+    def replace(self, **kwargs):
+        components = self.components._replace(**kwargs)
+        return URL(components.geturl())
 
 class QueryParams(typing.Mapping[str, str]):
     def __init__(

@@ -15,6 +15,13 @@ def test_url():
     assert url.password == 'passwd'
     assert url.hostname == 'www.baidu.com'
 
+    _new = url.replace(scheme='ws', path='/replace/a/path')
+    assert _new.scheme == 'ws'
+    assert str(_new).startswith('ws://')
+    assert str(_new).__contains__('/replace/a/path')
+    assert not str(_new).__contains__('/abcd/test.php')
+
+
 
 def test_query_params():
     qry_prm = QueryParams([("a", "123"), ("a", "456"), ("bb", "xxx")])

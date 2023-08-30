@@ -1,7 +1,10 @@
 import pytest
 import os
 
-from yast import Response, StreamingResponse, FileResponse, TestClient
+from yast.response import (
+    Response, StreamingResponse, FileResponse, RedirectResponse
+)
+from yast.testclient import TestClient
 
 
 def test_response_text():
@@ -103,3 +106,18 @@ def test_file_response(tmpdir):
     assert res.headers['content-type'] == 'image/png'
     assert res.headers['content-disposition'] == 'attachment; filename="example.png"'
     assert 'content-length' in res.headers
+
+
+def test_redirect():
+    def app(scope):
+        async def asgi(receive, send):
+            if scope["path"] == "/":
+                response = Response("hello, world", media_type="text/plain")
+            else:
+                response = RedirectResponse("/")
+            await response(receive, send)
+        return asgi
+    client = TestClient(app)
+    response = client.get("/redirect")
+    assert response.text == "hello, world"
+    assert response.url == "http://testserver/"

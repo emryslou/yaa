@@ -5,9 +5,11 @@ import os
 import stat
 import hashlib
 
+
 from aiofiles.os import stat as aio_stat
 from email.utils import formatdate
 from mimetypes import guess_type
+from urllib.parse import quote_plus
 from yast.types import Recevie, Send
 from yast.datastructures import MutableHeaders
 from yast.types import Recevie, Send
@@ -194,3 +196,11 @@ class FileResponse(Response):
                     'body': chunk,
                     'more_body': more_body,
                 })
+
+
+class RedirectResponse(Response):
+    def __init__(self, url: str, status_code=302, headers: dict =None):
+        super().__init__(b'', status_code=status_code, headers=headers)
+
+        #todo: why: '&' repeat 
+        self.headers['location'] = quote_plus(url, safe=":/#?&=@[]!$&'()*+,;")

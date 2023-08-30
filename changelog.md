@@ -1,5 +1,6 @@
 # v0.1.4
 1. websocket
+2. redirect response
 
 # v0.1.3
 1. debug middleware
