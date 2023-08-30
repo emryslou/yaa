@@ -13,7 +13,7 @@ class StaticFile(object):
     
     def __call__(self, scope: Scope):
         if scope['method'] not in ('GET', 'HEAD'):
-            return PlainTextResponse('Method not allowed', status_code=406)
+            return PlainTextResponse('Method not allowed', status_code=405)
         
         return _StaticFileResponser(scope, self.path) 
 
@@ -25,7 +25,7 @@ class StaticFiles(object):
     
     def __call__(self, scope: Scope):
         if scope['method'] not in ('GET', 'HEAD'):
-            return PlainTextResponse('Method not allowed', status_code=406)
+            return PlainTextResponse('Method not allowed', status_code=405)
         
         path = os.path.normpath(os.path.join(*scope['path'].split('/')))
         if path.startswith('..'):

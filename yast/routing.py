@@ -45,7 +45,7 @@ class Path(Route):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         if self.methods and scope['method'] not in self.methods:
-            return Response('Method not allowed', 406, media_type='text/plain')
+            return Response('Method not allowed', 405, media_type='text/plain')
         return self.app(scope)
 
 class PathPrefix(Route):
@@ -78,7 +78,7 @@ class PathPrefix(Route):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         if self.methods and scope['method'] not in self.methods:
-            return Response('Method not allowed', 406, media_type='text/plain')
+            return Response('Method not allowed', 405, media_type='text/plain')
         return self.app(scope)
 
 

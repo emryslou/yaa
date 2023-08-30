@@ -59,7 +59,7 @@ def test_routing_path():
     assert res.text == 'Hello Home'
 
     res = client.post('/')
-    assert res.status_code == 406
+    assert res.status_code == 405
     assert res.text == 'Method not allowed'
 
     res = client.get('/nope')
@@ -87,7 +87,7 @@ def test_routing_pathprefix():
     assert res.text == 'User aaaa'
 
     res = client.post('/static/123')
-    assert res.status_code == 406
+    assert res.status_code == 405
     assert res.text == 'Method not allowed'
 
 

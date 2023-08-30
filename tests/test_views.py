@@ -29,5 +29,5 @@ def test_view_route():
     assert res.text == 'Hello, abc'
 
     res = client.post('/abc')
-    assert res.status_code == 406
+    assert res.status_code == 405
     assert res.text == 'Method not allowed'
