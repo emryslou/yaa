@@ -36,7 +36,7 @@ def ws_session(func):
 
     return app
 
-class App(object):
+class Yast(object):
     def __init__(self, debug: bool = False) -> None:
         self.router = Router(routes=[])
         self.exception_middleware = ExceptionMiddleware(

@@ -4,7 +4,7 @@ import stat
 from aiofiles.os import stat as aio_stat
 
 from yast.types import Scope
-from yast import PlainTextResponse, FileResponse
+from yast.response import PlainTextResponse, FileResponse
 
 
 class StaticFile(object):

@@ -1,13 +1,13 @@
 import os
 
-from yast.app import App
+from yast.app import Yast
 from yast.request import Request
 from yast.response import PlainTextResponse, JSONResponse
 from yast.routing import Router
 from yast.staticfiles import StaticFiles
 from yast.testclient import TestClient
 
-app = App()
+app = Yast()
 client = TestClient(app)
 
 @app.exception_handle(Exception)
