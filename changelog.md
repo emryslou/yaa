@@ -1,5 +1,6 @@
 # v0.2.1
-
+1. 代码重构
+2. testclient response reason
 # v0.2.0
 1. add object App & remove decorator AsgiApp
 2. add view
