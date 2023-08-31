@@ -1,4 +1,5 @@
 import asyncio
+import typing
 
 from yast.exceptions import HttpException
 from yast.requests import Request
@@ -7,16 +8,16 @@ from yast.types import Scope, Recevie, Send
 
 
 class HttpEndPoint(object):
-    def __init__(self, scope: Scope):
+    def __init__(self, scope: Scope) -> None:
         self.scope = scope
     
-    async def __call__(self, recevie: Recevie, send: Send):
+    async def __call__(self, recevie: Recevie, send: Send) -> None:
         req = Request(self.scope, recevie) 
         res = await self.dispatch(req, **self.scope.get('kwargs', {}))
 
         await res(recevie, send)
     
-    async def dispatch(self, req: Request, **kwargs) -> Response:
+    async def dispatch(self, req: Request, **kwargs: typing.Any) -> Response:
         handler_name = 'get' if req.method == 'HEAD' else req.method.lower()
         handler = getattr(self, handler_name, self.method_not_allowed)
 
@@ -26,7 +27,7 @@ class HttpEndPoint(object):
             res = handler(req, **kwargs)
         return res
     
-    async def method_not_allowed(self, req: Request, **kwargs):
+    async def method_not_allowed(self, req: Request, **kwargs: typing.Any):
         if 'app' in self.scope:
             raise HttpException(status_code=405)
         return PlainTextResponse('Method Not Allowed', 405)
