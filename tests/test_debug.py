@@ -1,7 +1,8 @@
 import pytest
 
-from yast import TestClient, Response
+from yast import TestClient
 from yast.debug import DebugMiddleware
+from yast.responses import Response
 
 def test_debug_text():
     def app(scope):

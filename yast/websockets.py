@@ -15,7 +15,7 @@ class WebSocketDisconnect(Exception):
     def __init__(self, code=1000):
         self.code = code
 
-class WebSocketSession(Mapping):
+class WebSocket(Mapping):
     def __init__(self, scope: Scope, recevie: Recevie=None, send: Send=None):
         assert scope['type'] == 'websocket'
         self._scope = scope

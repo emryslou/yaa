@@ -2,8 +2,8 @@ import asyncio
 import http
 
 from yast.debug import get_debug_response
-from yast.request import Request
-from yast.response import Response, PlainTextResponse
+from yast.requests import Request
+from yast.responses import Response, PlainTextResponse
 
 class HttpException(Exception):
     def __init__(self, status_code: int, detail: str = None):

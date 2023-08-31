@@ -3,7 +3,7 @@ import re
 from typing import Any
 
 from yast.exceptions import HttpException
-from yast.response import Response, PlainTextResponse
+from yast.responses import Response, PlainTextResponse
 from yast.types import Scope, ASGIApp, ASGIInstance
 from yast.websockets import WebSocketClose
 

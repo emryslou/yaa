@@ -1,8 +1,9 @@
 import asyncio
 import pytest
 
-from yast import TestClient, Request, JSONResponse
-from yast.request import ClientDisconnect
+from yast import TestClient
+from yast.responses import JSONResponse
+from yast.requests import Request, ClientDisconnect
 
 def test_request_url():
     """ test """

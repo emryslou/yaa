@@ -2,11 +2,11 @@ from asyncio import iscoroutinefunction
 import inspect
 
 from yast.exceptions import ExceptionMiddleware
-from yast.request import Request
-from yast.response import Response
+from yast.requests import Request
+from yast.responses import Response
 from yast.routing import Router, Path, PathPrefix
 from yast.types import ASGIApp, Scope, ASGIInstance, Send, Recevie
-from yast.websockets import WebSocketSession
+from yast.websockets import WebSocket
 
 def req_res(func):
     is_coroutine = iscoroutinefunction(func)
@@ -29,7 +29,7 @@ def req_res(func):
 def ws_session(func):
     def app(scope: Scope) -> ASGIInstance:
         async def awaitable(recv: Recevie, send: Send) -> None:
-            session = WebSocketSession(scope, recv, send)
+            session = WebSocket(scope, recv, send)
             await func(session, **scope.get('kwargs', {}))
 
         return awaitable

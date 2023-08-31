@@ -1,13 +1,13 @@
 import pytest
 
-from yast.request import Request
-from yast.response import PlainTextResponse
+from yast.requests import Request
+from yast.responses import PlainTextResponse
 from yast.routing import Router, Path
 from yast.testclient import TestClient
-from yast.views import View
+from yast.endpoints import HttpEndPoint
 
 
-class HomePage(View):
+class HomePage(HttpEndPoint):
     async def get(self, req: Request, username: str =None):
         if username is None:
             return PlainTextResponse('Hello, all of you')
@@ -21,7 +21,7 @@ app = Router(routes=[
 ])
 client = TestClient(app)
 
-def test_view_route():
+def test_endpoints_route():
     res = client.get('/')
     assert res.status_code == 200
     assert res.text == 'Hello, all of you'

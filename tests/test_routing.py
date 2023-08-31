@@ -1,9 +1,11 @@
 import os
 import pytest
 
-from yast import TestClient, Response, JSONResponse, StaticFiles
+from yast import TestClient
+from yast.responses import Response, JSONResponse
 from yast.routing import Router, Path, PathPrefix, ProtocalRouter
-from yast.websockets import WebSocketSession, WebSocketDisconnect
+from yast.staticfiles import StaticFiles
+from yast.websockets import WebSocket, WebSocketDisconnect
 
 
 def home(scope):
@@ -27,7 +29,7 @@ def http_endpoint(scope):
 
 def websocket_endpoint(scope):
     async def asgi(recevie, send):
-        session = WebSocketSession(scope, recevie, send)
+        session = WebSocket(scope, recevie, send)
         await session.accept()
         await session.send_json({"hello": "websocket"})
         await session.close()

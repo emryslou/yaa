@@ -1,8 +1,8 @@
 import os
 
 from yast.app import Yast
-from yast.request import Request
-from yast.response import PlainTextResponse, JSONResponse
+from yast.requests import Request
+from yast.responses import PlainTextResponse, JSONResponse
 from yast.routing import Router
 from yast.staticfiles import StaticFiles
 from yast.testclient import TestClient

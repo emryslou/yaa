@@ -2,8 +2,8 @@ import traceback
 import html
 
 from yast.datastructures import Headers
-from yast.request import Request
-from yast.response import PlainTextResponse, HTMLResponse
+from yast.requests import Request
+from yast.responses import PlainTextResponse, HTMLResponse
 from yast.types import ASGIApp, ASGIInstance, Scope, Recevie, Send
 
 def get_debug_response(request:Request, exc):

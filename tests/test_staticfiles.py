@@ -1,7 +1,7 @@
 import os
 import pytest
 from yast import TestClient
-from yast import StaticFiles, StaticFile
+from yast.staticfiles import StaticFiles, StaticFile
 
 
 def test_staticfile(tmpdir):

@@ -1,4 +1,4 @@
-from yast import URL, QueryParams, Headers
+from yast.datastructures import URL, QueryParams, Headers
 
 def test_url():
     url = URL('http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff')

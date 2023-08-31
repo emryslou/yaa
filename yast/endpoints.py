@@ -1,12 +1,12 @@
 import asyncio
 
 from yast.exceptions import HttpException
-from yast.request import Request
-from yast.response import Response, PlainTextResponse
+from yast.requests import Request
+from yast.responses import Response, PlainTextResponse
 from yast.types import Scope, Recevie, Send
 
 
-class View(object):
+class HttpEndPoint(object):
     def __init__(self, scope: Scope):
         self.scope = scope
     
