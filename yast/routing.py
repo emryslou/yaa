@@ -113,7 +113,7 @@ class Router(object):
 
 
 class ProtocalRouter(object):
-    def __init__(self, protocals: typing.Dict[str, ASGIApp]):
+    def __init__(self, protocals: typing.Dict[str, ASGIApp]) -> None:
         self.protocals = protocals
     
     def __call__(self, scope: Scope) -> ASGIInstance:
