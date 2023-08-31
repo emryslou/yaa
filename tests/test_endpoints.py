@@ -1,10 +1,12 @@
 import pytest
+import typing
 
+from yast.endpoints import HttpEndPoint, WebSocketEndpoint
 from yast.requests import Request
 from yast.responses import PlainTextResponse
 from yast.routing import Router, Path
 from yast.testclient import TestClient
-from yast.endpoints import HttpEndPoint
+from yast.websockets import WebSocket
 
 
 class HomePage(HttpEndPoint):
@@ -21,7 +23,7 @@ app = Router(routes=[
 ])
 client = TestClient(app)
 
-def test_endpoints_route():
+def test_http_endpoint_route():
     res = client.get('/')
     assert res.status_code == 200
     assert res.text == 'Hello, all of you'
@@ -33,3 +35,30 @@ def test_endpoints_route():
     res = client.post('/abc')
     assert res.status_code == 405
     assert res.text == 'Method Not Allowed'
+
+def test_websocket_endpoint_on_connect():
+    class WsApp(WebSocketEndpoint):
+        async def on_connect(self, **kwargs: typing.Any) -> None:
+            assert self.ws['subprotocols'] == ['soap', 'wamp']
+            await self.ws.accept(subprotocol='wamp')
+        
+    client = TestClient(WsApp)
+    with client.wsconnect('/ws', subprotocols=['soap', 'wamp']) as s:
+        s.accepted_subprotocol == 'wamp'
+
+
+@pytest.mark.timeout(3)
+def test_websocket_endpoint_on_receive_bytes():
+    class WsApp(WebSocketEndpoint):
+        encoding = 'bytes'
+        async def on_receive(self, data) -> None:
+            await self.send(b'Received msg is ' + data)
+        
+        async def on_disconnect(self, code: int) -> None:
+            pass 
+        
+    client = TestClient(WsApp)
+    with client.wsconnect('/ws') as s:
+        msg = 'Hello, Bytes'
+        s.send_bytes(msg.encode('utf-8'))
+        s.receive_bytes() == (f'Received msg is {msg}').encode('utf-8')

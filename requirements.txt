@@ -5,4 +5,5 @@ ujson
 # Testing & Linting
 pytest
 pytest-cov
+pytest-timeout
 black
