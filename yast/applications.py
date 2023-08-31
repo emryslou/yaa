@@ -1,7 +1,7 @@
 from asyncio import iscoroutinefunction
 import inspect
 
-from yast.exceptions import ExceptionMiddleware
+from yast.middlewares import ExceptionMiddleware
 from yast.requests import Request
 from yast.responses import Response
 from yast.routing import Router, Path, PathPrefix

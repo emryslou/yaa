@@ -254,3 +254,7 @@ class MutableHeaders(Headers):
         
         self._list.append((set_key, set_value))
         return value
+    
+    def update(self, other: dict):
+        for key, val in other.items():
+            self[key] = val

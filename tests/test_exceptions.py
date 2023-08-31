@@ -1,7 +1,8 @@
 import pytest
 
 from yast import TestClient
-from yast.exceptions import ExceptionMiddleware, HttpException
+from yast.middlewares import ExceptionMiddleware
+from yast.exceptions import HttpException
 from yast.responses import PlainTextResponse
 from yast.routing import Router, Path
 
