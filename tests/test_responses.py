@@ -121,3 +121,25 @@ def test_redirect():
     response = client.get("/redirect")
     assert response.text == "hello, world"
     assert response.url == "http://testserver/"
+
+def test_phrase():
+    def app(scope):
+        return Response(b'', status_code=200)
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.reason == 'OK'
+
+    def app(scope):
+        return Response(b'', status_code=123)
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.reason == ''
+
+    def app(scope):
+        return Response(b'', status_code=500)
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.reason == 'Internal Server Error'
