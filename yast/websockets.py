@@ -4,7 +4,7 @@ from typing import Mapping
 from urllib.parse import unquote
 
 from yast.datastructures import URL, Headers, QueryParams
-from yast.types import Scope, Recevie, Send
+from yast.types import Scope, Receive, Send
 
 class WebSocketState(enum.Enum):
     CONNECTING = 0
@@ -16,10 +16,10 @@ class WebSocketDisconnect(Exception):
         self.code = code
 
 class WebSocket(Mapping):
-    def __init__(self, scope: Scope, recevie: Recevie=None, send: Send=None):
+    def __init__(self, scope: Scope, receive: Receive=None, send: Send=None):
         assert scope['type'] == 'websocket'
         self._scope = scope
-        self._recevie = recevie
+        self._receive = receive
         self._send = send
         self.client_state = WebSocketState.CONNECTING
         self.application_state = WebSocketState.CONNECTING
@@ -69,21 +69,21 @@ class WebSocket(Mapping):
         return self._query_params
     
 
-    async def recevie(self):
+    async def receive(self):
         if self.client_state == WebSocketState.CONNECTING:
-            message = await self._recevie()
+            message = await self._receive()
             assert message['type'] == 'websocket.connect'
             self.client_state = WebSocketState.CONNECTED
             return message
         elif self.client_state == WebSocketState.CONNECTED:
-            message = await self._recevie()
-            assert message['type'] in {'websocket.recevie', 'websocket.disconnect'}
+            message = await self._receive()
+            assert message['type'] in {'websocket.receive', 'websocket.disconnect'}
             if message['type'] == 'websocket.disconnect':
                 self.client_state = WebSocketState.DISCONNECTED
             return message
         else:
             raise RuntimeError(
-                'Cannot call "recevie" once a disconnect message has been recevied'
+                'Cannot call "receive" once a disconnect message has been received'
             )
 
     async def send(self, message):
@@ -108,7 +108,7 @@ class WebSocket(Mapping):
     
     async def accept(self, subprotocol=None):
         if self.client_state == WebSocketState.CONNECTING:
-            await self.recevie()
+            await self.receive()
         await self.send(
                 {'type': 'websocket.accept', 'subprotocol': subprotocol}
             )
@@ -119,22 +119,22 @@ class WebSocket(Mapping):
         if message['type'] == 'websocket.disconnect':
             raise WebSocketDisconnect(message['code'])
     
-    async def recevie_text(self):
+    async def receive_text(self):
         assert self.application_state == WebSocketState.CONNECTED
 
-        message = await self.recevie()
+        message = await self.receive()
         self._raise_on_disconnect(message)
         return message['text']
     
-    async def recevie_bytes(self):
+    async def receive_bytes(self):
         assert self.application_state == WebSocketState.CONNECTED
 
-        message = await self.recevie()
+        message = await self.receive()
         self._raise_on_disconnect(message)
         return message['bytes']
     
-    async def recevie_json(self):
-        json_bytes = await self.recevie_bytes()
+    async def receive_json(self):
+        json_bytes = await self.receive_bytes()
         return json.loads(json_bytes.decode('utf-8'))
     
     async def send_text(self, data: str):
@@ -155,5 +155,5 @@ class WebSocketClose(object):
     def __init__(self, code=1000):
         self.code = code
     
-    async def __call__(self, recevie, send):
+    async def __call__(self, receive, send):
         await send({'type': 'websocket.close', 'code': self.code})

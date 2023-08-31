@@ -6,7 +6,7 @@ from yast.responses import Response
 
 def test_debug_text():
     def app(scope):
-        async def asgi(recevie, send):
+        async def asgi(receive, send):
             raise RuntimeError('Text:Something went wrong')
         
         return asgi
@@ -20,7 +20,7 @@ def test_debug_text():
 
 def test_debug_html():
     def app(scope):
-        async def asgi(recevie, send):
+        async def asgi(receive, send):
             raise RuntimeError('Something went wrong')
         
         return asgi
@@ -35,9 +35,9 @@ def test_debug_html():
 
 def test_debug_after_response_sent():
     def app(scope):
-        async def asgi(recevie, send):
+        async def asgi(receive, send):
             res = Response(b'', status_code=204)
-            await res(recevie, send)
+            await res(receive, send)
             raise RuntimeError('Something went wrong')
         
         return asgi
@@ -48,7 +48,7 @@ def test_debug_after_response_sent():
 
 def test_debug_error_during_scope():
     def app(scope):
-        async def asgi(recevie, send):
+        async def asgi(receive, send):
             raise RuntimeError('Something went wrong')
         
         return asgi

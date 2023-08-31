@@ -172,13 +172,13 @@ class WebSocketTestSession(object):
         self.accepted_subprotocol = None
         self._loop = asyncio.new_event_loop()
         self._instance = app(scope)
-        self._recevie_queue = queue.Queue()
+        self._receive_queue = queue.Queue()
         self._send_queue = queue.Queue()
         self._thread = threading.Thread(target=self._run)
         self.send({'type': 'websocket.connect'})
         self._thread.start()
         
-        message = self.recevie()
+        message = self.receive()
         self._raise_on_close(message)
         self.accepted_subprotocol = message.get('subprotocol', None)
     
@@ -189,20 +189,20 @@ class WebSocketTestSession(object):
         self.close(1000)
         self._thread.join()
         while not self._send_queue.empty():
-            message = self.recevie()
+            message = self.receive()
             if isinstance(message, BaseException):
                 raise message
     
     def _run(self):
         try:
-            asgi = self._instance(self._asgi_recevie, self._asgi_send)
+            asgi = self._instance(self._asgi_receive, self._asgi_send)
             task = self._loop.create_task(asgi)
             self._loop.run_until_complete(task)
         except BaseException as exc:
             self.__sput(exc)
     
-    async def _asgi_recevie(self):
-        msg = self._recevie_queue.get()
+    async def _asgi_receive(self):
+        msg = self._receive_queue.get()
         return msg
     
     async def _asgi_send(self, message):
@@ -215,14 +215,14 @@ class WebSocketTestSession(object):
     def send(self, value):
         if value is None:
             raise RuntimeError('value is None')
-        self._recevie_queue.put(value)
+        self._receive_queue.put(value)
     
     def send_text(self, data: str):
-        self.send({'type': 'websocket.recevie', 'text': data})
+        self.send({'type': 'websocket.receive', 'text': data})
     
 
     def send_bytes(self, data: bytes):
-        self.send({'type': 'websocket.recevie', 'bytes': data})
+        self.send({'type': 'websocket.receive', 'bytes': data})
     
 
     def send_json(self, data):
@@ -232,24 +232,24 @@ class WebSocketTestSession(object):
     def close(self, code=1000):
         self.send({'type': 'websocket.disconnect', 'code': code})
 
-    def recevie(self):
+    def receive(self):
         message = self._send_queue.get()
         if isinstance(message, BaseException):
             raise message
         return message
 
-    def recevie_text(self):
-        message = self.recevie()
+    def receive_text(self):
+        message = self.receive()
         self._raise_on_close(message)
         return message['text']
     
-    def recevie_bytes(self) -> bytes:
-        message = self.recevie()
+    def receive_bytes(self) -> bytes:
+        message = self.receive()
         self._raise_on_close(message)
         return message['bytes']
     
-    def recevie_json(self):
-        return json.loads(self.recevie_bytes().decode('utf-8'))
+    def receive_json(self):
+        return json.loads(self.receive_bytes().decode('utf-8'))
     
     def __sput(self, message):
         if message is None:

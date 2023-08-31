@@ -4,18 +4,18 @@ import typing
 from yast.exceptions import HttpException
 from yast.requests import Request
 from yast.responses import Response, PlainTextResponse
-from yast.types import Scope, Recevie, Send
+from yast.types import Scope, Receive, Send
 
 
 class HttpEndPoint(object):
     def __init__(self, scope: Scope) -> None:
         self.scope = scope
     
-    async def __call__(self, recevie: Recevie, send: Send) -> None:
-        req = Request(self.scope, recevie) 
+    async def __call__(self, receive: Receive, send: Send) -> None:
+        req = Request(self.scope, receive) 
         res = await self.dispatch(req, **self.scope.get('kwargs', {}))
 
-        await res(recevie, send)
+        await res(receive, send)
     
     async def dispatch(self, req: Request, **kwargs: typing.Any) -> Response:
         handler_name = 'get' if req.method == 'HEAD' else req.method.lower()

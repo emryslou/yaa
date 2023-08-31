@@ -1,6 +1,6 @@
 from typing import Iterator
 from .datastructures import QueryParams, Headers, URL
-from .types import Scope, Recevie
+from .types import Scope, Receive
 
 from collections.abc import Mapping
 import json
@@ -12,7 +12,7 @@ class ClientDisconnect(Exception):
     pass
 
 class Request(Mapping):
-    def __init__(self, scope: Scope, receive: Recevie = None):
+    def __init__(self, scope: Scope, receive: Receive = None):
         self._scope = scope
         self._receive = receive
         self._stream_consumed = False
@@ -26,7 +26,7 @@ class Request(Mapping):
     def __len__(self) -> int:
         return len(self._scope)
     
-    def set_recevie_channel(self, receive: Recevie):
+    def set_receive_channel(self, receive: Receive):
         self._receive = receive
 
     @property

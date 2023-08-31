@@ -7,28 +7,28 @@ from yast.routing import Router, Path
 
 
 def raise_runtime_error(scope):
-    async def asgi(recevie, send):
+    async def asgi(receive, send):
         raise RuntimeError('W.c.')
     
     return asgi
 
 def not_acceptable(scope):
-    async def asgi(recevie, send):
+    async def asgi(receive, send):
         raise HttpException(status_code=406)
     
     return asgi
 
 def not_modified(scope):
-    async def asgi(recevie, send):
+    async def asgi(receive, send):
         raise HttpException(status_code=304)
     
     return asgi
 
 
 def handled_exc_after_response(scope):
-    async def asgi(recevie, send):
+    async def asgi(receive, send):
         res = PlainTextResponse('OK', status_code=200)
-        await res(recevie, send)
+        await res(receive, send)
         raise HttpException(status_code=406)
     
     return asgi

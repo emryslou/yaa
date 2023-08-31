@@ -60,7 +60,7 @@ def test_ws_route():
         await session.close()
     
     with client.wsconnect('/ws') as s:
-        text = s.recevie_text()
+        text = s.receive_text()
         assert text == 'Hello, Ws'
 
 def test_400():

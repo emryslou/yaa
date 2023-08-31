@@ -46,7 +46,7 @@ class _StaticFileResponser(object):
         self.scope = scope
         self.path = path
     
-    async def __call__(self, recevie, send):
+    async def __call__(self, receive, send):
         try:
             stat_result = await aio_stat(self.path)
         except FileNotFoundError:
@@ -58,7 +58,7 @@ class _StaticFileResponser(object):
             
             res = FileResponse(self.path, stat_result=stat_result)
 
-            await res(recevie, send)
+            await res(receive, send)
 
     
 
@@ -79,7 +79,7 @@ class _StaticFilesResponser(object):
             raise RuntimeError('Staticfiles directory %s is not a directory' % dir)
 
 
-    async def __call__(self, recevie, send):
+    async def __call__(self, receive, send):
         if self.check_directory:
             await self.check_directory_configured_correctly()
         
@@ -94,4 +94,4 @@ class _StaticFilesResponser(object):
             else:
                 res = FileResponse(self.path, stat_result=stat_result)
 
-        await res(recevie, send)
+        await res(receive, send)

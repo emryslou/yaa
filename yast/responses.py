@@ -7,9 +7,9 @@ from email.utils import formatdate
 from mimetypes import guess_type
 from urllib.parse import quote_plus
 
-from yast.types import Recevie, Send
+from yast.types import Receive, Send
 from yast.datastructures import MutableHeaders
-from yast.types import Recevie, Send
+from yast.types import Receive, Send
 
 try:
     import aiofiles
@@ -47,7 +47,7 @@ class Response:
             self.media_type = media_type
         self.init_headers(headers)
 
-    async def __call__(self, receive: Recevie, send: Send) -> None:
+    async def __call__(self, receive: Receive, send: Send) -> None:
         await send(
             {
                 "type": "http.response.start",
@@ -126,7 +126,7 @@ class StreamingResponse(Response):
 
         self.init_headers(headers)
 
-    async def __call__(self, receive: Recevie, send: Send):
+    async def __call__(self, receive: Receive, send: Send):
         await send(
             {
                 "type": "http.response.start",
@@ -183,7 +183,7 @@ class FileResponse(Response):
         self.headers.setdefault("last-modified", last_modified)
         self.headers.setdefault("etag", etag)
 
-    async def __call__(self, receive: Recevie, send: Send) -> None:
+    async def __call__(self, receive: Receive, send: Send) -> None:
         if self.stat_result is None:
             stat_result = await aio_stat(self.path)
             self.set_stat_headers(stat_result)

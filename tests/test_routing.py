@@ -28,8 +28,8 @@ def http_endpoint(scope):
     return Response('Hello, Http', media_type='text/plain')
 
 def websocket_endpoint(scope):
-    async def asgi(recevie, send):
-        session = WebSocket(scope, recevie, send)
+    async def asgi(receive, send):
+        session = WebSocket(scope, receive, send)
         await session.accept()
         await session.send_json({"hello": "websocket"})
         await session.close()
@@ -134,7 +134,7 @@ def test_protocal_switch():
     assert res.text == 'Hello, Http'
 
     with client.wsconnect('/') as session:
-        assert session.recevie_json() == {"hello": 'websocket'}
+        assert session.receive_json() == {"hello": 'websocket'}
     
     with pytest.raises(WebSocketDisconnect):
         client.wsconnect('/404')

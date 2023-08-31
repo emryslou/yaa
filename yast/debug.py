@@ -3,10 +3,10 @@ import html
 
 from yast.datastructures import Headers
 from yast.requests import Request
-from yast.responses import PlainTextResponse, HTMLResponse
-from yast.types import ASGIApp, ASGIInstance, Scope, Recevie, Send
+from yast.responses import Response,PlainTextResponse, HTMLResponse
+from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
-def get_debug_response(request:Request, exc):
+def get_debug_response(request:Request, exc: Exception) -> Response:
     accept = request.headers.get('accept', '')
     content = ''.join(traceback.format_tb(exc.__traceback__))
     if 'text/html' in accept:
@@ -21,10 +21,10 @@ def get_debug_response(request:Request, exc):
 
 
 class DebugMiddleware(object):
-    def __init__(self, app: ASGIApp):
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
     
-    def __call__(self, scope: Scope):
+    def __call__(self, scope: Scope) -> ASGIInstance:
         if scope['type'] != 'http':
             return self.app(scope)
             
@@ -32,12 +32,12 @@ class DebugMiddleware(object):
 
 
 class _DebuggerResponser(object):
-    def __init__(self, app: ASGIApp, scope: Scope):               
+    def __init__(self, app: ASGIApp, scope: Scope) -> None:               
         self.scope = scope
         self.app = app
         self.response_started = False
 
-    async def __call__(self, receive, send):
+    async def __call__(self, receive: Receive, send: Send) -> None:
         self.raw_send = send
         try:
             await self.app(self.scope)(receive, self.send)
@@ -48,7 +48,7 @@ class _DebuggerResponser(object):
                 await res(receive, send)
             raise exc from None
     
-    async def send(self, message):
+    async def send(self, message: Message) -> None:
         if message['type'] == 'http.response.start':
             self.response_started = True
         await self.raw_send(message)

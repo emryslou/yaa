@@ -36,7 +36,7 @@ class ExceptionMiddleware(object):
         if scope['type'] != 'http':
             self.app(scope)
         
-        async def app(recevie, send):
+        async def app(receive, send):
             responsed_started = False
 
             async def sender(message):
@@ -47,7 +47,7 @@ class ExceptionMiddleware(object):
             
             try:
                 try:
-                    await self.app(scope)(recevie, sender)
+                    await self.app(scope)(receive, sender)
                 except BaseException as exc:
                     handler, cls = self._lookup_exception_handler(exc)
                     if cls is Exception:
@@ -55,27 +55,27 @@ class ExceptionMiddleware(object):
                     if responsed_started:
                         raise RuntimeError('Caught handled exception, but response already started')
                     
-                    req = Request(scope, recevie)
+                    req = Request(scope, receive)
                     if asyncio.iscoroutinefunction(handler):
                         res = await handler(req, exc)
                     else:
                         res = handler(req, exc)
                     
-                    await res(recevie, sender)
+                    await res(receive, sender)
                     
             except Exception as exc:
                 if self.debug:
                     handler = get_debug_response
                 else:
                     handler = self._exception_handlers[Exception]
-                req = Request(scope, recevie)
+                req = Request(scope, receive)
                 if asyncio.iscoroutinefunction(handler):
                     res = await handler(req, exc)
                 else:
                     res = handler(req, exc)
                 
                 if not responsed_started:
-                    await res(recevie, send)
+                    await res(receive, send)
                 
                 raise
         
