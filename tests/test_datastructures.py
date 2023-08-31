@@ -2,7 +2,6 @@ from yast.datastructures import URL, QueryParams, Headers
 
 def test_url():
     url = URL('http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff')
-    assert issubclass(URL, str)
     assert url == 'http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff'
     assert url.scheme == 'http'
     assert url.netloc == 'user:passwd@www.baidu.com:443'
@@ -21,6 +20,9 @@ def test_url():
     assert str(_new).__contains__('/replace/a/path')
     assert not str(_new).__contains__('/abcd/test.php')
 
+    # username:passwd discard ????
+    _new = url.replace(port=None)
+    assert _new == 'http://www.baidu.com/abcd/test.php?aaa=ccc#fff'
 
 
 def test_query_params():

@@ -10,7 +10,7 @@ def test_request_url():
     def app(scope):
         async def asgi(recv, send):
             request = Request(scope, recv)
-            data = {'method': request.method, 'url': request.url}
+            data = {'method': request.method, 'url': str(request.url)}
             response = JSONResponse(data)
             await response(recv, send)
 
@@ -193,7 +193,7 @@ def test_request_disconnect():
         return asgi
 
     async def rev(*args, **kwargs):
-        print('debug -- 003 ', args, kwargs)
+        
         return {'type': 'http.disconnect'}
     
     scope = {'method': 'POST', 'path': '/'}

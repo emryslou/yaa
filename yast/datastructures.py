@@ -1,59 +1,97 @@
-from urllib.parse import urlparse, parse_qsl
-from .types import StrPairs, StrDict
 import typing
+from urllib.parse import urlparse, parse_qsl, unquote, ParseResult
+
+from yast.types import Scope, StrDict, StrPairs
 
 
-class URL(str):
+class URL(object):
+    def __init__(self, url: str = '', scope: Scope = None) -> None:
+        if scope is not None:
+            assert not url, 'Cannot set both "url" and "scope"'
+            scheme = scope['scheme']
+            path = scope.get('root_path', '') + scope['path']
+            query_string = scope['query_string']
+            default_port = {
+                    'http': 80, 'https': 443,
+                    'ws': 80, 'wss': 443
+                }[scheme]
+            host, port = scope['server']
+            if port == default_port:
+                url = '%s://%s%s' % (scheme, host, path)
+            else:
+                url = '%s://%s:%s%s' % (scheme, host, port, path)
+            
+            if query_string:
+                url += '?' + unquote(query_string.decode())
+        
+        self._url = url
+    
     @property
-    def components(self):
+    def components(self) -> ParseResult:
         if not hasattr(self, "_components"):
-            self._components = urlparse(self)
+            self._components = urlparse(self._url)
 
         return self._components
 
     @property
-    def scheme(self):
+    def scheme(self) -> str:
         return self.components.scheme
 
     @property
-    def netloc(self):
+    def netloc(self) -> str:
         return self.components.netloc
 
     @property
-    def path(self):
+    def path(self) -> str:
         return self.components.path
 
     @property
-    def params(self):
+    def params(self) -> str:
         return self.components.params
 
     @property
-    def query(self):
+    def query(self) -> str:
         return self.components.query
 
     @property
-    def fragment(self):
+    def fragment(self) -> str:
         return self.components.fragment
 
     @property
-    def username(self):
+    def username(self) -> typing.Union[str, None]:
         return self.components.username
 
     @property
-    def password(self):
+    def password(self) -> typing.Union[str, None]:
         return self.components.password
 
     @property
-    def hostname(self):
+    def hostname(self) -> typing.Union[str, None]:
         return self.components.hostname
 
     @property
-    def port(self):
+    def port(self) -> typing.Optional[int]:
         return self.components.port
 
-    def replace(self, **kwargs):
+    def replace(self, **kwargs: typing.Any) -> "URL": # type: ignore
+
+        if 'hostname' in kwargs or 'port' in kwargs:
+            hostname = kwargs.pop('hostname', self.hostname)
+            port = kwargs.pop('port', self.port)
+
+            if port is None:
+                kwargs['netloc'] = hostname
+            else:
+                kwargs['netloc'] = '%s:%d' % (hostname, port)
+
         components = self.components._replace(**kwargs)
         return URL(components.geturl())
+    
+    def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
+        return str(self) == str(other)
+    
+    def __str__(self):
+        return self._url
 
 class QueryParams(typing.Mapping[str, str]):
     def __init__(

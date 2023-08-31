@@ -8,7 +8,7 @@ class test_websocket_url():
         async def asgi(receive, send):
             session = WebSocket(scope, receive, send)
             await session.accept()
-            await session.send_json({'url': session.url})
+            await session.send_json({'url': str(session.url)})
             await session.close()
         
         return asgi

@@ -8,7 +8,7 @@ from mimetypes import guess_type
 from urllib.parse import quote_plus
 
 from yast.background import BackgroundTask
-from yast.datastructures import MutableHeaders
+from yast.datastructures import MutableHeaders, URL
 from yast.types import Receive, Send
 
 try:
@@ -212,8 +212,8 @@ class FileResponse(Response):
 
 
 class RedirectResponse(Response):
-    def __init__(self, url: str, status_code=302, headers: dict =None):
+    def __init__(self, url: typing.Union[str, URL], status_code=302, headers: dict =None):
         super().__init__(b'', status_code=status_code, headers=headers)
 
         #todo: why: '&' repeat 
-        self.headers['location'] = quote_plus(url, safe=":/#?&=@[]!$&'()*+,;")
+        self.headers['location'] = quote_plus(str(url), safe=":/#?&=@[]!$&'()*+,;")

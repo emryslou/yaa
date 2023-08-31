@@ -26,7 +26,7 @@ class Request(Mapping):
     def __len__(self) -> int:
         return len(self._scope)
     
-    def set_receive_channel(self, receive: Receive):
+    def set_receive_channel(self, receive: Receive) -> None:
         self._receive = receive
 
     @property
@@ -36,20 +36,7 @@ class Request(Mapping):
     @property
     def url(self) -> URL:
         if not hasattr(self, "_url"):
-            scheme = self._scope["scheme"]
-            host, port = self._scope["server"]
-            path = self._scope.get('root_path', '') + self._scope["path"]
-            query_string = self._scope["query_string"]
-
-            if (scheme == "http" and port != 80) or (scheme == "https" and port != 443):
-                url = "%s://%s:%s%s" % (scheme, host, port, path)
-            else:
-                url = "%s://%s%s" % (scheme, host, path)
-
-            if query_string:
-                url += "?" + query_string.decode()
-
-            self._url = URL(url)
+            self._url = URL(scope=self._scope)
         return self._url
     
 
@@ -97,7 +84,7 @@ class Request(Mapping):
             elif message['type'] == 'http.disconnect':
                 raise ClientDisconnect()
 
-    async def body(self):
+    async def body(self) -> bytes:
         if not hasattr(self, "_body"):
             body = b""
             async for chunk in self.stream():
@@ -105,7 +92,7 @@ class Request(Mapping):
             self._body = body
         return self._body
 
-    async def json(self):
+    async def json(self) -> typing.Any:
         if not hasattr(self, "_json"):
             body = await self.body()
             self._json = json.loads(body)
