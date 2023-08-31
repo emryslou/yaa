@@ -5,5 +5,5 @@ __all__ = [
     "Yast", "TestClient"
 ]
 
-from .app import Yast
+from .applications import Yast
 from .testclient import TestClient
