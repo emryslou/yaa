@@ -1,5 +1,6 @@
 from asyncio import iscoroutinefunction
 import inspect
+import typing
 
 from yast.middlewares import ExceptionMiddleware
 from yast.requests import Request
@@ -39,6 +40,7 @@ def ws_session(func):
 class Yast(object):
     def __init__(self, debug: bool = False) -> None:
         self.router = Router(routes=[])
+        self.app = self.router
         self.exception_middleware = ExceptionMiddleware(
                 self.router, debug=debug
             )
@@ -79,6 +81,13 @@ class Yast(object):
             route = ws_session(route)
         instance = Path(path, route, protocol='websocket')
         self.router.routes.append(instance)
+    
+    def add_middleware(
+            self,
+            middleware_class: type,
+            **kwargs: typing.Any
+        ) -> None:
+        self.exception_middleware.app = middleware_class(self.app, **kwargs)
     
     def route(self, path: str, methods: list[str] = None):
         def decorator(func):

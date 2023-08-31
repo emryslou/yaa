@@ -1,6 +1,7 @@
 import os
 
 from yast.applications import Yast
+from yast.datastructures import Headers
 from yast.requests import Request
 from yast.responses import PlainTextResponse, JSONResponse
 from yast.routing import Router
@@ -97,3 +98,29 @@ def test_app_error():
     res = client.post('/err_500')
     assert res.status_code == 405
     assert res.text ==  'Method Not Allowed'
+
+
+def test_app_add_middleware():
+    class TrustedHostMiddleware(object):
+        def __init__(self, app, host) -> None:
+            self.app = app
+            self.host = host
+        
+        def __call__(self, scope):
+            if scope['type'] in ('http', 'websocket'):
+                headers = Headers(scope['headers'])
+                if headers.get('host') != self.host:
+                    return PlainTextResponse('Invalid host header', status_code=400)
+            return self.app(scope)
+    
+    app.add_middleware(TrustedHostMiddleware, host='testserver')
+    _add_router()
+    client = TestClient(app, base_url='http://error')
+    res = client.get('/')
+    assert res.status_code == 400
+    assert res.text == 'Invalid host header'
+
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.status_code == 200
+    assert res.text == 'Hello, func_homepage'
