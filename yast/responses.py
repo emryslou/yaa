@@ -7,7 +7,7 @@ from email.utils import formatdate
 from mimetypes import guess_type
 from urllib.parse import quote_plus
 
-from yast.types import Receive, Send
+from yast.background import BackgroundTask
 from yast.datastructures import MutableHeaders
 from yast.types import Receive, Send
 
@@ -38,13 +38,15 @@ class Response:
         self,
         content: typing.Any,
         status_code: int = 200,
-        headers: dict = None, # todo
+        headers: dict = None,
         media_type: str = None,
+        background: BackgroundTask = None
     ) -> None:
         self.body = self.render(content)
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
+        self.background = background
         self.init_headers(headers)
 
     async def __call__(self, receive: Receive, send: Send) -> None:
@@ -58,6 +60,9 @@ class Response:
             }
         )
         await send({"type": "http.response.body", "body": self.body})
+        if self.background is not None:
+            await self.background()
+            
 
     def render(self, content: typing.Any) -> bytes:
         if isinstance(content, bytes):
