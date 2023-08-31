@@ -3,6 +3,7 @@
 2. testclient response reason
 3. websocket endpoint
 4. background task
+5. middlewares: HttpsRedirect, CORS, TrustedHost
 
 # v0.2.0
 1. add object App & remove decorator AsgiApp
