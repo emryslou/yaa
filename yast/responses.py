@@ -1,20 +1,34 @@
-import aiofiles
-import json
-import typing
+import hashlib
 import os
 import stat
-import hashlib
+import typing
 
-
-from aiofiles.os import stat as aio_stat
 from email.utils import formatdate
 from mimetypes import guess_type
 from urllib.parse import quote_plus
+
 from yast.types import Recevie, Send
 from yast.datastructures import MutableHeaders
 from yast.types import Recevie, Send
 
+try:
+    import aiofiles
+    from aiofiles.os import stat as aio_stat
+except ImportError: # pragma: nocover
+    aiofiles = None
+    aio_stat = None
 
+try:
+    import ujson as json
+    JSON_DUMPS_OPTIONS = {'ensure_ascii': False}
+except ImportError: # pragma: nocover
+    import json
+    JSON_DUMPS_OPTIONS = {
+        'ensure_ascii': False,
+        'allow_nan': False,
+        'indent': None,
+        'separators': (',', ':')
+    }
 
 class Response:
     media_type = None
@@ -92,15 +106,9 @@ class PlainTextResponse(Response):
 
 class JSONResponse(Response):
     media_type = "application/json"
-    options = {
-        "ensure_ascii": False,
-        "allow_nan": False,
-        "indent": None,
-        "separators": (",", ":"),
-    } # type: typing.Dict[str, typing.Any]
 
     def render(self, content: typing.Any) -> bytes:
-        return json.dumps(content, **self.options).encode("utf-8")
+        return json.dumps(content, **JSON_DUMPS_OPTIONS).encode("utf-8")
 
 
 class StreamingResponse(Response):
@@ -148,7 +156,7 @@ class FileResponse(Response):
             filename: str = None,
             stat_result: os.stat_result = None
         ) -> None:
-        """ init """
+        assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
         self.status_code = 200
         self.filename = filename

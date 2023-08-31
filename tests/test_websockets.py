@@ -3,7 +3,7 @@ import pytest
 from yast import TestClient
 from yast.websockets import WebSocket, WebSocketDisconnect
 
-class test_session_url():
+class test_websocket_url():
     def app(scope):
         async def asgi(recevie, send):
             session = WebSocket(scope, recevie, send)
@@ -18,7 +18,7 @@ class test_session_url():
         data = ss.recevie_json()
         assert data == {'url': 'ws://testserver/aaa?b=ccc'}
 
-class test_session_query_params():
+class test_websocket_query_params():
     def app(scope):
         async def asgi(recevie, send):
             session = WebSocket(scope, recevie, send)
@@ -33,7 +33,7 @@ class test_session_query_params():
         data = ss.recevie_json()
         assert data == {'params': {'b': 'ccc', 'd': '22', 'ff': 'sss'}}
     
-class test_session_headers():
+class test_websocket_headers():
     def app(scope):
         async def asgi(recevie, send):
             session = WebSocket(scope, recevie, send)
@@ -57,7 +57,7 @@ class test_session_headers():
         }
         assert data == {'headers': expected_headers}
 
-class test_session_headers():
+class test_websocket_headers():
     def app(scope):
         async def asgi(recevie, send):
             session = WebSocket(scope, recevie, send)
@@ -74,7 +74,7 @@ class test_session_headers():
         assert data == {'port': 123}
 
 
-def test_session_send_and_receive_text():
+def test_websocket_send_and_receive_text():
     def app(scope):
         async def asgi(receive, send):
             session = WebSocket(scope, receive, send)
@@ -89,7 +89,7 @@ def test_session_send_and_receive_text():
         data = session.recevie_text()
         assert data == "Message was: Hello, world!"
 
-def test_session_send_and_receive_bytes():
+def test_websocket_send_and_receive_bytes():
     def app(scope):
         async def asgi(receive, send):
             session = WebSocket(scope, receive, send)
@@ -105,7 +105,7 @@ def test_session_send_and_receive_bytes():
         assert data == b"Message was: Hello, bytes!"
 
 
-def test_session_send_and_receive_json():
+def test_websocket_send_and_receive_json():
     def app(scope):
         async def asgi(receive, send):
             session = WebSocket(scope, receive, send)
@@ -174,7 +174,7 @@ def test_subprotocol():
     with client.wsconnect("/", subprotocols=["soap", "wamp"]) as session:
         assert session.accepted_subprotocol == "wamp"
 
-def test_session_exception():
+def test_websocket_exception():
     def app(scope):
         async def asgi(receive, send):
             assert False
@@ -207,7 +207,7 @@ def test_duplicate_disconnect():
     with pytest.raises(RuntimeError):
         with client.wsconnect("/") as session:
             session.close()
-def test_session_scope_interface():
+def test_websocket_scope_interface():
     """
     A WebSocket can be instantiated with a scope, and presents a `Mapping`
     interface.

@@ -1,5 +1,6 @@
 requests
 aiofiles
+ujson
 
 # Testing & Linting
 pytest
