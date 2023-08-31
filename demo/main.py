@@ -1,9 +1,13 @@
 from yast import Yast
-from yast.responses import Response, FileResponse, RedirectResponse
+from yast.responses import Response, FileResponse, RedirectResponse, HTMLResponse
 from yast.requests import Request
 from yast.staticfiles import StaticFiles
+from yast.endpoints import HttpEndPoint, WebSocketEndpoint
+from yast.routing import Path
 
-app = App()
+app = Yast()
+
+
 app.mount('/static', StaticFiles(directory='demo/static'))
 
 @app.route('/')
@@ -13,6 +17,12 @@ def home(request: Request) -> Response:
 @app.route('/favicon.ico')
 def fav(_):
     return RedirectResponse('/static/favicon.ico', 302)
+
+class Demo(HttpEndPoint):
+    def get(self, request: Request, **kwargs):
+        return HTMLResponse('Demo')
+
+app.add_route('/demo', route=Path('/', app=Demo))
 """
 ReadMe:
 python3 -m pip install 'uvicorn[standard]'
