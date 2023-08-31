@@ -1,4 +1,7 @@
-from yast import App, Response, Request, StaticFiles, FileResponse, RedirectResponse
+from yast import Yast
+from yast.responses import Response, FileResponse, RedirectResponse
+from yast.requests import Request
+from yast.staticfiles import StaticFiles
 
 app = App()
 app.mount('/static', StaticFiles(directory='demo/static'))
