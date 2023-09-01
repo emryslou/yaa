@@ -1,6 +1,7 @@
 # v0.2.2
 1. middleware cors: support `allow_origin_regex`
 2. support lifespan app.on_event: startup, cleanup
+3. UJSONResponse & websocket: annotations
 
 # v0.2.1
 1. 代码重构
