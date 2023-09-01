@@ -6,12 +6,18 @@ from urllib.parse import unquote
 from typing import Iterator
 
 from yast.datastructures import QueryParams, Headers, URL
+from yast.formparsers import FormParser, MultiPartParser
 from yast.types import Scope, Receive
 
+try:
+    from multipart.multiparse import parse_options_header
+except ImportError:
+    parse_options_header = None
 
 
 class ClientDisconnect(Exception):
     pass
+
 
 class Request(Mapping):
     def __init__(
@@ -97,11 +103,14 @@ class Request(Mapping):
         while True:
             message = await self._receive()
             if message['type'] == 'http.request':
-                yield message.get('body', b'')
+                body = message.get('body', b'')
+                if body:
+                    yield body
                 if not message.get('more_body', False):
                     break
             elif message['type'] == 'http.disconnect':
                 raise ClientDisconnect()
+        yield b''
 
     async def body(self) -> bytes:
         if not hasattr(self, "_body"):
@@ -116,3 +125,24 @@ class Request(Mapping):
             body = await self.body()
             self._json = json.loads(body)
         return self._json
+
+    async def form(self):
+        if not hasattr(self, '_form'):
+            assert parse_options_header is not None, 'The `python-multipart` library must be installed to use form parsing'
+
+            content_type_header = self.headers.get('Content-Type')
+            content_type, options = parse_options_header(content_type_header)
+            if content_type == b'multipart/form-data':
+                parser = MultiPartParser(self.headers, self.stream)
+                self._form = await parser.parse()
+            elif content_type == b'application/x-www-form-urlencoded':
+                parser = FormParser(self.headers, self.stream)
+            else:
+                self._form = {}
+        return self._form
+    
+    async def close(self):
+        if hasattr(self, '_form'):
+            for it in self._form.values():
+                if hasattr(it, 'close'):
+                    await it.close()
