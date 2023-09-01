@@ -74,14 +74,15 @@ class Request(Mapping):
 
     @property
     def cookie(self) -> typing.Dict[str, str]:
-        if self._cookies is None:
-            self._cookies = {}
+        if hasattr(self, '_cookies'):
+            cookies = {}
             cookie_headers = self.headers.get('cookie')
             if cookie_headers:
                 cookie = http.cookies.SimpleCookie()
                 cookie.load(cookie_headers)
                 for k, morse in cookie.items():
-                    self._cookies[k] = morse.value
+                    cookies[k] = morse.value
+            self._cookies = cookies
         return self._cookies
 
     async def stream(self):
