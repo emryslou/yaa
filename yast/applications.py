@@ -5,11 +5,11 @@ import typing
 from yast.middlewares import ExceptionMiddleware
 from yast.requests import Request
 from yast.responses import Response
-from yast.routing import Router, Path, PathPrefix
+from yast.routing import Route, Router, Path, PathPrefix
 from yast.types import ASGIApp, Scope, ASGIInstance, Send, Receive
 from yast.websockets import WebSocket
 
-def req_res(func):
+def req_res(func: typing.Callable):
     is_coroutine = iscoroutinefunction(func)
 
     def app(scope: Scope) -> ASGIInstance:
@@ -27,7 +27,7 @@ def req_res(func):
 
     return app
 
-def ws_session(func):
+def ws_session(func: typing.Callable):
     def app(scope: Scope) -> ASGIInstance:
         async def awaitable(recv: Receive, send: Send) -> None:
             session = WebSocket(scope, recv, send)
@@ -52,11 +52,17 @@ class Yast(object):
     def debug(self, val: bool) -> None:
         self.exception_middleware.debug = val
     
-    def mount(self, path: str, app: ASGIApp, methods:list[str] = None):
+    def mount(
+            self, path: str,
+            app: ASGIApp, methods:list[str] = None
+        ):
         prefix = PathPrefix(path, app=app, methods=methods)
         self.router.routes.append(prefix)
     
-    def add_exception_handler(self, exc_class: type, handler) -> None:
+    def add_exception_handler(
+            self, exc_class: type,
+            handler: typing.Callable
+        ) -> None:
         self.exception_middleware.add_exception_handler(exc_class, handler)
     
     def exception_handle(self, exc_class: type):
@@ -66,7 +72,11 @@ class Yast(object):
         
         return decorator
     
-    def add_route(self, path: str, route, methods: list[str] = None):
+    def add_route(
+            self, path: str,
+            route: typing.Union[typing.Callable, Route],
+            methods: list[str] = None
+        ):
         if not inspect.isclass(route):
             route = req_res(route)
             if methods is None:
@@ -76,7 +86,10 @@ class Yast(object):
             Path(path, route, protocol='http', methods=methods)
         )
     
-    def add_route_ws(self, path: str, route):
+    def add_route_ws(
+            self, path: str,
+            route: typing.Union[typing.Callable, Route]
+        ):
         if not inspect.isclass(route):
             route = ws_session(route)
         instance = Path(path, route, protocol='websocket')
@@ -89,14 +102,14 @@ class Yast(object):
         ) -> None:
         self.exception_middleware.app = middleware_class(self.app, **kwargs)
     
-    def route(self, path: str, methods: list[str] = None):
+    def route(self, path: str, methods: list[str] = None) -> typing.Callable:
         def decorator(func):
             self.add_route(path, func, methods)
             return func
         
         return decorator
     
-    def ws_route(self, path: str):
+    def ws_route(self, path: str) -> typing.Callable:
         def decorator(func):
             self.add_route_ws(path, func)
             return func
