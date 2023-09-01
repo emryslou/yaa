@@ -1,4 +1,5 @@
 # v0.2.2
+1. middleware cors: support `allow_origin_regex`
 
 # v0.2.1
 1. 代码重构

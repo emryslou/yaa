@@ -1,3 +1,5 @@
+import pytest
+
 from yast.applications import Yast
 from yast.responses import PlainTextResponse
 from yast.testclient import TestClient
@@ -163,3 +165,35 @@ def test_middleware_cors_disallowed_preflight():
     res = client.options('/', headers=headers)
     assert res.status_code == 400
     assert res.text == 'Disabllowed CORS origin,method,headers'
+
+def test_middleware_cors_allow_origin_regex():
+    """test cors origin regex"""
+    from yast.middlewares import CORSMiddleware
+    app = Yast()
+
+    @app.route('/')
+    def homepage(_):
+        return PlainTextResponse('HomePage')
+    
+    app.add_middleware(CORSMiddleware, allow_headers=['X-Test'], allow_origin_regex='http://[\d][a-z][A-Z].testserver')
+    client = TestClient(app)
+
+    res = client.get('/')
+    assert res.status_code == 200
+    assert res.text == 'HomePage'
+
+    res = client.get('/', headers={'Origin': 'http://1aA.testserver'})
+    assert res.status_code == 200
+    assert res.text == 'HomePage'
+
+    res = client.get('/', headers={'Origin': 'http://aaaa.testserver'})
+    assert res.status_code == 400
+    assert res.text == 'Disabllowed CORS origin'
+
+    res = client.get('/', headers={'Origin': 'http://aaa.otherserver'})
+    assert res.status_code == 400
+    assert res.text == 'Disabllowed CORS origin'
+
+    res = client.get('/', headers={'Origin': 'http://1aA.otherserver'})
+    assert res.status_code == 400
+    assert res.text == 'Disabllowed CORS origin'
