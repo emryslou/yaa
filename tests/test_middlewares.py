@@ -211,3 +211,53 @@ def test_middleware_cors_allow_origin_regex():
     assert response.status_code == 400
     assert response.text == "Disallowed CORS origin"
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_middleware_cors_credentialed_requests_return_specific_origin():
+    from yast.middlewares import CORSMiddleware
+    app = Yast()
+    app.add_middleware(CORSMiddleware, allow_origins=['*'])
+
+    @app.route('/')
+    def homepage(_):
+        return PlainTextResponse('HomePage')
+    
+    client = TestClient(app)
+    headers = {'Origin': 'https://example.org', 'Cookie': 'start_cookie=sugar'}
+    res = client.get('/', headers=headers)
+    assert res.status_code == 200
+    assert res.text == 'HomePage'
+    assert res.headers['access-control-allow-origin'] == 'https://example.org'
+
+def test_middleware_cors_vary_header_defaults_to_orgin():
+    from yast.middlewares import CORSMiddleware
+    app = Yast()
+    app.add_middleware(CORSMiddleware, allow_origins=['https://example.org'])
+
+    @app.route('/')
+    def homepage(_):
+        return PlainTextResponse('HomePage')
+    
+    client = TestClient(app)
+    headers = {'Origin': 'https://example.org'}
+    res = client.get('/', headers=headers)
+    assert res.status_code == 200
+    assert res.text == 'HomePage'
+    assert res.headers['vary'] == 'Origin'
+
+
+def test_middleware_cors_vary_header_is_properly_set():
+    from yast.middlewares import CORSMiddleware
+    app = Yast()
+    app.add_middleware(CORSMiddleware, allow_origins=['https://example.org'])
+
+    @app.route('/')
+    def homepage(_):
+        return PlainTextResponse('HomePage', headers={'Vary': 'Accept-Encoding'})
+    
+    client = TestClient(app)
+    headers = {'Origin': 'https://example.org'}
+    res = client.get('/', headers=headers)
+    assert res.status_code == 200
+    assert res.text == 'HomePage'
+    assert res.headers['vary'] == 'Accept-Encoding, Origin'

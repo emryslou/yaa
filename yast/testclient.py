@@ -303,6 +303,8 @@ class _TestClient(requests.Session):
             self.request('GET', url, **kwargs)
         except _Upgrade as exc:
             return exc.session
+        else:
+            raise RuntimeError('Expected WebSocket upgrade') # progma: on cover
         
 
 def TestClient(

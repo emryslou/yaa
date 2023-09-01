@@ -54,6 +54,14 @@ class YaWs(object):
 
 app.add_route_ws('/yaws', route=YaWs)
 app.add_route('/demo', route=Path('/', app=Demo))
+
+@app.on_event('startup')
+def run_startup():
+    print('startup ...')
+
+@app.on_event('cleanup')
+def run_cleanup():
+    print('cleanup')
 """
 ReadMe:
 python3 -m pip install 'uvicorn[standard]'

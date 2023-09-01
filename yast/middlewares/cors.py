@@ -33,6 +33,9 @@ class CORSMiddleware(object):
         simple_headers = {}
         if '*' in allow_origins:
             simple_headers['Access-Control-Allow-Origin'] = '*'
+        else:
+            simple_headers['Vary'] = 'Origin'
+
         if allow_credentials:
             simple_headers['Access-Control-Allow-Credentials'] = 'true'
         if expose_headers:
@@ -83,8 +86,8 @@ class CORSMiddleware(object):
                 else:
                     return functools.partial(
                                 self.simple_response,
-                                scope=scope,
-                                origin=origin
+                                scope=scope, origin=origin,
+                                request_headers=headers
                             )
         return self.app(scope)
     def is_allowed_origin(self, origin: str) -> bool:
@@ -135,20 +138,32 @@ class CORSMiddleware(object):
     
     async def simple_response(
             self, receive: Receive, send: Send,
-            scope = None, origin = None
+            scope = None, origin = None,
+            request_headers = None
         ):
         inner = self.app(scope)
-        send = functools.partial(self.send, send=send, origin=origin)
+        send = functools.partial(
+                self.send, send=send, request_headers=request_headers
+            )
         await inner(receive, send)
 
-    async def send(self, message: Message, send: Send, origin=None) -> None:
+    async def send(
+            self, message: Message, send: Send,
+            request_headers=None
+        ) -> None:
         if message['type'] != 'http.response.start':
             await send(message)
             return
         message.setdefault('headers', [])
         headers = MutableHeaders(message['headers'])
+        origin = request_headers['Origin']
+        has_cookie = 'cookie' in request_headers
 
-        if not self.allow_all_origins and self.is_allowed_origin(origin):
+        if self.allow_all_origins and has_cookie:
+            self.simple_headers['Access-Control-Allow-Origin'] = origin
+        elif not self.allow_all_origins and self.is_allowed_origin(origin):
             headers['Access-Control-Allow-Origin'] = origin
+            if 'vary' in headers:
+                self.simple_headers['Vary'] = f'{headers.get("vary")}, Origin'
         headers.update(self.simple_headers)
         await send(message)

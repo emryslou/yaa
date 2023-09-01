@@ -24,3 +24,7 @@ help:
 test:
 	@export PYTHONPATH=`pwd`
 	python -m pytest $(pytest_params) $(pytest_fn)
+
+
+run:
+	python -m uvicorn demo.main:app --port 5505 --lifespan on --reload
