@@ -204,3 +204,26 @@ def test_request_disconnect():
     with pytest.raises(ClientDisconnect):
         loop.run_until_complete(asgi_call(rev, None))
         assert True == 1
+
+
+def test_request_cookies():
+    from yast.responses import Response, PlainTextResponse
+    def app(scope):
+        async def asgi(receive, send):
+            req = Request(scope, receive)
+            mycookie = req.cookie.get('my_cookie')
+            if mycookie:
+                res = PlainTextResponse(mycookie)
+            else:
+                res = PlainTextResponse('Hello, NoCookies')
+                res.set_cookie('my_cookie', 'cooooooooooooookies')
+            await res(receive, send)
+        
+        return asgi
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.text == 'Hello, NoCookies'
+    
+    res = client.get('/', )
+    assert res.text == 'cooooooooooooookies'

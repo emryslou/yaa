@@ -1,4 +1,5 @@
 import hashlib
+import http.cookies
 import os
 import stat
 import typing
@@ -94,6 +95,37 @@ class Response:
             raw_headers.append((b'content-type', content_type.encode('latin-1')))
 
         self.raw_headers = raw_headers
+
+    def set_cookie(
+            self,
+            key: str,
+            value: str = '',
+            max_age: int = None,
+            expires: int = None,
+            path: str = None,
+            domain: str = None,
+            secure: bool = False,
+            httponly: bool = False
+        ) -> None:
+        cookie = http.cookies.SimpleCookie()
+        cookie[key] = value
+        if max_age is not None:
+            cookie[key]['max-age'] = max_age
+        if expires is not None:
+            cookie[key]['expires'] = expires
+        if path is not None:
+            cookie[key]['path'] = path
+        if domain is not None:
+            cookie[key]['domain'] = domain
+        if secure:
+            cookie[key]['secure'] = True
+        if httponly:
+            cookie[key]['httponly'] = True
+        cookie_val = cookie.output(header='')
+        self.raw_headers.append((b'set-cookie', cookie_val.encode('latin-1')))
+    
+    def del_cookie(self, key: str, path: str = '/', domain: str = None) -> None:
+        self.set_cookie(key, expires=0, max_age=0, path=path, domain=domain)
 
     @property
     def headers(self):

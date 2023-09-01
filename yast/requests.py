@@ -1,21 +1,27 @@
-from typing import Iterator
-from .datastructures import QueryParams, Headers, URL
-from .types import Scope, Receive
-
-from collections.abc import Mapping
 import json
 import typing
-from urllib.parse import quote, unquote
+import http.cookies
+from collections.abc import Mapping
+from urllib.parse import unquote
+from typing import Iterator
+
+from yast.datastructures import QueryParams, Headers, URL
+from yast.types import Scope, Receive
+
 
 
 class ClientDisconnect(Exception):
     pass
 
 class Request(Mapping):
-    def __init__(self, scope: Scope, receive: Receive = None):
+    def __init__(
+            self, scope: Scope,
+            receive: Receive = None
+        ):
         self._scope = scope
         self._receive = receive
         self._stream_consumed = False
+        self._cookies = None
 
     def __getitem__(self, __key: typing.Any) -> typing.Any:
         return self._scope[__key]
@@ -65,6 +71,18 @@ class Request(Mapping):
             query_string = self._scope["query_string"].decode()
             self._query_params = QueryParams(query_string)
         return self._query_params
+
+    @property
+    def cookie(self) -> typing.Dict[str, str]:
+        if self._cookies is None:
+            self._cookies = {}
+            cookie_headers = self.headers.get('cookie')
+            if cookie_headers:
+                cookie = http.cookies.SimpleCookie()
+                cookie.load(cookie_headers)
+                for k, morse in cookie.items():
+                    self._cookies[k] = morse.value
+        return self._cookies
 
     async def stream(self):
         if hasattr(self, "_body"):

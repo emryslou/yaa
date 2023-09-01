@@ -143,3 +143,42 @@ def test_phrase():
     client = TestClient(app)
     res = client.get('/')
     assert res.reason == 'Internal Server Error'
+
+def test_set_cookie():
+    def app(scope):
+        async def asgi(receive, send):
+            res = Response('Hello, Set Cookie')
+            res.set_cookie('my_cookie', 'AAAAA')
+            await res(receive, send)
+        
+        return asgi
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.text == 'Hello, Set Cookie'
+    assert 'my_cookie' in res.cookies
+    assert res.cookies.get('my_cookie') == 'AAAAA'
+
+def test_del_cookie():
+    from yast.requests import Request
+    def app(scope):
+        async def asgi(receive, send):
+            req = Request(scope, receive)
+            res = Response('Hello, Set Cookie')
+            if req.cookie.get('my_cookie'):
+                res.del_cookie('my_cookie')
+            else:
+                res.set_cookie('my_cookie', 'AAAAA')
+            await res(receive, send)
+        
+        return asgi
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.text == 'Hello, Set Cookie'
+    assert 'my_cookie' in res.cookies
+    assert res.cookies.get('my_cookie') == 'AAAAA'
+
+    res = client.get('/')
+    assert res.text == 'Hello, Set Cookie'
+    assert 'my_cookie' not in res.cookies

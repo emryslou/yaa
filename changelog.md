@@ -9,6 +9,7 @@
 1. add object App & remove decorator AsgiApp
 2. add view
 3. exception handle
+4. support cookie
 
 # v0.1.5
 1. fix: type expose
