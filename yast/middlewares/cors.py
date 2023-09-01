@@ -26,9 +26,9 @@ class CORSMiddleware(object):
         if '*' in allow_methods:
             allow_methods = ALL_METHODS
         
+        compiled_allow_origin_regex = None
         if allow_origin_regex is not None:
-            regex = re.compile(allow_origin_regex)
-            allow_origin_regex = regex
+            compiled_allow_origin_regex = re.compile(allow_origin_regex)
 
         simple_headers = {}
         if '*' in allow_origins:
@@ -58,7 +58,7 @@ class CORSMiddleware(object):
         
         self.allow_origins = allow_origins        
         self.allow_all_origins = '*' in allow_origins
-        self.allow_origin_regex = allow_origin_regex
+        self.allow_origin_regex = compiled_allow_origin_regex
 
         self.allow_methods = allow_methods
 
@@ -81,46 +81,43 @@ class CORSMiddleware(object):
                 ):
                     return self.preflight_response(headers)
                 else:
-                    if self.is_allowed_origin(origin=origin):
-                        return functools.partial(
+                    return functools.partial(
                                 self.simple_response,
                                 scope=scope,
                                 origin=origin
                             )
-                    return PlainTextResponse('Disabllowed CORS origin', status_code=400)
         return self.app(scope)
     def is_allowed_origin(self, origin: str) -> bool:
-        """
-        TODO: allow all , allow_regex which one is first ????
-              In my opinion, it should be `allow all`
-              but it is another one
-        """
-        
-        if self.allow_origin_regex:
-            return self.allow_origin_regex.match(origin)
         
         if self.allow_all_origins:
             return True
 
+        if (
+            self.allow_origin_regex is not None and 
+            self.allow_origin_regex.match(origin)
+        ):
+            return True
         return origin in self.allow_origins
 
     def preflight_response(self, request_headers) -> Response:
         req_origin = request_headers['origin']
         req_method = request_headers['access-control-request-method']
         req_headers = request_headers.get('access-control-request-headers')
+        req_cookie = 'cookie' in request_headers # todo: how to handle???
 
         headers = dict(self.preflight_headers)
         failures = []
-        if not self.allow_all_origins:
-            if self.is_allowed_origin(origin=req_origin):
+        if self.is_allowed_origin(origin=req_origin):
+            if not self.allow_all_origins:
                 headers['Access-Control-Allow-Origin'] = req_origin
-            else:
-                failures.append('origin')
+        else:
+            failures.append('origin')
         
         if req_method not in self.allow_methods:
             failures.append('method')
         
-        if self.allow_all_headers and request_headers is not None:
+        print('debug -- 005 -- preflight', request_headers, req_headers)
+        if self.allow_all_headers and req_headers is not None:
             headers['Access-Control-Allow-Headers'] = req_headers
         elif req_headers is not None:
             for header in req_headers.split(','):
@@ -128,7 +125,8 @@ class CORSMiddleware(object):
                     failures.append('headers')
         
         if failures:
-            failure_text = 'Disabllowed CORS ' + ','.join(failures)
+            failure_text = 'Disallowed CORS ' + ','.join(failures)
+            print('debug -- 001 failures', failure_text)
             return PlainTextResponse(
                     failure_text, status_code=400, headers=headers
                 )
@@ -150,7 +148,7 @@ class CORSMiddleware(object):
         message.setdefault('headers', [])
         headers = MutableHeaders(message['headers'])
 
-        if not self.allow_all_origins and self.is_allowed_origin(origin=origin):
+        if not self.allow_all_origins and self.is_allowed_origin(origin):
             headers['Access-Control-Allow-Origin'] = origin
         headers.update(self.simple_headers)
         await send(message)

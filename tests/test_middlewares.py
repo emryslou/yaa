@@ -164,36 +164,50 @@ def test_middleware_cors_disallowed_preflight():
 
     res = client.options('/', headers=headers)
     assert res.status_code == 400
-    assert res.text == 'Disabllowed CORS origin,method,headers'
+    assert res.text == 'Disallowed CORS origin,method,headers'
 
 def test_middleware_cors_allow_origin_regex():
-    """test cors origin regex"""
     from yast.middlewares import CORSMiddleware
     app = Yast()
-
-    @app.route('/')
-    def homepage(_):
-        return PlainTextResponse('HomePage')
-    
-    app.add_middleware(CORSMiddleware, allow_headers=['X-Test'], allow_origin_regex='http://[\d][a-z][A-Z].testserver')
+    app.add_middleware(
+        CORSMiddleware, allow_headers=["X-Example"], allow_origin_regex="https://*"
+    )
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse("Homepage", status_code=200)
     client = TestClient(app)
-
-    res = client.get('/')
-    assert res.status_code == 200
-    assert res.text == 'HomePage'
-
-    res = client.get('/', headers={'Origin': 'http://1aA.testserver'})
-    assert res.status_code == 200
-    assert res.text == 'HomePage'
-
-    res = client.get('/', headers={'Origin': 'http://aaaa.testserver'})
-    assert res.status_code == 400
-    assert res.text == 'Disabllowed CORS origin'
-
-    res = client.get('/', headers={'Origin': 'http://aaa.otherserver'})
-    assert res.status_code == 400
-    assert res.text == 'Disabllowed CORS origin'
-
-    res = client.get('/', headers={'Origin': 'http://1aA.otherserver'})
-    assert res.status_code == 400
-    assert res.text == 'Disabllowed CORS origin'
+    # Test standard response
+    headers = {"Origin": "https://example.org"}
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert response.headers["access-control-allow-origin"] == "https://example.org"
+    # Test diallowed standard response
+    # Note that enforcement is a browser concern. The disallowed-ness is reflected
+    # in the lack of an "access-control-allow-origin" header in the response.
+    headers = {"Origin": "http://example.org"}
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert "access-control-allow-origin" not in response.headers
+    # Test pre-flight response
+    headers = {
+        "Origin": "https://another.com",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Example",
+    }
+    response = client.options("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "OK"
+    assert response.headers["access-control-allow-origin"] == "https://another.com"
+    assert response.headers["access-control-allow-headers"] == "X-Example"
+    # Test disallowed pre-flight response
+    headers = {
+        "Origin": "http://another.com",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Example",
+    }
+    response = client.options("/", headers=headers)
+    assert response.status_code == 400
+    assert response.text == "Disallowed CORS origin"
+    assert "access-control-allow-origin" not in response.headers

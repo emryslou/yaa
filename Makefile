@@ -1,3 +1,20 @@
+DIRTESTS=`pwd`/tests
+TESTPREFIX=test_
+
+ifndef $(name)
+	name=*
+endif
+pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py
+
+ifneq ($(strip $(fn)),)
+	pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py -k '$(fn)'
+endif
+
+ifdef $(detail)
+	pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py -k '$(fn)' -s -vv
+endif
+
+
 help:
 	@echo "================================================" 
 	@echo "|help info:                                    |"
@@ -8,11 +25,6 @@ help:
 	@echo "================================================"
 
 
-tests:
-	@echo "test all cases, may takes some minutes ..."
-	@export PYTHONPATH=`pwd`
-	python -m pytest tests/*
-
 test:
 	@export PYTHONPATH=`pwd`
-	python -m pytest tests/test_$(name).py -s -vv
+	python -m pytest $(pytest_params) $(pytest_fn)
