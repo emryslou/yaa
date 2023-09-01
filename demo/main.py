@@ -4,6 +4,7 @@ from yast.requests import Request
 from yast.staticfiles import StaticFiles
 from yast.endpoints import HttpEndPoint, WebSocketEndpoint
 from yast.routing import Path
+from yast.websockets import WebSocket, WebSocketDisconnect
 
 app = Yast()
 
@@ -11,8 +12,15 @@ app = Yast()
 app.mount('/static', StaticFiles(directory='demo/static'))
 
 @app.route('/')
-def home(request: Request) -> Response: 
-    return Response('<h1>Hello</h1>', media_type='text/html')
+def home(request: Request) -> Response:
+    html_content = (
+        '<h1>Hello</h1>'
+        '<input id="ws_host" value="localhost:5505/ws"/>'
+        '<button id="send">send</button>'
+        '<span id="receive_msg"></span>'
+        '<script src="/static/js/ws.js?_no=125"></script>'
+    )
+    return Response(html_content, media_type='text/html')
 
 @app.route('/favicon.ico')
 def fav(_):
@@ -22,6 +30,29 @@ class Demo(HttpEndPoint):
     def get(self, request: Request, **kwargs):
         return HTMLResponse('Demo')
 
+@app.ws_route('/ws')
+class WsApp(WebSocketEndpoint):
+    encoding = 'text'
+    async def on_receive(self, data):
+        await self.send('data received ' + data, 'text')
+
+class YaWs(object):
+    def __init__(self, scope):
+        self.scope = scope
+    
+    async def __call__(self, receive, send):
+        ws = WebSocket(self.scope, receive, send)
+        await ws.accept()
+        await ws.send_text('Hello, Ws')
+        while True:
+            try:
+                data = await ws.receive_text()
+                await ws.send_text('msg received, is:' + data)
+            except WebSocketDisconnect:
+                await ws.close()
+                break
+
+app.add_route_ws('/yaws', route=YaWs)
 app.add_route('/demo', route=Path('/', app=Demo))
 """
 ReadMe:
