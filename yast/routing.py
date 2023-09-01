@@ -90,12 +90,16 @@ class PathPrefix(Route):
 
 
 class Router(object):
-    def __init__(self, routes: typing.List[Route]=[], default: ASGIApp=None) -> None:
+    def __init__(
+            self, routes: typing.List[Route]=[],
+            default: ASGIApp=None
+        ) -> None:
         self.routes = routes
         self.default = self.not_found if default is None else default
     
 
     def __call__(self, scope: Scope) -> ASGIInstance:
+        assert scope['type'] in ('http', 'websocket')
         for route in self.routes:
             match, child_scope = route.matches(scope)
             if match:

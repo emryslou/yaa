@@ -12,6 +12,7 @@ class StaticFile(object):
         self.path = path
     
     def __call__(self, scope: Scope):
+        assert scope['type'] == 'http'
         if scope['method'] not in ('GET', 'HEAD'):
             return PlainTextResponse('Method Not Allowed', status_code=405)
         
@@ -24,6 +25,7 @@ class StaticFiles(object):
         self.config_checked = False
     
     def __call__(self, scope: Scope):
+        assert scope['type'] == 'http'
         if scope['method'] not in ('GET', 'HEAD'):
             return PlainTextResponse('Method Not Allowed', status_code=405)
         

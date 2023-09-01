@@ -2,6 +2,7 @@ from asyncio import iscoroutinefunction
 import inspect
 import typing
 
+from yast.lifespan import LifeSpanHandler, EventType
 from yast.middlewares import ExceptionMiddleware
 from yast.requests import Request
 from yast.responses import Response
@@ -40,6 +41,7 @@ def ws_session(func: typing.Callable):
 class Yast(object):
     def __init__(self, debug: bool = False) -> None:
         self.router = Router(routes=[])
+        self.lifespan_handler = LifeSpanHandler()
         self.app = self.router
         self.exception_middleware = ExceptionMiddleware(
                 self.router, debug=debug
@@ -48,6 +50,9 @@ class Yast(object):
     def debug(self) -> bool:
         return self.exception_middleware.debug
     
+    def on_event(self, event_type: EventType) -> None:
+        return self.lifespan_handler.on_event(event_type)
+
     @debug.setter
     def debug(self, val: bool) -> None:
         self.exception_middleware.debug = val
@@ -117,5 +122,7 @@ class Yast(object):
         return decorator
 
     def __call__(self, scope: Scope) -> ASGIInstance:
+        if scope['type'] == 'lifespan':
+            return self.lifespan_handler(scope)
         scope['app'] = self
         return self.exception_middleware(scope)

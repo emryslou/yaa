@@ -7,10 +7,6 @@ endif
 pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py
 
 ifneq ($(strip $(fn)),)
-	pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py -k '$(fn)'
-endif
-
-ifdef $(detail)
 	pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py -k '$(fn)' -s -vv
 endif
 

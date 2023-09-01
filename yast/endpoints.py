@@ -11,6 +11,7 @@ from yast.websockets import WebSocket
 
 class HttpEndPoint(object):
     def __init__(self, scope: Scope) -> None:
+        assert scope['type'] == 'http'
         self.scope = scope
     
     async def __call__(self, receive: Receive, send: Send) -> None:
@@ -39,6 +40,7 @@ class WebSocketEndpoint(object):
     ws: WebSocket = None
 
     def __init__(self, scope: Scope) -> None:
+        assert scope['type'] == 'websocket'
         self.scope = scope
     
     async def __call__(self, receive: Receive, send: Send) -> None:
