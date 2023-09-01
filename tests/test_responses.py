@@ -182,3 +182,17 @@ def test_del_cookie():
     res = client.get('/')
     assert res.text == 'Hello, Set Cookie'
     assert 'my_cookie' not in res.cookies
+
+
+def test_response_ujson():
+    from yast.responses import UJSONResponse
+    def app(scope):
+        async def asgi(receive, send):
+            res = UJSONResponse({'hello': 'usjon'})
+            await res(receive, send)
+        
+        return asgi
+    
+    client = TestClient(app)
+    res = client.get('/')
+    assert res.json() == {'hello': 'usjon'}

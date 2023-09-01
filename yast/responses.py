@@ -1,5 +1,6 @@
 import hashlib
 import http.cookies
+import json
 import os
 import stat
 import typing
@@ -16,20 +17,13 @@ try:
     import aiofiles
     from aiofiles.os import stat as aio_stat
 except ImportError: # pragma: nocover
-    aiofiles = None
-    aio_stat = None
+    aiofiles = None # type: ignore
+    aio_stat = None # type: ignore
 
 try:
-    import ujson as json
-    JSON_DUMPS_OPTIONS = {'ensure_ascii': False}
+    import ujson
 except ImportError: # pragma: nocover
-    import json
-    JSON_DUMPS_OPTIONS = {
-        'ensure_ascii': False,
-        'allow_nan': False,
-        'indent': None,
-        'separators': (',', ':')
-    }
+    ujson = None # type: ignore
 
 class Response:
     media_type = None
@@ -72,7 +66,7 @@ class Response:
 
     def init_headers(self, headers: dict = None):
         if headers is None:
-            raw_headers = []
+            raw_headers = [] # type: typing.List[typing.Tuple[bytes, bytes]]
             missing_content_length = True
             missing_content_type = True
         else:
@@ -145,7 +139,21 @@ class JSONResponse(Response):
     media_type = "application/json"
 
     def render(self, content: typing.Any) -> bytes:
-        return json.dumps(content, **JSON_DUMPS_OPTIONS).encode("utf-8")
+        return json.dumps(
+                content,
+                ensure_ascii=False,
+                allow_nan=False,
+                indent=None,
+                separators=(',', ':'),
+            ).encode("utf-8")
+
+
+class UJSONResponse(JSONResponse):
+    def render(self, content: typing.Any) -> bytes:
+        return json.dumps(
+                content, ensure_ascii=False,
+            ).encode("utf-8")
+
 
 
 class StreamingResponse(Response):
