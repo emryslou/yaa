@@ -72,7 +72,7 @@ class CORSMiddleware(object):
     def __call__(self, scope: Scope) -> Response:
         if scope['type'] == 'http':
             method = scope['method']
-            headers = Headers(scope['headers'])
+            headers = Headers(scope=scope)
             origin = headers.get('origin')
 
             if origin is not None:
@@ -151,7 +151,7 @@ class CORSMiddleware(object):
             await send(message)
             return
         message.setdefault('headers', [])
-        headers = MutableHeaders(message['headers'])
+        headers = MutableHeaders(raw=message['headers'])
         origin = request_headers['Origin']
         has_cookie = 'cookie' in request_headers
 

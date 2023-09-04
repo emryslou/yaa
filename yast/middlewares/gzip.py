@@ -12,7 +12,7 @@ class GZipMiddleware(object):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         if scope['type'] == 'http':
-            headers = Headers(scope['headers'])
+            headers = Headers(scope=scope)
             if 'gzip' in headers.get('Accept-Encoding', ''):
                 return GZipResponder(self.app, scope, self.minimum_size)
         return self.app(scope)
@@ -53,13 +53,13 @@ class GZipResponder(object):
                     self.gzip_file.write(body)
                     self.gzip_file.close()
                     body = self.gzip_buffer.getbuffer()
-                    headers = MutableHeaders(self.init_message['headers'])
+                    headers = MutableHeaders(raw=self.init_message['headers'])
                     headers['Content-Encoding'] = 'gzip'
                     headers['Content-Length'] = str(len(body))
                     headers.add_vary_header('Accept-Encoding')
                     message['body'] = body
                 else:
-                    headers = MutableHeaders(self.init_message['headers'])
+                    headers = MutableHeaders(raw=self.init_message['headers'])
                     headers['Content-Encoding'] = 'gzip'
                     headers.add_vary_header('Accept-Encoding')
                     del headers['Content-Length']

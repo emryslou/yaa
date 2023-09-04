@@ -108,7 +108,7 @@ def test_app_add_middleware():
         
         def __call__(self, scope):
             if scope['type'] in ('http', 'websocket'):
-                headers = Headers(scope['headers'])
+                headers = Headers(scope=scope)
                 if headers.get('host') != self.host:
                     return PlainTextResponse('Invalid host header', status_code=400)
             return self.app(scope)

@@ -26,18 +26,33 @@ def test_url():
 
 
 def test_query_params():
-    qry_prm = QueryParams([("a", "123"), ("a", "456"), ("bb", "xxx")])
-    assert "a" in qry_prm
-    assert "A" not in qry_prm
-    assert qry_prm['a'] == '123'
-    assert qry_prm.get('a') == '123'
-    assert qry_prm.get('??', default=None) == None
-    assert qry_prm.getlist('a') == ['123', '456']
-    assert QueryParams() == {}
+    q = QueryParams(query_string="a=123&a=456&b=789")
+    assert "a" in q
+    assert "A" not in q
+    assert "c" not in q
+    assert q["a"] == "123"
+    assert q.get("a") == "123"
+    assert q.get("nope", default=None) is None
+    assert q.getlist("a") == ["123", "456"]
+    assert q.keys() == ["a", "a", "b"]
+    assert q.values() == ["123", "456", "789"]
+    assert q.items() == [("a", "123"), ("a", "456"), ("b", "789")]
+    assert list(q) == [("a", "123"), ("a", "456"), ("b", "789")]
+    assert dict(q) == {"a": "123", "b": "789"}
+    assert str(q) == "a=123&a=456&b=789"
+    assert repr(q) == "QueryParams(query_string='a=123&a=456&b=789')"
+    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
+        query_string="a=123&b=456"
+    )
+    assert QueryParams({"a": "123", "b": "456"}) != {"b": "456", "a": "123"}
+    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
+        {"b": "456", "a": "123"}
+    )
+    assert QueryParams() == QueryParams({})
 
 
 def test_headers():
-    h = Headers([(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
+    h = Headers(raw=[(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
     assert "a" in h
     assert "A" in h
     assert "b" in h
@@ -53,13 +68,13 @@ def test_headers():
     assert list(h) == [("a", "123"), ("a", "456"), ("b", "789")]
     assert dict(h) == {"a": "123", "b": "789"}
     assert repr(h) == "Headers([('a', '123'), ('a', '456'), ('b', '789')])"
-    assert h == Headers([(b"a", b"123"), (b"b", b"789"), (b"a", b"456")])
+    assert h == Headers(raw=[(b"a", b"123"), (b"b", b"789"), (b"a", b"456")])
     assert h != [(b"a", b"123"), (b"A", b"456"), (b"b", b"789")]
     h = Headers()
     assert not h.items()
 
 def test_headers_mutablecopy():
-    h = Headers([(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
+    h = Headers(raw=[(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
     c = h.mutablecopy()
     assert c.items() == [("a", "123"), ("a", "456"), ("b", "789")]
     c["a"] = "abc"

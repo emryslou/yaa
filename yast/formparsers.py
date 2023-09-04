@@ -198,7 +198,7 @@ class MultiPartParser(object):
                     raw_headers.append((header_field.lower(), header_value))
                     header_field, header_value = b'', b''
                 elif msg_type == MultiPartMessage.HEADERS_FINISHED:
-                    headers = Headers(raw_headers)
+                    headers = Headers(raw=raw_headers)
                     content_disposition = headers.get('Content-Disposition')
                     disposition, options = parse_options_header(content_disposition)
                     field_name = options[b'name'].decode('latin-1')

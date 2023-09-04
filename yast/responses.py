@@ -124,7 +124,7 @@ class Response:
     @property
     def headers(self):
         if not hasattr(self, '_headers'):
-            self._headers = MutableHeaders(self.raw_headers)
+            self._headers = MutableHeaders(raw=self.raw_headers)
         return self._headers
 
 class HTMLResponse(Response):

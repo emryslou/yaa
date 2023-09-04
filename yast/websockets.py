@@ -48,7 +48,7 @@ class WebSocket(Mapping):
     @property
     def headers(self) -> Headers:
         if not hasattr(self, '_headers'):
-            self._headers = Headers(self._scope['headers'])
+            self._headers = Headers(scope=self._scope)
         
         return self._headers
     
@@ -56,7 +56,7 @@ class WebSocket(Mapping):
     @property
     def query_params(self) -> QueryParams:
         if not hasattr(self, '_query_parmas'):
-            self._query_params = QueryParams(self._scope.get('query_string', '').decode())
+            self._query_params = QueryParams(scope=self._scope)
         
         return self._query_params
     

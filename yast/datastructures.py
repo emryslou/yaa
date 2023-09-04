@@ -1,5 +1,5 @@
 import typing
-from urllib.parse import urlparse, parse_qsl, unquote, ParseResult
+from urllib.parse import urlparse, parse_qsl, urlencode, unquote, ParseResult
 
 from yast.types import Scope, StrDict, StrPairs
 
@@ -104,45 +104,50 @@ class URL(object):
 
 class QueryParams(typing.Mapping[str, str]):
     def __init__(
-        self, value: typing.Union[str, typing.Union[StrDict, StrPairs]] = None
+        self,
+        params: typing.Mapping[str, str] = None,
+        query_string: str = None,
+        scope: Scope = None
     ) -> None:
-        if value is None:
-            value = []
-        elif isinstance(value, str):
-            value = parse_qsl(value)
-
-        if hasattr(value, "items"):
-            items = list(typing.cast(StrDict, value).items())
-        else:
-            items = list(typing.cast(StrPairs, value))
+        items = [] # type: typing.List[typing.Tuple[str, str]]
+        if params is not None:
+            assert query_string is None, 'Cannot set both `params` and `query_string`'
+            assert scope is None, 'Cannot set both `params` and `scope`'
+            items = list(params.items())
+        elif query_string is not None:
+            assert scope is None, 'Cannot set both `query_string` and `scope`'
+            items = parse_qsl(query_string)
+        elif scope is not None:
+            items = parse_qsl(scope['query_string'].decode('latin-1'))
+        
         self._dict = {k: v for k, v in reversed(items)}
         self._list = items
 
     def getlist(self, key: str) -> typing.List[str]:
         return [item_value for item_key, item_value in self._list if item_key == key]
 
-    def keys(self):
+    def keys(self) -> typing.List[str]:
         return [key for key, value in self._list]
 
-    def values(self):
+    def values(self) -> typing.List[typing.Any]:
         return [value for key, value in self._list]
 
-    def items(self):
+    def items(self) -> typing.List:
         return list(self._list)
 
-    def get(self, key, default=None):
+    def get(self, key, default=None) -> typing.Any:
         if key in self._dict:
             return self._dict[key]
         else:
             return default
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> typing.Any:
         return self._dict[key]
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         return key in self._dict
 
-    def __iter__(self):
+    def __iter__(self) -> iter:
         return iter(self._list)
 
     def __len__(self):
@@ -150,25 +155,41 @@ class QueryParams(typing.Mapping[str, str]):
 
     def __eq__(self, other):
         if not isinstance(other, QueryParams):
-            other = QueryParams(other)
+            return False
         return sorted(self._list) == sorted(other._list)
 
-    def __repr__(self):
-        return "QueryParams(%s)" % repr(self._list)
+    def __str__(self) -> str:
+        return urlencode(self._list)
+
+    def __repr__(self) -> str:
+        return "%s(query_string=%s)" % (self.__class__.__name__, repr(str(self)))
 
 
 class Headers(typing.Mapping[str, str]):
     """ headers  """
-    def __init__(self, value: typing.Union[StrDict, StrPairs] = None) -> None:
-        if value is None:
-            self._list = []
-        else:
-            assert isinstance(value, list)
-            for h_k, h_v in value:
-                assert isinstance(h_k, bytes)
-                assert isinstance(h_v, bytes)
-                assert h_k == h_k.lower()
-            self._list = value
+    def __init__(
+            self,
+            headers: typing.Mapping[str, str] = None,
+            raw: typing.List[typing.Tuple[bytes, bytes]] = None,
+            scope: Scope = None
+        ) -> None:
+        self._list = []
+        if headers is not None:
+            assert raw is None, 'Cannot set both `headers` and `raw`'
+            assert scope is None, 'Cannot set both `headers` and `scope`'
+            self._list = [
+                (key.lower().encode('latin-1'), value.encode('latin-1'))
+                for key, value in headers.items()
+            ]
+        elif raw is not None:
+            assert scope is None, 'Cannot set both `raw` and `scope`'
+            self._list = raw
+        elif scope is not None:
+            self._list = scope['headers']
+    
+    @property
+    def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+        return list(self._list)
 
     def keys(self):
         return [key.decode('latin-1') for key, _ in self._list]
@@ -176,8 +197,11 @@ class Headers(typing.Mapping[str, str]):
     def values(self):
         return [value.decode('latin-1') for _, value in self._list]
 
-    def items(self):
-        return [(k.decode('latin-1'), v.decode('latin-1')) for k, v in self._list]
+    def items(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+        return [
+                (k.decode('latin-1'), v.decode('latin-1')) 
+                for k, v in self._list
+            ]
 
     def get(self, key: str, default: str = None):
         try:
@@ -194,7 +218,7 @@ class Headers(typing.Mapping[str, str]):
         ]
 
     def mutablecopy(self):
-        return MutableHeaders(self._list[:])
+        return MutableHeaders(raw=self._list[:])
 
     def __getitem__(self, key: str):
         h_k = key.lower().encode('latin-1')
@@ -218,7 +242,7 @@ class Headers(typing.Mapping[str, str]):
             return False
         return sorted(self._list) == sorted(other._list)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "%s(%s)" % (self.__class__.__name__, repr(self.items()))
 
 
@@ -252,6 +276,10 @@ class MutableHeaders(Headers):
         
         for idx in reversed(pop_indexes):
             del self._list[idx]
+
+    @property
+    def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+        return self._list
     
     def setdefault(self, key: str, value: str):
         set_key = key.lower().encode('latin-1')

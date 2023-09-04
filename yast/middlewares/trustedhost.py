@@ -10,7 +10,7 @@ class TrustedHostMiddleware(object):
     
     def __call__(self, scope: Scope) -> Response:
         if scope['type'] in ('http', 'websocket') and not self.allow_any:
-            headers = Headers(scope['headers'])
+            headers = Headers(scope=scope)
             host = headers.get('host')
             if host not in self.allowed_hosts:
                 return PlainTextResponse('Invalid host header', status_code=400)
