@@ -119,7 +119,6 @@ class CORSMiddleware(object):
         if req_method not in self.allow_methods:
             failures.append('method')
         
-        print('debug -- 005 -- preflight', request_headers, req_headers)
         if self.allow_all_headers and req_headers is not None:
             headers['Access-Control-Allow-Headers'] = req_headers
         elif req_headers is not None:
@@ -129,7 +128,6 @@ class CORSMiddleware(object):
         
         if failures:
             failure_text = 'Disallowed CORS ' + ','.join(failures)
-            print('debug -- 001 failures', failure_text)
             return PlainTextResponse(
                     failure_text, status_code=400, headers=headers
                 )

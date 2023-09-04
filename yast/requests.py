@@ -10,7 +10,7 @@ from yast.formparsers import FormParser, MultiPartParser
 from yast.types import Scope, Receive
 
 try:
-    from multipart.multiparse import parse_options_header
+    from multipart.multipart import parse_options_header
 except ImportError:
     parse_options_header = None
 
@@ -137,6 +137,7 @@ class Request(Mapping):
                 self._form = await parser.parse()
             elif content_type == b'application/x-www-form-urlencoded':
                 parser = FormParser(self.headers, self.stream)
+                self._form = await parser.parse()
             else:
                 self._form = {}
         return self._form

@@ -50,12 +50,12 @@ class UploadFile(object):
         await self._loop.run_in_executor(None, self._file.write, data)
     
     async def read(self, size: int = None) -> None:
-        await self._loop.run_in_executor(None, self._file.read, size)
+        return await self._loop.run_in_executor(None, self._file.read, size)
     
     async def seek(self, offset: int) -> None:
         await self._loop.run_in_executor(None, self._file.seek, offset)
     
-    async def close(self, offset: int) -> None:
+    async def close(self) -> None:
         await self._loop.run_in_executor(None, self._file.close)
 
 
@@ -70,27 +70,22 @@ class FormParser(object):
         self.messages = [] # type: typing.List[typing.Tuple[MultiPartMessage, bytes]]
     
 
-    def on_field_start(self, data: bytes, start: int, end: int) -> None:
-        print('debug -- 900 on field start')
-        self.messages.append((FormMessage.FIELD_START, data[start:end]))
+    def on_field_start(self) -> None:
+        self.messages.append((FormMessage.FIELD_START, b''))
 
     
     def on_field_name(self, data: bytes, start: int, end: int) -> None:
-        print('debug -- 901 on field name')
         self.messages.append((FormMessage.FIELD_NAME, data[start:end]))
 
 
     def on_field_data(self, data: bytes, start: int, end: int) -> None:
-        print('debug -- 902 on field data')
         self.messages.append((FormMessage.FIELD_DATA, data[start:end]))
     
 
     def on_field_end(self) -> None:
-        print('debug -- 903 on field data')
         self.messages.append((FormMessage.FIELD_END, b''))
     
     def on_end(self) -> None:
-        print('debug -- 903 on end')
         self.messages.append((FormMessage.END, b''))
     
     async def parse(self) -> typing.Dict[str,typing.Union[str, UploadFile]]:
@@ -114,7 +109,7 @@ class FormParser(object):
             messages = list(self.messages)
             self.messages.clear()
             for msg_type, msg_bytes in messages:
-                if msg_type == FormMessage.FIELD_DATA:
+                if msg_type == FormMessage.FIELD_START:
                     field_name, field_value = b'', b''
                 elif msg_type == FormMessage.FIELD_NAME:
                     field_name += msg_bytes
@@ -150,3 +145,79 @@ class MultiPartParser(object):
     def on_header_field(self, data: bytes, start: int, end: int) -> None:
         self.messages.append((MultiPartMessage.HEADER_FIELD, data[start:end]))
 
+    def on_header_value(self, data: bytes, start: int, end: int) -> None:
+        self.messages.append((MultiPartMessage.HEADER_VALUE, data[start:end]))
+
+    def on_header_end(self) -> None:
+        self.messages.append((MultiPartMessage.HEADER_END, b''))
+    
+    def on_headers_finished(self) -> None:
+        self.messages.append((MultiPartMessage.HEADERS_FINISHED, b''))
+    
+    def on_end(self) -> None:
+        self.messages.append((MultiPartMessage.END, b''))
+    
+    async def parse(self) -> typing.Dict[str, typing.Union[str, UploadFile]]:
+        content_type, params = parse_options_header(self.headers['Content-Type'])
+        boundary = params.get(b'boundary')
+        _mpm_attrs = [
+                'on_%s'%fm.name.lower() 
+                for fm in list(MultiPartMessage)
+            ]
+        callbacks = {
+            attr: getattr(self, attr)
+            for attr in self.__dir__()
+            if attr in _mpm_attrs
+        }
+        parser = multipart.MultipartParser(boundary, callbacks)
+        header_field, header_value = b'', b''
+        raw_headers = []
+        field_name = ''
+        data = b''
+        _file = None
+
+        result = {}
+
+        async for chunk in self.stream():
+            parser.write(chunk)
+            messages = list(self.messages)
+            self.messages.clear()
+
+            for msg_type, msg_bytes in messages:
+                if msg_type == MultiPartMessage.PART_BEGIN:
+                    raw_headers = []
+                    data = b''
+                elif msg_type == MultiPartMessage.HEADER_FIELD:
+                    header_field += msg_bytes
+                elif msg_type == MultiPartMessage.HEADER_VALUE:
+                    header_value += msg_bytes
+                elif msg_type == MultiPartMessage.HEADER_END:
+                    raw_headers.append((header_field.lower(), header_value))
+                    header_field, header_value = b'', b''
+                elif msg_type == MultiPartMessage.HEADERS_FINISHED:
+                    headers = Headers(raw_headers)
+                    content_disposition = headers.get('Content-Disposition')
+                    disposition, options = parse_options_header(content_disposition)
+                    field_name = options[b'name'].decode('latin-1')
+                    
+                    if b'filename' in options:
+                        filename = options[b'filename'].decode('latin-1')
+                        _file = UploadFile(filename=filename)
+                        
+                        await _file.setup()
+                elif msg_type == MultiPartMessage.PART_DATA:
+                    if _file is None:
+                        data += msg_bytes
+                    else:
+                        await _file.write(msg_bytes)
+                elif msg_type == MultiPartMessage.PART_END:
+                    if _file is None:
+                        result[field_name] = data.decode('latin-1')
+                    else:
+                        await _file.seek(0)
+                        result[field_name] = _file
+                elif msg_type == MultiPartMessage.END:
+                    pass
+        parser.finalize()
+
+        return result

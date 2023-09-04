@@ -85,7 +85,6 @@ class WebSocketEndpoint(object):
     async def _decode_bytes(self, message: Message):
         if 'bytes' not in message: 
             await self.ws.close(1003)
-            print('debug -- 004', message)
             raise RuntimeError('Expected bytes websocket messages, but got others')
         return message['bytes']
 
