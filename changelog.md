@@ -3,6 +3,7 @@
 2. support lifespan app.on_event: startup, cleanup
 3. UJSONResponse & websocket: annotations
 4. MultiPartParser
+5. middleware gzip
 
 # v0.2.1
 1. 代码重构

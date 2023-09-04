@@ -1,59 +1,8 @@
-import pytest
-
 from yast.applications import Yast
 from yast.responses import PlainTextResponse
 from yast.testclient import TestClient
 
-
-def test_middleware_trustedhost():
-    from yast.middlewares import TrustedHostMiddleware
-
-    app = Yast()
-
-    @app.route('/')
-    async def home(_):
-        return PlainTextResponse('OK')
-    
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=['aa.com', 'bb.com'])
-
-    client = TestClient(app, base_url='http://aa.com')
-    res = client.get('/')
-    assert res.status_code == 200
-    assert res.text == 'OK'
-
-    client = TestClient(app, base_url='http://bb.com')
-    res = client.get('/')
-    assert res.status_code == 200
-    assert res.text == 'OK'
-
-    client = TestClient(app, base_url='http://xx.com')
-    res = client.get('/')
-    assert res.status_code == 400
-    assert res.text == 'Invalid host header'
-
-
-def test_middleware_httpredirect():
-    from yast.middlewares import HttpsRedirectMiddleware
-
-    app = Yast()
-
-    @app.route('/')
-    async def home(_):
-        return PlainTextResponse('OK')
-    
-    app.add_middleware(HttpsRedirectMiddleware)
-
-    client = TestClient(app, base_url='https://testserver')
-    res = client.get('/?type=https')
-    assert res.status_code == 200
-
-    client = TestClient(app)
-    res = client.get('/?type=http', allow_redirects=False)
-    assert res.status_code == 301
-    assert res.headers['location'] == 'https://testserver/?type=http'
-
-
-def test_middleware_cors_allow_all():
+def test_cors_allow_all():
     from yast.middlewares import CORSMiddleware
 
     app = Yast()
@@ -95,7 +44,7 @@ def test_middleware_cors_allow_all():
     assert 'access-control-allow-headers' not in res.headers
 
 
-def test_middleware_cors_specific_origin():
+def test_cors_specific_origin():
     from yast.middlewares import CORSMiddleware
 
     app = Yast()
@@ -138,7 +87,7 @@ def test_middleware_cors_specific_origin():
     assert 'access-control-allow-origin' not in res.headers
 
 
-def test_middleware_cors_disallowed_preflight():
+def test_cors_disallowed_preflight():
     from yast.middlewares import CORSMiddleware
 
     app = Yast()
@@ -166,7 +115,7 @@ def test_middleware_cors_disallowed_preflight():
     assert res.status_code == 400
     assert res.text == 'Disallowed CORS origin,method,headers'
 
-def test_middleware_cors_allow_origin_regex():
+def test_cors_allow_origin_regex():
     from yast.middlewares import CORSMiddleware
     app = Yast()
     app.add_middleware(
@@ -213,7 +162,7 @@ def test_middleware_cors_allow_origin_regex():
     assert "access-control-allow-origin" not in response.headers
 
 
-def test_middleware_cors_credentialed_requests_return_specific_origin():
+def test_cors_credentialed_requests_return_specific_origin():
     from yast.middlewares import CORSMiddleware
     app = Yast()
     app.add_middleware(CORSMiddleware, allow_origins=['*'])
@@ -229,7 +178,7 @@ def test_middleware_cors_credentialed_requests_return_specific_origin():
     assert res.text == 'HomePage'
     assert res.headers['access-control-allow-origin'] == 'https://example.org'
 
-def test_middleware_cors_vary_header_defaults_to_orgin():
+def test_cors_vary_header_defaults_to_orgin():
     from yast.middlewares import CORSMiddleware
     app = Yast()
     app.add_middleware(CORSMiddleware, allow_origins=['https://example.org'])
@@ -246,7 +195,7 @@ def test_middleware_cors_vary_header_defaults_to_orgin():
     assert res.headers['vary'] == 'Origin'
 
 
-def test_middleware_cors_vary_header_is_properly_set():
+def test_cors_vary_header_is_properly_set():
     from yast.middlewares import CORSMiddleware
     app = Yast()
     app.add_middleware(CORSMiddleware, allow_origins=['https://example.org'])

@@ -33,8 +33,6 @@ class CORSMiddleware(object):
         simple_headers = {}
         if '*' in allow_origins:
             simple_headers['Access-Control-Allow-Origin'] = '*'
-        else:
-            simple_headers['Vary'] = 'Origin'
 
         if allow_credentials:
             simple_headers['Access-Control-Allow-Credentials'] = 'true'
@@ -161,7 +159,6 @@ class CORSMiddleware(object):
             self.simple_headers['Access-Control-Allow-Origin'] = origin
         elif not self.allow_all_origins and self.is_allowed_origin(origin):
             headers['Access-Control-Allow-Origin'] = origin
-            if 'vary' in headers:
-                self.simple_headers['Vary'] = f'{headers.get("vary")}, Origin'
+            headers.add_vary_header('Origin')
         headers.update(self.simple_headers)
         await send(message)

@@ -1,13 +1,18 @@
 DIRTESTS=`pwd`/tests
 TESTPREFIX=test_
 
-ifndef $(name)
-	name=*
+pytest_params=.
+ifneq ($(strip $(name)),)
+	pytest_params=$(DIRTESTS)/$(name)
 endif
-pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py
 
 ifneq ($(strip $(fn)),)
-	pytest_params=$(DIRTESTS)/$(TESTPREFIX)$(name).py -k '$(fn)' -s -vv
+	ifneq ($(strip $(name)),)
+		path=`echo $(name) | awk -F'.' '{pint}'`
+		pytest_params=$(DIRTESTS)/$(name) -k '$(fn)'
+	else
+		pytest_params=. -k '$(fn)'
+	endif
 endif
 
 
@@ -20,10 +25,13 @@ help:
 	@echo "| test name=xxx    - test tests/test_xxx.py    |"
 	@echo "================================================"
 
+tests:
+	@export PYTHONPATH=`pwd`
+	python -m pytest .
 
 test:
 	@export PYTHONPATH=`pwd`
-	python -m pytest $(pytest_params) $(pytest_fn)
+	python -m pytest $(pytest_params) $(pytest_fn) -s -vv
 
 
 demo:
