@@ -30,6 +30,7 @@ def test_gzip_not_in_accept_encoding():
     assert response.text == "x" * 4000
     assert "Content-Encoding" not in response.headers
     assert int(response.headers["Content-Length"]) == 4000
+
 def test_gzip_ignored_for_small_responses():
     app = Yast()
     app.add_middleware(GZipMiddleware)
@@ -42,6 +43,7 @@ def test_gzip_ignored_for_small_responses():
     assert response.text == "OK"
     assert "Content-Encoding" not in response.headers
     assert int(response.headers["Content-Length"]) == 2
+    
 def test_gzip_streaming_response():
     app = Yast()
     app.add_middleware(GZipMiddleware)
