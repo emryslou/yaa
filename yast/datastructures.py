@@ -243,7 +243,10 @@ class Headers(typing.Mapping[str, str]):
         return sorted(self._list) == sorted(other._list)
 
     def __repr__(self) -> str:
-        return "%s(%s)" % (self.__class__.__name__, repr(self.items()))
+        as_dict = dict(self.items())
+        if len(as_dict) == len(self):
+            return "%s(%s)" % (self.__class__.__name__, repr(self.items()))
+        return "%s(raw=%s)" % (self.__class__.__name__, repr(self.raw))
 
 
 class MutableHeaders(Headers):
