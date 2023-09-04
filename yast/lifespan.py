@@ -3,7 +3,7 @@ import asyncio
 import enum
 import typing
 
-from yast.types import ASGIApp, Scope, Receive, Send
+from yast.types import ASGIApp, Scope, Receive, Send, Message
 
 STATE_TRANSITION_ERROR = "Got invalid state transition on lifespan protocal"
 
@@ -16,13 +16,13 @@ class EventType(enum.Enum):
 
 class LifeSpanHandler(object):
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.handlers = {
             et: []
             for et in list(EventType)
         }
     
-    def on_event(self, event_type: str):
+    def on_event(self, event_type: str) -> typing.Callable:
         def decorator(func):   
             self.handlers[EventType(event_type)].append(func)
             return func
@@ -37,7 +37,7 @@ class LifeSpanHandler(object):
             else:
                 handler()
 
-    def __call__(self, scope: Scope):
+    def __call__(self, scope: Scope) -> typing.Callable:
         assert scope['type'] == 'lifespan'
         return self.run_lifespan
 
@@ -52,7 +52,7 @@ class LifeSpanContext(object):
     def __init__(
             self, app: ASGIApp,
             **kwargs
-        ):
+        ) -> None:
         self.timeout = {
             et: kwargs.get(f'{et.value}_timeout', 10) 
             for et in list(EventType)
@@ -64,31 +64,31 @@ class LifeSpanContext(object):
         self.receive_queue = asyncio.Queue()
         self.asgi = app({'type': 'lifespan'})
     
-    def __enter__(self):
+    def __enter__(self) -> None:
         loop = asyncio.get_event_loop()
         loop.create_task(self.run_lifespan())
         loop.run_until_complete(self.wait_event_type(EventType.STARTUP))
     
-    def __exit__(self, exc_type, exc, tb):
+    def __exit__(self, exc_type, exc, tb) -> None:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.wait_event_type(EventType.CLEANUP))
     
-    async def run_lifespan(self):
+    async def run_lifespan(self) -> None:
         try:
             await self.asgi(self.receive, self.send)
         finally:
             [ events.set() for events in self.events]
     
-    async def send(self, message):
+    async def send(self, message: Message) -> None:
         if message['type'] == 'lifespan.startup.complete':
             self.events[EventType.STARTUP].set()
         else:
             self.events[EventType.CLEANUP].set()
 
-    async def receive(self):
+    async def receive(self) -> None:
         return await self.receive_queue.get()
     
-    async def wait_event_type(self, event_type: EventType):
+    async def wait_event_type(self, event_type: EventType) -> None:
         await self.receive_queue.put({'type': f'lifespan.{str(event_type)}'})
         await asyncio.wait_for(
                 self.events[event_type].wait(),

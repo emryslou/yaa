@@ -60,7 +60,7 @@ class Yast(object):
     def mount(
             self, path: str,
             app: ASGIApp, methods:list[str] = None
-        ):
+        ) -> None:
         prefix = PathPrefix(path, app=app, methods=methods)
         self.router.routes.append(prefix)
     
@@ -70,7 +70,7 @@ class Yast(object):
         ) -> None:
         self.exception_middleware.add_exception_handler(exc_class, handler)
     
-    def exception_handle(self, exc_class: type):
+    def exception_handle(self, exc_class: type) -> typing.Callable:
         def decorator(func):
             self.add_exception_handler(exc_class, func)
             return func
@@ -81,7 +81,7 @@ class Yast(object):
             self, path: str,
             route: typing.Union[typing.Callable, Route],
             methods: list[str] = None
-        ):
+        ) -> None:
         if not inspect.isclass(route):
             route = req_res(route)
             if methods is None:
@@ -94,7 +94,7 @@ class Yast(object):
     def add_route_ws(
             self, path: str,
             route: typing.Union[typing.Callable, Route]
-        ):
+        ) -> None:
         if not inspect.isclass(route):
             route = ws_session(route)
         instance = Path(path, route, protocol='websocket')
