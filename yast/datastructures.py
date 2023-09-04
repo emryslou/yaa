@@ -8,18 +8,23 @@ class URL(object):
     def __init__(self, url: str = '', scope: Scope = None) -> None:
         if scope is not None:
             assert not url, 'Cannot set both "url" and "scope"'
-            scheme = scope['scheme']
+            scheme = scope.get('scheme', 'http')
             path = scope.get('root_path', '') + scope['path']
             query_string = scope['query_string']
-            default_port = {
+            
+            server = scope.get('server', None)
+            if server is None:
+                url = path
+            else:
+                host, port = server
+                default_port = {
                     'http': 80, 'https': 443,
                     'ws': 80, 'wss': 443
                 }[scheme]
-            host, port = scope['server']
-            if port == default_port:
-                url = '%s://%s%s' % (scheme, host, path)
-            else:
-                url = '%s://%s:%s%s' % (scheme, host, port, path)
+                if port == default_port:
+                    url = '%s://%s%s' % (scheme, host, path)
+                else:
+                    url = '%s://%s:%s%s' % (scheme, host, port, path)
             
             if query_string:
                 url += '?' + unquote(query_string.decode())
@@ -92,6 +97,10 @@ class URL(object):
     
     def __str__(self):
         return self._url
+    
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, repr(self._url))
+
 
 class QueryParams(typing.Mapping[str, str]):
     def __init__(

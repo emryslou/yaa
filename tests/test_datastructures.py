@@ -64,3 +64,8 @@ def test_headers_mutablecopy():
     assert c.items() == [("a", "123"), ("a", "456"), ("b", "789")]
     c["a"] = "abc"
     assert c.items() == [("a", "abc"), ("b", "789")]
+
+
+def test_url_from_scope():
+    u = URL(scope={'path': '/a/path/to/somewhere', 'query_string': b'abc=123'})
+    assert u == '/a/path/to/somewhere?abc=123'

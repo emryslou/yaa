@@ -1,5 +1,6 @@
 import asyncio
 import enum
+import io
 import tempfile
 import typing
 
@@ -37,13 +38,15 @@ class MultiPartMessage(enum.Enum):
 class UploadFile(object):
     def __init__(self, filename: str) -> None:
         self.filename = filename
-        self._file = None
+        self._file = io.BytesIO() # type: typing.IO[typing.Any]
         self._loop = asyncio.get_event_loop()
     
+    def create_tempfile(self) -> None:
+        self._file = tempfile.SpooledTemporaryFile()
+
     async def setup(self) -> None:
-        self._file = await self._loop.run_in_executor(
-                None,
-                tempfile.SpooledTemporaryFile
+        await self._loop.run_in_executor(
+                None, self.create_tempfile
             )
     
     async def write(self, data: bytes) -> None:
@@ -67,7 +70,7 @@ class FormParser(object):
         assert multipart is not None, 'The `python-multipart` library must be installed to use form parsing'
         self.headers = headers
         self.stream = stream
-        self.messages = [] # type: typing.List[typing.Tuple[MultiPartMessage, bytes]]
+        self.messages = [] # type: typing.List[typing.Tuple[FormMessage, bytes]]
     
 
     def on_field_start(self) -> None:

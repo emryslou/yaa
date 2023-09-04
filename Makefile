@@ -26,5 +26,5 @@ test:
 	python -m pytest $(pytest_params) $(pytest_fn)
 
 
-run:
+demo:
 	python -m uvicorn demo.main:app --port 5505 --lifespan on --reload
