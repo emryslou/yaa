@@ -2,6 +2,8 @@ requests
 aiofiles
 ujson
 python-multipart
+graphql-core < 3
+graphene
 
 # Testing & Linting
 pytest

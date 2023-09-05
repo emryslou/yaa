@@ -5,6 +5,7 @@ import ujson as json
 from yast.exceptions import HttpException
 from yast.requests import Request
 from yast.responses import Response, PlainTextResponse
+import yast.status as status
 from yast.types import Message, Receive, Scope, Send
 from yast.websockets import WebSocket
 
@@ -48,7 +49,7 @@ class WebSocketEndpoint(object):
         kwargs = self.scope.get('kwargs', {})
         await self.on_connect(**kwargs)
 
-        close_code = None
+        close_code = status.WS_1000_NORMAL_CLOSURE
         try:
             while True:
                 message = await self.ws.receive()
@@ -56,8 +57,11 @@ class WebSocketEndpoint(object):
                     data = await self.decode(message)
                     await self.on_receive(data)
                 elif message['type'] == 'websocket.disconnect':
-                    close_code = message.get('code', 1000)
-                    return
+                    close_code = message.get('code', status.WS_1000_NORMAL_CLOSURE)
+                    break
+        except Exception as exc:
+            close_code = status.WS_1011_INTERNAL_ERROR
+            raise exc from None
         finally:
             await self.on_disconnect(close_code)
     
@@ -78,19 +82,19 @@ class WebSocketEndpoint(object):
     
     async def _decode_text(self, message: Message):
         if 'text' not in message:
-            await self.ws.close(1003) 
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA) 
             raise RuntimeError('Expected text websocket messages, but got others')
         return message['text']
 
     async def _decode_bytes(self, message: Message):
         if 'bytes' not in message: 
-            await self.ws.close(1003)
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
             raise RuntimeError('Expected bytes websocket messages, but got others')
         return message['bytes']
 
     async def _decode_json(self, message: Message):
         if 'bytes' not in message:
-            await self.ws.close(1003) 
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA) 
             raise RuntimeError('Expected json websocket messages, but got others')
         
         return json.loads(message['bytes'].decode('utf-8'))

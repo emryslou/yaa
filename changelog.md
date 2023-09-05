@@ -4,6 +4,7 @@
 3. UJSONResponse & websocket: annotations
 4. MultiPartParser
 5. middleware gzip, wsgi
+6. support graphql
 
 # v0.2.1
 1. 代码重构

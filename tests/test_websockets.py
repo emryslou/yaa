@@ -1,6 +1,7 @@
 import pytest
 
 from yast import TestClient
+import yast.status as status
 from yast.websockets import WebSocket, WebSocketDisconnect
 
 class test_websocket_url():
@@ -134,33 +135,33 @@ def test_client_close():
         return asgi
     client = TestClient(app)
     with client.wsconnect("/") as session:
-        session.close(code=1001)
-    assert close_code == 1001
+        session.close(code=status.WS_1001_GOING_AWAY)
+    assert close_code == status.WS_1001_GOING_AWAY
 
 def test_application_close():
     def app(scope):
         async def asgi(receive, send):
             session = WebSocket(scope, receive, send)
             await session.accept()
-            await session.close(1001)
+            await session.close(status.WS_1001_GOING_AWAY)
         return asgi
     client = TestClient(app)
     with client.wsconnect("/") as session:
         with pytest.raises(WebSocketDisconnect) as exc:
             session.receive_text()
-        assert exc.value.code == 1001
+        assert exc.value.code == status.WS_1001_GOING_AWAY
 
 
 def test_rejected_connection():
     def app(scope):
         async def asgi(receive, send):
             session = WebSocket(scope, receive, send)
-            await session.close(1008)
+            await session.close(status.WS_1008_POLICY_VIOLATION)
         return asgi
     client = TestClient(app)
     with pytest.raises(WebSocketDisconnect) as exc:
         client.wsconnect("/")
-    assert exc.value.code == 1008
+    assert exc.value.code == status.WS_1008_POLICY_VIOLATION
 
 def test_subprotocol():
     def app(scope):
