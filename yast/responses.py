@@ -50,7 +50,8 @@ class Response:
                 "type": "http.response.start",
                 "status": self.status_code,
                 "headers": [
-                    [key.encode(), value.encode()] for key, value in self.headers
+                    [key.encode(), self.headers[key].encode()]
+                    for key in self.headers
                 ],
             }
         )
@@ -177,7 +178,8 @@ class StreamingResponse(Response):
                 "type": "http.response.start",
                 "status": self.status_code,
                 "headers": [
-                    [key.encode(), value.encode()] for key, value in self.headers
+                    [key.encode(), self.headers[key].encode()] 
+                    for key in self.headers
                 ],
             }
         )

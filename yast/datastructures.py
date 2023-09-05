@@ -148,7 +148,7 @@ class QueryParams(typing.Mapping[str, str]):
         return key in self._dict
 
     def __iter__(self) -> iter:
-        return iter(self._list)
+        return iter(self.keys())
 
     def __len__(self):
         return len(self._list)
@@ -232,7 +232,7 @@ class Headers(typing.Mapping[str, str]):
         return key.lower() in self.keys()
 
     def __iter__(self):
-        return iter(self.items())
+        return iter(self.keys())
 
     def __len__(self):
         return len(self._list)
