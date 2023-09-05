@@ -52,6 +52,12 @@ class Yast(object):
     
     def on_event(self, event_type: EventType) -> None:
         return self.lifespan_handler.on_event(event_type)
+    
+    def add_event_handler(
+            self, event_type: EventType,
+            func: typing.Callable
+        ) -> None:
+        self.lifespan_handler.add_event_handler(event_type, func)
 
     @debug.setter
     def debug(self, val: bool) -> None:
@@ -70,7 +76,7 @@ class Yast(object):
         ) -> None:
         self.exception_middleware.add_exception_handler(exc_class, handler)
     
-    def exception_handle(self, exc_class: type) -> typing.Callable:
+    def exception_handler(self, exc_class: type) -> typing.Callable:
         def decorator(func):
             self.add_exception_handler(exc_class, func)
             return func

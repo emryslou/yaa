@@ -2,6 +2,7 @@ import os
 
 from yast.applications import Yast
 from yast.datastructures import Headers
+from yast.lifespan import LifeSpanContext
 from yast.requests import Request
 from yast.responses import PlainTextResponse, JSONResponse
 from yast.routing import Router
@@ -11,7 +12,7 @@ from yast.testclient import TestClient
 app = Yast()
 client = TestClient(app)
 
-@app.exception_handle(Exception)
+@app.exception_handler(Exception)
 async def error_500(req: Request, exc):
     return JSONResponse({'detail': 'oo....ooo'}, status_code=500)
 
@@ -124,3 +125,24 @@ def test_app_add_middleware():
     res = client.get('/')
     assert res.status_code == 200
     assert res.text == 'Hello, func_homepage'
+
+
+def test_app_add_event_handler():
+    startup_complete = False
+    cleanup_complete = False
+    app = Yast()
+    def run_startup():
+        nonlocal startup_complete
+        startup_complete = True
+    def run_cleanup():
+        nonlocal cleanup_complete
+        cleanup_complete = True
+    app.add_event_handler("startup", run_startup)
+    app.add_event_handler("cleanup", run_cleanup)
+    assert not startup_complete
+    assert not cleanup_complete
+    with LifeSpanContext(app):
+        assert startup_complete
+        assert not cleanup_complete
+    assert startup_complete
+    assert cleanup_complete

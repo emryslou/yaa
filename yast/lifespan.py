@@ -24,10 +24,15 @@ class LifeSpanHandler(object):
     
     def on_event(self, event_type: str) -> typing.Callable:
         def decorator(func):   
-            self.handlers[EventType(event_type)].append(func)
+            self.add_event_handler(event_type, func)
             return func
         
         return decorator
+    
+    def add_event_handler(
+            self, event_type: str, func: typing.Callable
+        ) -> None:
+        self.handlers[EventType(event_type)].append(func)
     
     async def run_handler(self, event_type: EventType) -> None:
         assert event_type in self.handlers, f'EventType "{str(event_type)}" not supported'
