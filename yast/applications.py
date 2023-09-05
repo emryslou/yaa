@@ -2,6 +2,7 @@ from asyncio import iscoroutinefunction
 import inspect
 import typing
 
+from yast.graphql import GraphQLApp
 from yast.lifespan import LifeSpanHandler, EventType
 from yast.middlewares import ExceptionMiddleware
 from yast.requests import Request
@@ -106,6 +107,17 @@ class Yast(object):
         instance = Path(path, route, protocol='websocket')
         self.router.routes.append(instance)
     
+    def add_route_graphql(
+            self, path: str,
+            schema: typing.Any,
+            executor: typing.Any = None
+        ) -> None:
+        self.add_route(
+                path,
+                GraphQLApp(schema=schema, executor=executor),
+                methods=['GET', 'POST']
+            )
+
     def add_middleware(
             self,
             middleware_class: type,

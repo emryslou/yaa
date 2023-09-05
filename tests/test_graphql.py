@@ -77,6 +77,15 @@ def test_graphiql_get():
     assert "<!DOCTYPE html>" in response.text
 
 
+def test_add_graphql_route():
+    from yast import Yast
+    app = Yast()
+    app.add_route_graphql("/", schema)
+    client = TestClient(app)
+    response = client.get("/?query={ hello }")
+    assert response.status_code == 200
+    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+
 class AsyncQuery(graphene.ObjectType):
     hello = graphene.String(name=graphene.String(default_value='stranger'))
 
