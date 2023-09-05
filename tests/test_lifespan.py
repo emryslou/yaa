@@ -11,7 +11,7 @@ def test_lifespan_sync():
         nonlocal su_done
         su_done = True
     
-    @handler.on_event('cleanup')
+    @handler.on_event('shutdown')
     def fn_cu():
         nonlocal cu_done
         cu_done = True
@@ -35,7 +35,7 @@ def test_lifespan_async():
         nonlocal su_done
         su_done = True
     
-    @handler.on_event('cleanup')
+    @handler.on_event('shutdown')
     async def fn_cu():
         nonlocal cu_done
         cu_done = True
@@ -62,7 +62,7 @@ def test_lifespan_app():
         nonlocal su_done
         su_done = True
     
-    @handler.on_event('cleanup')
+    @handler.on_event('shutdown')
     async def fn_cu():
         nonlocal cu_done
         cu_done = True
