@@ -10,7 +10,7 @@ from yast.types import ASGIApp, Scope, ASGIInstance
 
 class Yast(object):
     def __init__(self, debug: bool = False) -> None:
-        self.router = Router()
+        self.router = Router(routes=[])
         self.lifespan_handler = LifeSpanHandler()
         self.app = self.router
         self.exception_middleware = ExceptionMiddleware(
@@ -70,7 +70,7 @@ class Yast(object):
             schema: typing.Any,
             executor: typing.Any = None
         ) -> None:
-        self.add_route_graphql(path, schema=schema)
+        self.router.add_route_graphql(path, schema=schema)
 
     def add_middleware(
             self,
