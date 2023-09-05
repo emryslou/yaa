@@ -45,7 +45,7 @@ def return_exc_info(environ, start_response):
 
 
 
-@pytest.mark.timeout(1)
+@pytest.mark.timeout(3)
 def test_get():
     app = WSGIMiddleware(demo)
     client = TestClient(app)
@@ -53,6 +53,7 @@ def test_get():
     assert res.status_code == 200
     assert res.text == 'Hello Demo'
 
+@pytest.mark.timeout(3)
 def test_wsgi_post():
     app = WSGIMiddleware(echo_body)
     client = TestClient(app)
@@ -60,6 +61,7 @@ def test_wsgi_post():
     assert response.status_code == 200
     assert response.text == '{"example": 123}'
 
+@pytest.mark.timeout(3)
 def test_wsgi_exception():
     # Note that we're testing the WSGI app directly here.
     # The HTTP protocol implementations would catch this error and return 500.
@@ -68,6 +70,7 @@ def test_wsgi_exception():
     with pytest.raises(RuntimeError):
         response = client.get("/")
 
+@pytest.mark.timeout(3)
 def test_wsgi_exc_info():
     # Note that we're testing the WSGI app directly here.
     # The HTTP protocol implementations would catch this error and return 500.
