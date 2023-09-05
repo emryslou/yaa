@@ -131,10 +131,8 @@ class Response:
 class HTMLResponse(Response):
     media_type = "text/html"
 
-
 class PlainTextResponse(Response):
     media_type = 'text/plain'
-
 
 class JSONResponse(Response):
     media_type = "application/json"
@@ -148,14 +146,11 @@ class JSONResponse(Response):
                 separators=(',', ':'),
             ).encode("utf-8")
 
-
 class UJSONResponse(JSONResponse):
     def render(self, content: typing.Any) -> bytes:
         return json.dumps(
                 content, ensure_ascii=False,
             ).encode("utf-8")
-
-
 
 class StreamingResponse(Response):
     def __init__(
@@ -189,7 +184,6 @@ class StreamingResponse(Response):
                 chunk = chunk.encode(self.charset)
             await send({ "type": "http.response.body", "body": chunk, "more_body": True })
         await send({ "type": "http.response.body", "body": b"", "more_body": False })
-
 
 class FileResponse(Response):
     """ File Response """
@@ -258,7 +252,6 @@ class FileResponse(Response):
                     'body': chunk,
                     'more_body': more_body,
                 })
-
 
 class RedirectResponse(Response):
     def __init__(self, url: typing.Union[str, URL], status_code=302, headers: dict =None):
