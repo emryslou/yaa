@@ -1,5 +1,5 @@
 # v0.2.3
-
+1. graphql: add graphiql
 # v0.2.2
 1. middleware cors: support `allow_origin_regex`
 2. support lifespan app.on_event: startup, cleanup
