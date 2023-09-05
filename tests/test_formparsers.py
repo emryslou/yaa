@@ -19,14 +19,12 @@ def app(scope):
         for k, v in data.items():
             if isinstance(v, UploadFile):
                 content = await v.read()
-                print('debug -- 09', content)
                 output[k] = {
                         'filename': v.filename, 'content': content.decode()
                     }
             else:
                 output[k] = v
         await req.close()
-        print('debug -- 11', output)
         res = JSONResponse(output)
         await res(receive, send)
 
