@@ -35,7 +35,7 @@ class LifeSpanHandler(object):
         event_types = [EventType(event_type)]
 
         if EventType(event_type) in (EventType.CLEANUP, EventType.SHUTDOWN):
-            event_types += (EventType.CLEANUP, EventType.SHUTDOWN)
+            event_types = [EventType.SHUTDOWN]
             
         [
             self.handlers[et].append(func)
@@ -55,7 +55,9 @@ class LifeSpanHandler(object):
         return self.run_lifespan
 
     async def run_lifespan(self, receive: Receive, send: Send):
-        for it in list(EventType):
+        for it in self.handlers.keys():
+            if it == EventType.CLEANUP:
+                continue
             message = await receive()
             await self.run_handler(it)
             await send({'type': f"lifespan.{it.value}.complete"})

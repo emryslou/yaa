@@ -232,8 +232,15 @@ class FileResponse(Response):
 
     async def __call__(self, receive: Receive, send: Send) -> None:
         if self.stat_result is None:
-            stat_result = await aio_stat(self.path)
-            self.set_stat_headers(stat_result)
+            try:
+                stat_result = await aio_stat(self.path)
+                self.set_stat_headers(stat_result)
+            except FileNotFoundError:
+                raise RuntimeError(f'File at path {self.path} does not exists.')
+            else:
+                mode = stat_result.st_mode
+                if not stat.S_ISREG(mode):
+                    raise RuntimeError(f'File at path {self.path} is not a file.')
             
         await send({
             'type': 'http.response.start',

@@ -1,45 +1,7 @@
 import os
 import pytest
 from yast import TestClient
-from yast.staticfiles import StaticFiles, StaticFile
-
-
-def test_staticfile(tmpdir):
-    path = os.path.join(tmpdir, "example.txt")
-    with open(path, 'w') as file:
-        file.write('<file content>')
-    
-    app = StaticFile(path=path)
-
-    client = TestClient(app)
-    res = client.get('/')
-    assert res.status_code == 200
-    assert res.text == '<file content>'
-
-    res = client.post('/')
-    assert res.status_code == 405
-    assert res.text == 'Method Not Allowed'
-
-
-def test_staticfile_with_directory_raise_error(tmpdir):
-    app = StaticFile(path=tmpdir)
-
-    client = TestClient(app)
-    
-    with pytest.raises(RuntimeError) as exc:
-        res = client.get('/')
-    
-    assert 'is not a file' in str(exc)
-
-
-    app = StaticFile(path=os.path.join(tmpdir, '404.txt'))
-
-    client = TestClient(app)
-    
-    with pytest.raises(RuntimeError) as exc:
-        res = client.get('/')
-    
-    assert 'does not found' in str(exc)
+from yast.staticfiles import StaticFiles
 
 
 def test_staticfiles(tmpdir):
@@ -96,20 +58,3 @@ def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
     response = app({'type': 'http', 'method': 'GET', 'path': '/../example.txt'})
     assert response.status_code == 404
     assert response.body == b"Not Found"
-
-
-def test_staticfile_largefile(tmpdir):
-    path = os.path.join(tmpdir, "example.txt")
-    content = "this is a lot of content" * 200
-    with open(path, "w") as file:
-        file.write(content)
-    app = StaticFile(path=path)
-    client = TestClient(app)
-    response = client.get("/")
-    assert response.status_code == 200
-    assert len(content) == len(response.text)
-    assert content == response.text
-
-
-if __name__ == '__main__':
-    test_staticfiles('.')

@@ -7,18 +7,6 @@ from yast.types import Scope
 from yast.responses import PlainTextResponse, FileResponse
 
 
-class StaticFile(object):
-    def __init__(self, *, path) -> None:
-        self.path = path
-    
-    def __call__(self, scope: Scope):
-        assert scope['type'] == 'http'
-        if scope['method'] not in ('GET', 'HEAD'):
-            return PlainTextResponse('Method Not Allowed', status_code=405)
-        
-        return _StaticFileResponser(scope, self.path) 
-
-
 class StaticFiles(object):
     def __init__(self, *, directory) -> None:
         self.directory = directory
@@ -42,27 +30,6 @@ class StaticFiles(object):
         
         return _StaticFilesResponser(scope, path, check_directory)
 
-
-class _StaticFileResponser(object):
-    def __init__(self, scope, path):
-        self.scope = scope
-        self.path = path
-    
-    async def __call__(self, receive, send):
-        try:
-            stat_result = await aio_stat(self.path)
-        except FileNotFoundError:
-            raise RuntimeError('StaticFile path "%s" does not found.' % self.path)
-        else:
-            mode =stat_result.st_mode
-            if not stat.S_ISREG(mode):
-                raise RuntimeError('StaticFile path "%s" is not a file.' % self.path)
-            
-            res = FileResponse(self.path, stat_result=stat_result)
-
-            await res(receive, send)
-
-    
 
 class _StaticFilesResponser(object):
     def __init__(self, scope, path, check_directory=None):

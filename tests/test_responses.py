@@ -196,3 +196,21 @@ def test_response_ujson():
     client = TestClient(app)
     res = client.get('/')
     assert res.json() == {'hello': 'usjon'}
+
+
+def test_file_response_with_directory_raises_error(tmpdir):
+    def app(scope):
+        return FileResponse(path=tmpdir, filename="example.png")
+    client = TestClient(app)
+    with pytest.raises(RuntimeError) as exc:
+        client.get("/")
+    assert "is not a file" in str(exc)
+    
+def test_file_response_with_missing_file_raises_error(tmpdir):
+    path = os.path.join(tmpdir, "404.txt")
+    def app(scope):
+        return FileResponse(path=path, filename="404.txt")
+    client = TestClient(app)
+    with pytest.raises(RuntimeError) as exc:
+        client.get("/")
+    assert "does not exist" in str(exc)
