@@ -3,18 +3,16 @@ import enum
 import io
 import tempfile
 import typing
-
-from yast.datastructures import Headers
-
+from urllib.parse import unquote
 
 try:
     from multipart.multipart import parse_options_header
     import multipart
 except ImportError as ierr:
-    print('import error', ierr)
     parse_options_header = None
     multipart = None 
 
+from yast.datastructures import Headers
 
 class FormMessage(enum.Enum):
     FIELD_START = 1
@@ -119,7 +117,7 @@ class FormParser(object):
                 elif msg_type == FormMessage.FIELD_DATA:
                     field_value += msg_bytes
                 elif msg_type == FormMessage.FIELD_END:
-                    result[field_name.decode('latin-1')] = field_value.decode('latin-1')
+                    result[field_name.decode('latin-1')] = unquote(field_value.decode('latin-1'))
                 elif msg_type == FormMessage.END:
                     pass
         
