@@ -1,11 +1,16 @@
-import typing
+from asyncio import iscoroutinefunction
+from concurrent.futures import ThreadPoolExecutor
+import inspect
 import re
-from typing import Any
+import typing
+
 
 from yast.exceptions import HttpException
+from yast.graphql import GraphQLApp
+from yast.requests import Request
 from yast.responses import Response, PlainTextResponse
-from yast.types import Scope, ASGIApp, ASGIInstance
-from yast.websockets import WebSocketClose
+from yast.types import Scope, ASGIApp, ASGIInstance, Receive, Send
+from yast.websockets import WebSocketClose, WebSocket
 
 
 
@@ -94,9 +99,39 @@ class Router(object):
             self, routes: typing.List[Route]=[],
             default: ASGIApp=None
         ) -> None:
-        self.routes = routes
+        self.routes = [] if routes is None else routes
         self.default = self.not_found if default is None else default
+        self.executor = ThreadPoolExecutor()
+
+    def mount(
+            self, path: str, app: ASGIApp,
+            methods: typing.Sequence[str]
+        ) -> None:
+        prefix = PathPrefix(path, app=app, methods=methods)
+        self.routes.append(prefix)
     
+    def add_route(
+            self, path: str, route: typing.Callable, 
+            methods: typing.Sequence[str] = None
+        ) -> None:
+        if not inspect.isclass(route):
+            route = req_res(route)
+            methods = ('GET',) if methods is None else methods
+        instance = Path(path, route, protocol='http', methods=methods)
+        self.routes.append(instance)
+    
+    def add_route_graphql(
+            self, path: str, schema: typing.Any, 
+            executor: typing.Any = None
+        ) -> None:
+        route = GraphQLApp(schema=schema, executor=executor)
+        self.add_route(path=path, route=route, methods=['GET', 'POST'])
+    
+    def add_route_ws(self, path, route: typing.Callable) -> None:
+        if not inspect.isclass(route):
+            route = ws_session(route)
+        instance = Path(path, route, protocol='websocket')
+        self.routes.append(instance)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         assert scope['type'] in ('http', 'websocket')
@@ -122,3 +157,34 @@ class ProtocalRouter(object):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         return self.protocals[scope['type']](scope)
+
+
+def req_res(func: typing.Callable):
+    is_coroutine = iscoroutinefunction(func)
+
+    def app(scope: Scope) -> ASGIInstance:
+        async def awaitable(recv: Receive, send: Send) -> None:
+            req = Request(scope, recv)
+            kwargs = scope.get('kwargs', {})
+            if is_coroutine:
+                res = await func(req, **kwargs)
+            else:    
+                res = func(req, **kwargs)
+            
+            await res(recv, send)
+
+        return awaitable
+
+    return app
+
+
+
+def ws_session(func: typing.Callable):
+    def app(scope: Scope) -> ASGIInstance:
+        async def awaitable(recv: Receive, send: Send) -> None:
+            session = WebSocket(scope, recv, send)
+            await func(session, **scope.get('kwargs', {}))
+
+        return awaitable
+
+    return app

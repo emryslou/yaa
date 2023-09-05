@@ -146,3 +146,41 @@ def test_app_add_event_handler():
         assert not cleanup_complete
     assert startup_complete
     assert cleanup_complete
+
+
+def test_add_route():
+    from yast import TestClient
+    from yast.responses import PlainTextResponse
+    
+    app = Yast()
+
+    async def homepage(_):
+        return PlainTextResponse('homepage')
+    
+
+    app.add_route('/homepage', homepage)
+    client = TestClient(app)
+
+    res = client.get('/homepage')
+    assert res.status_code == 200
+    assert res.text == 'homepage'
+
+
+def test_add_ws():
+    from yast import TestClient
+    from yast.responses import PlainTextResponse
+    
+    app = Yast()
+
+    async def ws_endpoint(ss):
+        await ss.accept()
+        await ss.send_text('Hello Ws')
+        await ss.close()
+    
+
+    app.add_route_ws('/homepage', ws_endpoint)
+    client = TestClient(app)
+
+    with client.wsconnect('/homepage') as ss:
+        text = ss.receive_text()
+        assert text == 'Hello Ws'

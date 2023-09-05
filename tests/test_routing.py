@@ -138,3 +138,28 @@ def test_protocal_switch():
     
     with pytest.raises(WebSocketDisconnect):
         client.wsconnect('/404')
+
+
+def test_router():
+    from yast import Yast
+    app = Yast()
+
+    @app.route('/func')
+    def func_homepage(_):
+        return Response('Hello Func HomePage', media_type='text/plain')
+    
+    @app.ws_route('/ws')
+    async def ws_endpoint(ss):
+        await ss.accept()
+        await ss.send_text('Hello, Ws')
+        await ss.close()
+    
+    client = TestClient(app)
+    res = client.get('/func')
+    assert res.status_code == 200
+    assert res.text == 'Hello Func HomePage'
+
+    with client.wsconnect('/ws') as ss:
+        text = ss.receive_text()
+        assert text == 'Hello, Ws'
+    

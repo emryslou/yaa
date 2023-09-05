@@ -5,43 +5,12 @@ import typing
 from yast.graphql import GraphQLApp
 from yast.lifespan import LifeSpanHandler, EventType
 from yast.middlewares import ExceptionMiddleware
-from yast.requests import Request
-from yast.responses import Response
-from yast.routing import Route, Router, Path, PathPrefix
-from yast.types import ASGIApp, Scope, ASGIInstance, Send, Receive
-from yast.websockets import WebSocket
-
-def req_res(func: typing.Callable):
-    is_coroutine = iscoroutinefunction(func)
-
-    def app(scope: Scope) -> ASGIInstance:
-        async def awaitable(recv: Receive, send: Send) -> None:
-            req = Request(scope, recv)
-            kwargs = scope.get('kwargs', {})
-            if is_coroutine:
-                res = await func(req, **kwargs)
-            else:    
-                res = func(req, **kwargs)
-            
-            await res(recv, send)
-
-        return awaitable
-
-    return app
-
-def ws_session(func: typing.Callable):
-    def app(scope: Scope) -> ASGIInstance:
-        async def awaitable(recv: Receive, send: Send) -> None:
-            session = WebSocket(scope, recv, send)
-            await func(session, **scope.get('kwargs', {}))
-
-        return awaitable
-
-    return app
+from yast.routing import Route, Router
+from yast.types import ASGIApp, Scope, ASGIInstance
 
 class Yast(object):
     def __init__(self, debug: bool = False) -> None:
-        self.router = Router(routes=[])
+        self.router = Router()
         self.lifespan_handler = LifeSpanHandler()
         self.app = self.router
         self.exception_middleware = ExceptionMiddleware(
@@ -68,8 +37,7 @@ class Yast(object):
             self, path: str,
             app: ASGIApp, methods:list[str] = None
         ) -> None:
-        prefix = PathPrefix(path, app=app, methods=methods)
-        self.router.routes.append(prefix)
+        self.router.mount(path, app=app, methods=methods)
     
     def add_exception_handler(
             self, exc_class: type,
@@ -88,35 +56,21 @@ class Yast(object):
             self, path: str,
             route: typing.Union[typing.Callable, Route],
             methods: list[str] = None
-        ) -> None:
-        if not inspect.isclass(route):
-            route = req_res(route)
-            if methods is None:
-                methods = ['GET']
-            
-        self.router.routes.append(
-            Path(path, route, protocol='http', methods=methods)
-        )
+        ) -> None:    
+        self.router.add_route(path, route, methods=methods)
     
     def add_route_ws(
             self, path: str,
             route: typing.Union[typing.Callable, Route]
         ) -> None:
-        if not inspect.isclass(route):
-            route = ws_session(route)
-        instance = Path(path, route, protocol='websocket')
-        self.router.routes.append(instance)
+        self.router.add_route_ws(path, route)
     
     def add_route_graphql(
             self, path: str,
             schema: typing.Any,
             executor: typing.Any = None
         ) -> None:
-        self.add_route(
-                path,
-                GraphQLApp(schema=schema, executor=executor),
-                methods=['GET', 'POST']
-            )
+        self.add_route_graphql(path, schema=schema)
 
     def add_middleware(
             self,
@@ -127,20 +81,21 @@ class Yast(object):
     
     def route(self, path: str, methods: list[str] = None) -> typing.Callable:
         def decorator(func):
-            self.add_route(path, func, methods)
+            self.router.add_route(path, func, methods)
             return func
         
         return decorator
     
     def ws_route(self, path: str) -> typing.Callable:
         def decorator(func):
-            self.add_route_ws(path, func)
+            self.router.add_route_ws(path, func)
             return func
         
         return decorator
 
     def __call__(self, scope: Scope) -> ASGIInstance:
+        scope['app'] = self
         if scope['type'] == 'lifespan':
             return self.lifespan_handler(scope)
-        scope['app'] = self
+        
         return self.exception_middleware(scope)
