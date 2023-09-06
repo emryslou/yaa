@@ -18,6 +18,12 @@ async def us(req):
     return JSONResponse({"session": req.session})
 
 
+@app.route("/cs", methods=["POST"])
+async def cs(req):
+    req.session.clear()
+    return JSONResponse({"session": req.session})
+
+
 def test_session():
     client = TestClient(app)
     res = client.get("/vs")
@@ -27,3 +33,8 @@ def test_session():
     res = client.post("/us", json={"hello": "session"})
     assert res.status_code == 200
     assert res.json() == {"session": {"hello": "session"}}
+
+    response = client.post("/cs")
+    assert response.json() == {"session": {}}
+    response = client.get("/vs")
+    assert response.json() == {"session": {}}
