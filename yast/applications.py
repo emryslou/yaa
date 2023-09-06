@@ -95,11 +95,12 @@ class Yast(object):
         
         return decorator
 
-    def url_for(self, name, **path_params: str) -> str:
-        return self.router.url_for(name=name, **path_params)
+    def url_path_for(self, name, **path_params: str) -> str:
+        return self.router.url_path_for(name=name, **path_params)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope['app'] = self
+        scope['router'] = self.router
         if scope['type'] == 'lifespan':
             return self.lifespan_handler(scope)
         

@@ -6,7 +6,7 @@ from yast.responses import Response, FileResponse, RedirectResponse, HTMLRespons
 from yast.requests import Request
 from yast.staticfiles import StaticFiles
 from yast.endpoints import HttpEndPoint, WebSocketEndpoint
-from yast.routing import Path
+from yast.routing import Route
 from yast.websockets import WebSocket, WebSocketDisconnect
 
 app = Yast()
@@ -56,7 +56,7 @@ class YaWs(object):
                 break
 
 app.add_route_ws('/yaws', route=YaWs)
-app.add_route('/demo', route=Path('/', app=Demo))
+app.add_route('/demo', route=Route('/', endpoint=Demo))
 
 @app.on_event('startup')
 def run_startup():

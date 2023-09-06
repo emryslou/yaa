@@ -5,9 +5,14 @@ from yast.types import Scope, StrDict, StrPairs
 
 
 class URL(object):
-    def __init__(self, url: str = '', scope: Scope = None) -> None:
+    def __init__(
+            self, url: str = '',
+            scope: Scope = None,
+            **components: typing.Any
+        ) -> None:
         if scope is not None:
-            assert not url, 'Cannot set both "url" and "scope"'
+            assert not url, 'Cannot set both `url` and `scope`'
+            assert not components, 'Cannot set both `**components` and `scope`'
             scheme = scope.get('scheme', 'http')
             path = scope.get('root_path', '') + scope['path']
             query_string = scope['query_string']
@@ -28,7 +33,9 @@ class URL(object):
             
             if query_string:
                 url += '?' + unquote(query_string.decode())
-        
+        elif components:
+            assert not url, 'Cannot set both `components` and `scope`'
+            url = URL('').replace(**components).components.geturl()
         self._url = url
     
     @property
@@ -78,6 +85,10 @@ class URL(object):
     def port(self) -> typing.Optional[int]:
         return self.components.port
 
+    @property
+    def is_secure(self) -> bool:
+        return self.scheme in ('https', 'wss')
+
     def replace(self, **kwargs: typing.Any) -> "URL": # type: ignore
 
         if 'hostname' in kwargs or 'port' in kwargs:
@@ -89,6 +100,13 @@ class URL(object):
             else:
                 kwargs['netloc'] = '%s:%d' % (hostname, port)
 
+        if 'secure' in kwargs:
+            secure = kwargs.pop('secure')
+            if self.scheme.startswith('http'):
+                kwargs['scheme'] = 'https' if secure else 'http'
+            elif self.scheme.startswith('ws'):
+                kwargs['scheme'] = 'wss' if secure else 'ws'
+
         components = self.components._replace(**kwargs)
         return URL(components.geturl())
     
@@ -96,6 +114,8 @@ class URL(object):
         return str(self) == str(other)
     
     def __str__(self):
+        if self.scheme and not self.netloc:
+            return str(self.replace(scheme=''))
         return self._url
     
     def __repr__(self):

@@ -94,9 +94,9 @@ def test_websocket():
         assert text == 'Hello, Ws at abcd'
 
 def test_url_for():
-    assert app.url_for('home') == '/'
-    assert app.url_for('users', username='eml') == '/users/eml'
-    assert app.url_for('users') == '/users'
+    assert app.url_path_for('home') == '/'
+    assert app.url_path_for('users', username='eml') == '/users/eml'
+    assert app.url_path_for('users') == '/users'
 
 
 def test_endpoint():
