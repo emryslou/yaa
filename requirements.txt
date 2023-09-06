@@ -1,3 +1,4 @@
+# Optionals
 requests
 aiofiles
 ujson
@@ -7,8 +8,12 @@ graphene
 isort
 itsdangerous
 
-# Testing & Linting
+# Testing
 pytest
 pytest-cov
 pytest-timeout
 black
+
+# Documentation
+mkdocs
+mkdocs-material
