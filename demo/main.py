@@ -8,9 +8,12 @@ from yast.staticfiles import StaticFiles
 from yast.endpoints import HttpEndPoint, WebSocketEndpoint
 from yast.routing import Route
 from yast.websockets import WebSocket, WebSocketDisconnect
+from yast.middlewares import SessionMiddleware, BaseHttpMiddleware
+
 
 app = Yast()
 
+app.add_middleware(SessionMiddleware, secret_key='test')
 
 app.mount('/static', StaticFiles(directory='demo/static'))
 

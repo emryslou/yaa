@@ -26,7 +26,6 @@ class SessionMiddleware(object):
                 scope["session"] = json.loads(b64decode(data))
             else:
                 scope["session"] = {}
-
             return functools.partial(self.asgi, scope=scope)
 
         return self.app(scope)
@@ -41,16 +40,22 @@ class SessionMiddleware(object):
                     data = b64encode(json.dumps(scope["session"]).encode())
                     data = self.signer.sign(data)
                     headers = MutableHeaders(scope=message)
-                    header_value = "%s=%s" % (self.session_cookie, data.decode("utf-8"))
+                    header_value = "%s=%s" % (
+                            self.session_cookie, data.decode("utf-8")
+                        )
                     headers.append("Set-Cookie", header_value)
+                    print('debug  -- 01 - 0', headers)
+                    message['headers'] = headers.getlist()
                 elif not was_empty_session:
                     headers = MutableHeaders(scope=message)
                     header_value = "%s=%s" % (
                         self.session_cookie,
-                        "nul; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT",
+                        "null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT",
                     )
                     headers.append("Set-Cookie", header_value)
-                # message["header"] = headers
+                else:
+                    # todo nothing
+                    pass
             await send(message)
 
         await inner(receive, sender)
