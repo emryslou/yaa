@@ -6,8 +6,8 @@ import typing
 from urllib.parse import unquote
 
 try:
-    from multipart.multipart import parse_options_header
     import multipart
+    from multipart.multipart import parse_options_header
 except ImportError as ierr:
     parse_options_header = None
     multipart = None

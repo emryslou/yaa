@@ -1,7 +1,8 @@
-import pytest
 import os
 
-from yast.responses import Response, StreamingResponse, FileResponse, RedirectResponse
+import pytest
+
+from yast.responses import FileResponse, RedirectResponse, Response, StreamingResponse
 from yast.testclient import TestClient
 
 

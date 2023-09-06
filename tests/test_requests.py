@@ -1,9 +1,10 @@
 import asyncio
+
 import pytest
 
 from yast import TestClient
+from yast.requests import ClientDisconnect, Request
 from yast.responses import JSONResponse
-from yast.requests import Request, ClientDisconnect
 
 
 def test_request_url():
@@ -207,7 +208,7 @@ def test_request_disconnect():
 
 
 def test_request_cookies():
-    from yast.responses import Response, PlainTextResponse
+    from yast.responses import PlainTextResponse, Response
 
     def app(scope):
         async def asgi(receive, send):

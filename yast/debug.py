@@ -1,9 +1,9 @@
-import traceback
 import html
+import traceback
 
 from yast.datastructures import Headers
 from yast.requests import Request
-from yast.responses import Response, PlainTextResponse, HTMLResponse
+from yast.responses import HTMLResponse, PlainTextResponse, Response
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 

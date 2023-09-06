@@ -1,7 +1,7 @@
 import pytest
 
-from yast import TestClient
 import yast.status as status
+from yast import TestClient
 from yast.websockets import WebSocket, WebSocketDisconnect
 
 

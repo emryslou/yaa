@@ -1,6 +1,6 @@
 import pytest
 
-from yast.lifespan import LifeSpanHandler, LifeSpanContext, EventType
+from yast.lifespan import EventType, LifeSpanContext, LifeSpanHandler
 
 
 def test_lifespan_sync():

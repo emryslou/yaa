@@ -1,16 +1,16 @@
-from asyncio import iscoroutinefunction
-from concurrent.futures import ThreadPoolExecutor
 import inspect
 import re
 import typing
+from asyncio import iscoroutinefunction
+from concurrent.futures import ThreadPoolExecutor
 
 from yast.datastructures import URL
 from yast.exceptions import HttpException
 from yast.graphql import GraphQLApp
 from yast.requests import Request
-from yast.responses import Response, PlainTextResponse
-from yast.types import Scope, ASGIApp, ASGIInstance, Receive, Send
-from yast.websockets import WebSocketClose, WebSocket
+from yast.responses import PlainTextResponse, Response
+from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
+from yast.websockets import WebSocket, WebSocketClose
 
 
 class NoMatchFound(Exception):

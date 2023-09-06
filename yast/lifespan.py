@@ -2,7 +2,7 @@ import asyncio
 import enum
 import typing
 
-from yast.types import ASGIApp, Scope, Receive, Send, Message
+from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 STATE_TRANSITION_ERROR = "Got invalid state transition on lifespan protocal"
 

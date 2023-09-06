@@ -4,6 +4,7 @@ ujson
 python-multipart
 graphql-core < 3
 graphene
+isort
 
 # Testing & Linting
 pytest

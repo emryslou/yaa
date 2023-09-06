@@ -1,5 +1,5 @@
 from yast.datastructures import URL
-from yast.responses import Response, RedirectResponse
+from yast.responses import RedirectResponse, Response
 from yast.types import ASGIApp, Scope
 
 

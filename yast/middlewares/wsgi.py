@@ -1,10 +1,10 @@
 import asyncio
 import io
 import sys
-from concurrent.futures import ThreadPoolExecutor
 import typing
+from concurrent.futures import ThreadPoolExecutor
 
-from yast.types import ASGIApp, ASGIInstance, Scope, Receive, Send
+from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
 
 
 def build_environ(scope: Scope, body: bytes) -> dict:

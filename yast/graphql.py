@@ -1,23 +1,23 @@
 import asyncio
 import functools
-import ujson as json
 import typing
+
+import ujson as json
 
 try:
     import graphene
+    from graphql.error import GraphQLError, format_error as format_graphql_error
     from graphql.execution.executors.asyncio import AsyncioExecutor
-    from graphql.error import format_error as format_graphql_error
-    from graphql.error import GraphQLError
 except ImportError:
     graphene = None
     AsyncioExecutor = None
     format_graphql_error = None
     GraphQLError = None
 
-from yast.requests import Request
-from yast.responses import Response, PlainTextResponse, JSONResponse, HTMLResponse
 import yast.status as web_status
-from yast.types import ASGIInstance, Scope, Receive, Send
+from yast.requests import Request
+from yast.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from yast.types import ASGIInstance, Receive, Scope, Send
 
 
 class GraphQLApp(object):

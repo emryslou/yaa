@@ -1,12 +1,12 @@
-from asyncio import iscoroutinefunction
 import inspect
 import typing
+from asyncio import iscoroutinefunction
 
 from yast.graphql import GraphQLApp
-from yast.lifespan import LifeSpanHandler, EventType
+from yast.lifespan import EventType, LifeSpanHandler
 from yast.middlewares import ExceptionMiddleware
-from yast.routing import Route, Router, BaseRoute
-from yast.types import ASGIApp, Scope, ASGIInstance
+from yast.routing import BaseRoute, Route, Router
+from yast.types import ASGIApp, ASGIInstance, Scope
 
 
 class Yast(object):

@@ -5,7 +5,7 @@ from typing import Mapping
 from urllib.parse import unquote
 
 from yast.datastructures import URL, Headers, QueryParams
-from yast.types import Scope, Receive, Send, Message
+from yast.types import Message, Receive, Scope, Send
 
 
 class WebSocketState(enum.Enum):

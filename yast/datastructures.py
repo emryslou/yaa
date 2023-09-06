@@ -1,5 +1,5 @@
 import typing
-from urllib.parse import urlparse, parse_qsl, urlencode, unquote, ParseResult
+from urllib.parse import ParseResult, parse_qsl, unquote, urlencode, urlparse
 
 from yast.types import Scope, StrDict, StrPairs
 

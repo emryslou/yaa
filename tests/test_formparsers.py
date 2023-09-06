@@ -1,7 +1,7 @@
 from yast import TestClient
 from yast.formparsers import FormParser, UploadFile
 from yast.requests import Request
-from yast.responses import Response, JSONResponse
+from yast.responses import JSONResponse, Response
 
 
 class ForceMultipartDict(dict):

@@ -4,13 +4,12 @@ import json
 import os
 import stat
 import typing
-
 from email.utils import formatdate
 from mimetypes import guess_type
 from urllib.parse import quote_plus
 
 from yast.background import BackgroundTask
-from yast.datastructures import MutableHeaders, URL
+from yast.datastructures import URL, MutableHeaders
 from yast.types import Receive, Send
 
 try:

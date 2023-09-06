@@ -3,7 +3,7 @@ import io
 
 from yast.datastructures import Headers, MutableHeaders
 from yast.message_handler import MessageHandler, MessageType
-from yast.types import ASGIApp, ASGIInstance, Message, Scope, Receive, Send
+from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 
 class GZipMiddleware(object):

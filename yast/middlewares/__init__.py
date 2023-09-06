@@ -9,8 +9,8 @@ __all__ = [
 ]
 
 from .base import BaseHttpMiddleware
-from .exception import ExceptionMiddleware
 from .cors import CORSMiddleware
+from .exception import ExceptionMiddleware
 from .gzip import GZipMiddleware
 from .httpsredirect import HttpsRedirectMiddleware
 from .trustedhost import TrustedHostMiddleware

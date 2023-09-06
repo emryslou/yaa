@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 from yast import TestClient
 from yast.staticfiles import StaticFiles
 

@@ -1,7 +1,8 @@
-import pytest
 import typing
 
-from yast import Yast, TestClient
+import pytest
+
+from yast import TestClient, Yast
 from yast.middlewares import BaseHttpMiddleware
 from yast.requests import Request
 from yast.responses import PlainTextResponse

@@ -4,7 +4,7 @@ from yast.applications import Yast
 from yast.datastructures import Headers
 from yast.lifespan import LifeSpanContext
 from yast.requests import Request
-from yast.responses import PlainTextResponse, JSONResponse
+from yast.responses import JSONResponse, PlainTextResponse
 from yast.routing import Router
 from yast.staticfiles import StaticFiles
 from yast.testclient import TestClient

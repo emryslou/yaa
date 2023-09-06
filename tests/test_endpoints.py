@@ -1,10 +1,11 @@
-import pytest
 import typing
+
+import pytest
 
 from yast.endpoints import HttpEndPoint, WebSocketEndpoint
 from yast.requests import Request
 from yast.responses import PlainTextResponse
-from yast.routing import Router, Route
+from yast.routing import Route, Router
 from yast.testclient import TestClient
 from yast.websockets import WebSocket
 

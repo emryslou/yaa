@@ -4,8 +4,8 @@ import typing
 from yast.debug import get_debug_response
 from yast.exceptions import HttpException
 from yast.requests import Request
-from yast.responses import Response, PlainTextResponse
-from yast.types import ASGIApp, Scope, Receive, Send
+from yast.responses import PlainTextResponse, Response
+from yast.types import ASGIApp, Receive, Scope, Send
 
 
 class ExceptionMiddleware(object):

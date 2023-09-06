@@ -1,4 +1,4 @@
-from yast.datastructures import URL, QueryParams, Headers
+from yast.datastructures import URL, Headers, QueryParams
 
 
 def test_url():

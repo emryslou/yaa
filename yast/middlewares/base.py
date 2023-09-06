@@ -4,7 +4,7 @@ import typing
 
 from yast.requests import Request
 from yast.responses import StreamingResponse
-from yast.types import ASGIApp, ASGIInstance, Scope, Receive, Send
+from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
 
 
 class BaseHttpMiddleware(object):

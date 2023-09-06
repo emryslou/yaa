@@ -5,10 +5,9 @@ import json
 import queue
 import threading
 import typing
+from urllib.parse import unquote, urljoin, urlparse
+
 import requests
-
-
-from urllib.parse import unquote, urlparse, urljoin
 
 from yast.websockets import WebSocketDisconnect
 

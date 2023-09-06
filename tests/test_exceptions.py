@@ -1,10 +1,10 @@
 import pytest
 
 from yast import TestClient
-from yast.middlewares import ExceptionMiddleware
 from yast.exceptions import HttpException
+from yast.middlewares import ExceptionMiddleware
 from yast.responses import PlainTextResponse
-from yast.routing import Router, Route
+from yast.routing import Route, Router
 
 
 def raise_runtime_error(scope):

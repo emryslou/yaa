@@ -1,5 +1,5 @@
 from yast.datastructures import Headers
-from yast.responses import Response, PlainTextResponse
+from yast.responses import PlainTextResponse, Response
 from yast.types import ASGIApp, Scope
 
 ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."

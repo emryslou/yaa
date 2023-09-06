@@ -3,8 +3,8 @@ import stat
 
 from aiofiles.os import stat as aio_stat
 
+from yast.responses import FileResponse, PlainTextResponse
 from yast.types import Scope
-from yast.responses import PlainTextResponse, FileResponse
 
 
 class StaticFiles(object):

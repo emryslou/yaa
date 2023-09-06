@@ -1,5 +1,6 @@
-import pytest
 import sys
+
+import pytest
 
 from yast.middlewares import WSGIMiddleware
 from yast.middlewares.wsgi import build_environ

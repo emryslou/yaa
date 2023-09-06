@@ -1,13 +1,13 @@
+import http.cookies
 import json
 import typing
-import http.cookies
 from collections.abc import Mapping
-from urllib.parse import unquote
 from typing import Iterator
+from urllib.parse import unquote
 
-from yast.datastructures import QueryParams, Headers, URL
+from yast.datastructures import URL, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
-from yast.types import Scope, Receive, Message
+from yast.types import Message, Receive, Scope
 
 try:
     from multipart.multipart import parse_options_header
