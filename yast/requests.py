@@ -7,12 +7,16 @@ from typing import Iterator
 
 from yast.datastructures import QueryParams, Headers, URL
 from yast.formparsers import FormParser, MultiPartParser
-from yast.types import Scope, Receive
+from yast.types import Scope, Receive, Message
 
 try:
     from multipart.multipart import parse_options_header
 except ImportError:
     parse_options_header = None
+
+
+async def empty_receive() -> Message:
+    raise RuntimeError('Receive channel has not been made avaible')
 
 
 class ClientDisconnect(Exception):
@@ -25,7 +29,7 @@ class Request(Mapping):
             receive: Receive = None
         ):
         self._scope = scope
-        self._receive = receive
+        self._receive = empty_receive if receive is None else receive
         self._stream_consumed = False
         self._cookies = None
 
@@ -93,6 +97,10 @@ class Request(Mapping):
                     cookies[k] = morse.value
             self._cookies = cookies
         return self._cookies
+
+    @property
+    def receive(self):
+        return self._receive
 
     def url_for(self, name: str, **path_params: typing.Any) -> URL:
         router = self._scope['router']

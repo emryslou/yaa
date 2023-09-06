@@ -5,11 +5,13 @@ __all__ = [
     'HttpsRedirectMiddleware',
     'TrustedHostMiddleware',
     'WSGIMiddleware',
+    'BaseHttpMiddleware',
 ]
 
+from .base import BaseHttpMiddleware
 from .exception import ExceptionMiddleware
 from .cors import CORSMiddleware
+from .gzip import GZipMiddleware
 from .httpsredirect import HttpsRedirectMiddleware
 from .trustedhost import TrustedHostMiddleware
-from .gzip import GZipMiddleware
 from .wsgi import WSGIMiddleware
