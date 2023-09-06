@@ -5,6 +5,7 @@ python-multipart
 graphql-core < 3
 graphene
 isort
+itsdangerous
 
 # Testing & Linting
 pytest

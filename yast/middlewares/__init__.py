@@ -13,5 +13,6 @@ from .cors import CORSMiddleware
 from .exception import ExceptionMiddleware
 from .gzip import GZipMiddleware
 from .httpsredirect import HttpsRedirectMiddleware
+from .sessions import SessionMiddleware
 from .trustedhost import TrustedHostMiddleware
 from .wsgi import WSGIMiddleware

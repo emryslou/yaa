@@ -307,6 +307,11 @@ class MutableHeaders(Headers):
         for key, val in other.items():
             self[key] = val
 
+    def append(self, key: str, value: str) -> None:
+        app_key = key.lower().encode("latin-1")
+        app_val = value.encode("latin-1")
+        self._list.append((app_key, app_val))
+
     def add_vary_header(self, vary):
         existing = self.get("vary")
         if existing is not None:

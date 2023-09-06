@@ -98,6 +98,10 @@ class Request(Mapping):
     def receive(self):
         return self._receive
 
+    @property
+    def session(self):
+        return self._scope["session"]
+
     def url_for(self, name: str, **path_params: typing.Any) -> URL:
         router = self._scope["router"]
         url = router.url_path_for(name, **path_params)
