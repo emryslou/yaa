@@ -8,17 +8,17 @@ def test_httpsredirect():
 
     app = Yast()
 
-    @app.route('/')
+    @app.route("/")
     async def home(_):
-        return PlainTextResponse('OK')
-    
+        return PlainTextResponse("OK")
+
     app.add_middleware(HttpsRedirectMiddleware)
 
-    client = TestClient(app, base_url='https://testserver')
-    res = client.get('/?type=https')
+    client = TestClient(app, base_url="https://testserver")
+    res = client.get("/?type=https")
     assert res.status_code == 200
 
     client = TestClient(app)
-    res = client.get('/?type=http', allow_redirects=False)
+    res = client.get("/?type=http", allow_redirects=False)
     assert res.status_code == 301
-    assert res.headers['location'] == 'https://testserver/?type=http'
+    assert res.headers["location"] == "https://testserver/?type=http"

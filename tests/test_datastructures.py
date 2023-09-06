@@ -1,28 +1,29 @@
 from yast.datastructures import URL, QueryParams, Headers
 
-def test_url():
-    url = URL('http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff')
-    assert url == 'http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff'
-    assert url.scheme == 'http'
-    assert url.netloc == 'user:passwd@www.baidu.com:443'
-    assert url.path == '/abcd/test.php'
-    assert url.params == ''
-    assert url.fragment == 'fff'
-    assert url.query == 'aaa=ccc'
-    assert url.port == 443
-    assert url.username == 'user'
-    assert url.password == 'passwd'
-    assert url.hostname == 'www.baidu.com'
 
-    _new = url.replace(scheme='ws', path='/replace/a/path')
-    assert _new.scheme == 'ws'
-    assert str(_new).startswith('ws://')
-    assert str(_new).__contains__('/replace/a/path')
-    assert not str(_new).__contains__('/abcd/test.php')
+def test_url():
+    url = URL("http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff")
+    assert url == "http://user:passwd@www.baidu.com:443/abcd/test.php?aaa=ccc#fff"
+    assert url.scheme == "http"
+    assert url.netloc == "user:passwd@www.baidu.com:443"
+    assert url.path == "/abcd/test.php"
+    assert url.params == ""
+    assert url.fragment == "fff"
+    assert url.query == "aaa=ccc"
+    assert url.port == 443
+    assert url.username == "user"
+    assert url.password == "passwd"
+    assert url.hostname == "www.baidu.com"
+
+    _new = url.replace(scheme="ws", path="/replace/a/path")
+    assert _new.scheme == "ws"
+    assert str(_new).startswith("ws://")
+    assert str(_new).__contains__("/replace/a/path")
+    assert not str(_new).__contains__("/abcd/test.php")
 
     # username:passwd discard ????
     _new = url.replace(port=None)
-    assert _new == 'http://www.baidu.com/abcd/test.php?aaa=ccc#fff'
+    assert _new == "http://www.baidu.com/abcd/test.php?aaa=ccc#fff"
 
 
 def test_query_params():
@@ -73,6 +74,7 @@ def test_headers():
     h = Headers()
     assert not h.items()
 
+
 def test_headers_mutablecopy():
     h = Headers(raw=[(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
     c = h.mutablecopy()
@@ -82,5 +84,5 @@ def test_headers_mutablecopy():
 
 
 def test_url_from_scope():
-    u = URL(scope={'path': '/a/path/to/somewhere', 'query_string': b'abc=123'})
-    assert u == '/a/path/to/somewhere?abc=123'
+    u = URL(scope={"path": "/a/path/to/somewhere", "query_string": b"abc=123"})
+    assert u == "/a/path/to/somewhere?abc=123"

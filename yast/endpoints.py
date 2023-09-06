@@ -12,17 +12,17 @@ from yast.websockets import WebSocket
 
 class HttpEndPoint(object):
     def __init__(self, scope: Scope) -> None:
-        assert scope['type'] == 'http'
+        assert scope["type"] == "http"
         self.scope = scope
-    
+
     async def __call__(self, receive: Receive, send: Send) -> None:
-        req = Request(self.scope, receive) 
+        req = Request(self.scope, receive)
         res = await self.dispatch(req)
 
         await res(receive, send)
-    
+
     async def dispatch(self, req: Request) -> Response:
-        handler_name = 'get' if req.method == 'HEAD' else req.method.lower()
+        handler_name = "get" if req.method == "HEAD" else req.method.lower()
         handler = getattr(self, handler_name, self.method_not_allowed)
 
         if asyncio.iscoroutinefunction(handler):
@@ -30,85 +30,86 @@ class HttpEndPoint(object):
         else:
             res = handler(req)
         return res
-    
+
     async def method_not_allowed(self, req: Request):
-        if 'app' in self.scope:
+        if "app" in self.scope:
             raise HttpException(status_code=405)
-        return PlainTextResponse('Method Not Allowed', 405)
+        return PlainTextResponse("Method Not Allowed", 405)
+
 
 class WebSocketEndpoint(object):
-    encoding = None # 'text', 'bytes', 'json'
+    encoding = None  # 'text', 'bytes', 'json'
     ws: WebSocket = None
 
     def __init__(self, scope: Scope) -> None:
-        assert scope['type'] == 'websocket'
+        assert scope["type"] == "websocket"
         self.scope = scope
-    
+
     async def __call__(self, receive: Receive, send: Send) -> None:
         self.ws = WebSocket(self.scope, receive, send)
-        kwargs = self.scope.get('kwargs', {})
+        kwargs = self.scope.get("kwargs", {})
         await self.on_connect(**kwargs)
 
         close_code = status.WS_1000_NORMAL_CLOSURE
         try:
             while True:
                 message = await self.ws.receive()
-                if message['type'] == 'websocket.receive':
+                if message["type"] == "websocket.receive":
                     data = await self.decode(message)
                     await self.on_receive(data)
-                elif message['type'] == 'websocket.disconnect':
-                    close_code = message.get('code', status.WS_1000_NORMAL_CLOSURE)
+                elif message["type"] == "websocket.disconnect":
+                    close_code = message.get("code", status.WS_1000_NORMAL_CLOSURE)
                     break
         except Exception as exc:
             close_code = status.WS_1011_INTERNAL_ERROR
             raise exc from None
         finally:
             await self.on_disconnect(close_code)
-    
-    async def send(self, data, send_type: str = 'bytes'):
-        fn = getattr(self.ws, 'send_'+ send_type)
+
+    async def send(self, data, send_type: str = "bytes"):
+        fn = getattr(self.ws, "send_" + send_type)
         await fn(data)
 
     async def decode(self, message: Message):
         if self.encoding is not None:
-            decode_fn_name = '_decode_' + self.encoding.lower()
+            decode_fn_name = "_decode_" + self.encoding.lower()
             if not hasattr(self, decode_fn_name):
-                decode_fn_name = '_decode_unknown'
+                decode_fn_name = "_decode_unknown"
         else:
-            decode_fn_name = '_decode_none'
+            decode_fn_name = "_decode_none"
 
         decode_fn = getattr(self, decode_fn_name)
         return await decode_fn(message)
-    
+
     async def _decode_text(self, message: Message):
-        if 'text' not in message:
-            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA) 
-            raise RuntimeError('Expected text websocket messages, but got others')
-        return message['text']
+        if "text" not in message:
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
+            raise RuntimeError("Expected text websocket messages, but got others")
+        return message["text"]
 
     async def _decode_bytes(self, message: Message):
-        if 'bytes' not in message: 
+        if "bytes" not in message:
             await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError('Expected bytes websocket messages, but got others')
-        return message['bytes']
+            raise RuntimeError("Expected bytes websocket messages, but got others")
+        return message["bytes"]
 
     async def _decode_json(self, message: Message):
-        if 'bytes' not in message:
-            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA) 
-            raise RuntimeError('Expected json websocket messages, but got others')
-        
-        return json.loads(message['bytes'].decode('utf-8'))
-    
+        if "bytes" not in message:
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
+            raise RuntimeError("Expected json websocket messages, but got others")
+
+        return json.loads(message["bytes"].decode("utf-8"))
+
     async def _decode_unknown(self, message: Message):
-        return await self._decode_text(message) 
-    
+        return await self._decode_text(message)
+
     async def _decode_none(self, message: Message):
         return await self._decode_text(message)
-    
+
     async def on_connect(self, **kwargs: typing.Any) -> None:
         """Override to handle an incoming websocket connection"""
         await self.ws.accept()
-    
+
     async def on_receive(self, data):
         """Override to handle an incoming websocket message"""
         pass

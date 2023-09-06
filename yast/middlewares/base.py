@@ -10,13 +10,13 @@ from yast.types import ASGIApp, ASGIInstance, Scope, Receive, Send
 class BaseHttpMiddleware(object):
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
-    
+
     def __call__(self, scope: Scope) -> ASGIInstance:
-        if scope['type'] != 'http':
+        if scope["type"] != "http":
             return self.app(scope)
-        
+
         return functools.partial(self.asgi, scope=scope)
-    
+
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         req = Request(scope, receive=receive)
         res = await self.dispath(req, self.call_next)
@@ -33,13 +33,13 @@ class BaseHttpMiddleware(object):
                 await inner(req._receive, queue.put)
             finally:
                 await queue.put(None)
-            
+
         task = loop.create_task(coro())
         message = await queue.get()
         if message is None:
             task.result()
-            raise RuntimeError('No response resulted.')
-        assert message['type'] == 'http.response.start'
+            raise RuntimeError("No response resulted.")
+        assert message["type"] == "http.response.start"
 
         async def body_stream() -> typing.AsyncGenerator[bytes, None]:
             while True:
@@ -47,18 +47,13 @@ class BaseHttpMiddleware(object):
                 if message is None:
                     break
 
-                assert message['type'] == 'http.response.body'
-                yield message['body']
+                assert message["type"] == "http.response.body"
+                yield message["body"]
             task.result()
 
-        res = StreamingResponse(
-                status_code=message['status'],
-                content=body_stream()
-            )
-        res.raw_headers = message['headers']
+        res = StreamingResponse(status_code=message["status"], content=body_stream())
+        res.raw_headers = message["headers"]
         return res
 
-    async def dispath(
-            self, req: Request, call_next: typing.Callable
-        ) -> ASGIInstance:
+    async def dispath(self, req: Request, call_next: typing.Callable) -> ASGIInstance:
         raise NotImplementedError()

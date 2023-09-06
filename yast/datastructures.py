@@ -6,38 +6,33 @@ from yast.types import Scope, StrDict, StrPairs
 
 class URL(object):
     def __init__(
-            self, url: str = '',
-            scope: Scope = None,
-            **components: typing.Any
-        ) -> None:
+        self, url: str = "", scope: Scope = None, **components: typing.Any
+    ) -> None:
         if scope is not None:
-            assert not url, 'Cannot set both `url` and `scope`'
-            assert not components, 'Cannot set both `**components` and `scope`'
-            scheme = scope.get('scheme', 'http')
-            path = scope.get('root_path', '') + scope['path']
-            query_string = scope['query_string']
-            
-            server = scope.get('server', None)
+            assert not url, "Cannot set both `url` and `scope`"
+            assert not components, "Cannot set both `**components` and `scope`"
+            scheme = scope.get("scheme", "http")
+            path = scope.get("root_path", "") + scope["path"]
+            query_string = scope["query_string"]
+
+            server = scope.get("server", None)
             if server is None:
                 url = path
             else:
                 host, port = server
-                default_port = {
-                    'http': 80, 'https': 443,
-                    'ws': 80, 'wss': 443
-                }[scheme]
+                default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
                 if port == default_port:
-                    url = '%s://%s%s' % (scheme, host, path)
+                    url = "%s://%s%s" % (scheme, host, path)
                 else:
-                    url = '%s://%s:%s%s' % (scheme, host, port, path)
-            
+                    url = "%s://%s:%s%s" % (scheme, host, port, path)
+
             if query_string:
-                url += '?' + unquote(query_string.decode())
+                url += "?" + unquote(query_string.decode())
         elif components:
-            assert not url, 'Cannot set both `components` and `scope`'
-            url = URL('').replace(**components).components.geturl()
+            assert not url, "Cannot set both `components` and `scope`"
+            url = URL("").replace(**components).components.geturl()
         self._url = url
-    
+
     @property
     def components(self) -> ParseResult:
         if not hasattr(self, "_components"):
@@ -87,39 +82,38 @@ class URL(object):
 
     @property
     def is_secure(self) -> bool:
-        return self.scheme in ('https', 'wss')
+        return self.scheme in ("https", "wss")
 
-    def replace(self, **kwargs: typing.Any) -> "URL": # type: ignore
-
-        if 'hostname' in kwargs or 'port' in kwargs:
-            hostname = kwargs.pop('hostname', self.hostname)
-            port = kwargs.pop('port', self.port)
+    def replace(self, **kwargs: typing.Any) -> "URL":  # type: ignore
+        if "hostname" in kwargs or "port" in kwargs:
+            hostname = kwargs.pop("hostname", self.hostname)
+            port = kwargs.pop("port", self.port)
 
             if port is None:
-                kwargs['netloc'] = hostname
+                kwargs["netloc"] = hostname
             else:
-                kwargs['netloc'] = '%s:%d' % (hostname, port)
+                kwargs["netloc"] = "%s:%d" % (hostname, port)
 
-        if 'secure' in kwargs:
-            secure = kwargs.pop('secure')
-            if self.scheme.startswith('http'):
-                kwargs['scheme'] = 'https' if secure else 'http'
-            elif self.scheme.startswith('ws'):
-                kwargs['scheme'] = 'wss' if secure else 'ws'
+        if "secure" in kwargs:
+            secure = kwargs.pop("secure")
+            if self.scheme.startswith("http"):
+                kwargs["scheme"] = "https" if secure else "http"
+            elif self.scheme.startswith("ws"):
+                kwargs["scheme"] = "wss" if secure else "ws"
 
         components = self.components._replace(**kwargs)
         return URL(components.geturl())
-    
+
     def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
         return str(self) == str(other)
-    
+
     def __str__(self):
         if self.scheme and not self.netloc:
-            return str(self.replace(scheme=''))
+            return str(self.replace(scheme=""))
         return self._url
-    
+
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, repr(self._url))
+        return "%s(%s)" % (self.__class__.__name__, repr(self._url))
 
 
 class QueryParams(typing.Mapping[str, str]):
@@ -127,19 +121,19 @@ class QueryParams(typing.Mapping[str, str]):
         self,
         params: typing.Mapping[str, str] = None,
         query_string: str = None,
-        scope: Scope = None
+        scope: Scope = None,
     ) -> None:
-        items = [] # type: typing.List[typing.Tuple[str, str]]
+        items = []  # type: typing.List[typing.Tuple[str, str]]
         if params is not None:
-            assert query_string is None, 'Cannot set both `params` and `query_string`'
-            assert scope is None, 'Cannot set both `params` and `scope`'
+            assert query_string is None, "Cannot set both `params` and `query_string`"
+            assert scope is None, "Cannot set both `params` and `scope`"
             items = list(params.items())
         elif query_string is not None:
-            assert scope is None, 'Cannot set both `query_string` and `scope`'
+            assert scope is None, "Cannot set both `query_string` and `scope`"
             items = parse_qsl(query_string)
         elif scope is not None:
-            items = parse_qsl(scope['query_string'].decode('latin-1'))
-        
+            items = parse_qsl(scope["query_string"].decode("latin-1"))
+
         self._dict = {k: v for k, v in reversed(items)}
         self._list = items
 
@@ -186,42 +180,40 @@ class QueryParams(typing.Mapping[str, str]):
 
 
 class Headers(typing.Mapping[str, str]):
-    """ headers  """
+    """headers"""
+
     def __init__(
-            self,
-            headers: typing.Mapping[str, str] = None,
-            raw: typing.List[typing.Tuple[bytes, bytes]] = None,
-            scope: Scope = None
-        ) -> None:
+        self,
+        headers: typing.Mapping[str, str] = None,
+        raw: typing.List[typing.Tuple[bytes, bytes]] = None,
+        scope: Scope = None,
+    ) -> None:
         self._list = []
         if headers is not None:
-            assert raw is None, 'Cannot set both `headers` and `raw`'
-            assert scope is None, 'Cannot set both `headers` and `scope`'
+            assert raw is None, "Cannot set both `headers` and `raw`"
+            assert scope is None, "Cannot set both `headers` and `scope`"
             self._list = [
-                (key.lower().encode('latin-1'), value.encode('latin-1'))
+                (key.lower().encode("latin-1"), value.encode("latin-1"))
                 for key, value in headers.items()
             ]
         elif raw is not None:
-            assert scope is None, 'Cannot set both `raw` and `scope`'
+            assert scope is None, "Cannot set both `raw` and `scope`"
             self._list = raw
         elif scope is not None:
-            self._list = scope['headers']
-    
+            self._list = scope["headers"]
+
     @property
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return list(self._list)
 
     def keys(self):
-        return [key.decode('latin-1') for key, _ in self._list]
+        return [key.decode("latin-1") for key, _ in self._list]
 
     def values(self):
-        return [value.decode('latin-1') for _, value in self._list]
+        return [value.decode("latin-1") for _, value in self._list]
 
     def items(self) -> typing.List[typing.Tuple[bytes, bytes]]:
-        return [
-                (k.decode('latin-1'), v.decode('latin-1')) 
-                for k, v in self._list
-            ]
+        return [(k.decode("latin-1"), v.decode("latin-1")) for k, v in self._list]
 
     def get(self, key: str, default: str = None):
         try:
@@ -230,21 +222,17 @@ class Headers(typing.Mapping[str, str]):
             return default
 
     def getlist(self, key: str) -> typing.List[str]:
-        h_k = key.lower().encode('latin-1')
-        return [
-            iv.decode('latin-1')
-            for ik, iv in self._list
-            if ik == h_k
-        ]
+        h_k = key.lower().encode("latin-1")
+        return [iv.decode("latin-1") for ik, iv in self._list if ik == h_k]
 
     def mutablecopy(self):
         return MutableHeaders(raw=self._list[:])
 
     def __getitem__(self, key: str):
-        h_k = key.lower().encode('latin-1')
+        h_k = key.lower().encode("latin-1")
         for ik, iv in self._list:
             if h_k == ik:
-                return iv.decode('latin-1')
+                return iv.decode("latin-1")
 
         raise KeyError(key)
 
@@ -271,14 +259,14 @@ class Headers(typing.Mapping[str, str]):
 
 class MutableHeaders(Headers):
     def __setitem__(self, key: str, value: str):
-        set_key = key.lower().encode('latin-1')
-        set_value = value.encode('latin-1')
+        set_key = key.lower().encode("latin-1")
+        set_value = value.encode("latin-1")
 
         pop_indexes = []
         for idx, (ik, _) in enumerate(self._list):
             if ik == set_key:
                 pop_indexes.append(idx)
-        
+
         """
         retain insertion order .
         """
@@ -291,37 +279,37 @@ class MutableHeaders(Headers):
             self._list.append((set_key, set_value))
 
     def __delitem__(self, key: str):
-        del_key = key.lower().encode('latin-1')
+        del_key = key.lower().encode("latin-1")
         pop_indexes = []
         for idx, (ik, _) in enumerate(self._list):
             if ik == del_key:
                 pop_indexes.append(idx)
-        
+
         for idx in reversed(pop_indexes):
             del self._list[idx]
 
     @property
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return self._list
-    
+
     def setdefault(self, key: str, value: str):
-        set_key = key.lower().encode('latin-1')
-        set_value = value.encode('latin-1')
+        set_key = key.lower().encode("latin-1")
+        set_value = value.encode("latin-1")
 
         for _, (itm_key, itm_val) in enumerate(self._list):
             if itm_key == set_key:
-                return itm_val.decode('latin-1')
-        
+                return itm_val.decode("latin-1")
+
         self._list.append((set_key, set_value))
         return value
-    
+
     def update(self, other: dict):
         for key, val in other.items():
             self[key] = val
-    
+
     def add_vary_header(self, vary):
-        existing = self.get('vary')
+        existing = self.get("vary")
         if existing is not None:
-            vary = ', '.join([existing, vary])
-        
-        self['vary'] = vary
+            vary = ", ".join([existing, vary])
+
+        self["vary"] = vary

@@ -11,4 +11,3 @@ Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
 ASGIApp = typing.Callable[[Scope], ASGIInstance]
-

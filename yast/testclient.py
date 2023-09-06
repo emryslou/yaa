@@ -41,15 +41,11 @@ def _get_reason_phrase(status_code):
     try:
         return http.HTTPStatus(status_code).phrase
     except ValueError:
-        return ''
+        return ""
 
 
 class _ASGIAdapter(requests.adapters.HTTPAdapter):
-    def __init__(
-            self,
-            app: typing.Callable,
-            raise_server_exceptions = True
-        ) -> None:
+    def __init__(self, app: typing.Callable, raise_server_exceptions=True) -> None:
         self.app = app
         self.raise_server_exceptions = raise_server_exceptions
 
@@ -72,27 +68,28 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
         # Include other request headers.
         headers += [
-            [key.lower().encode(), value.encode()] for key, value in request.headers.items()
+            [key.lower().encode(), value.encode()]
+            for key, value in request.headers.items()
         ]
 
-        if scheme in {'ws', 'wss'}:
-            subprotocol = request.headers.get('sec-websocket-protocol', None)
+        if scheme in {"ws", "wss"}:
+            subprotocol = request.headers.get("sec-websocket-protocol", None)
 
             if subprotocol is None:
                 subprotocols = []
             else:
-                subprotocols = [val.strip() for val in subprotocol.split(',')]
-            
+                subprotocols = [val.strip() for val in subprotocol.split(",")]
+
             scope = {
-                'type': 'websocket',
-                'path': unquote(path),
-                'root_path': '',
-                'scheme': scheme,
-                'query_string': query.encode(),
-                'headers': headers,
-                'client': ['testclient', 50000],
-                'server': [host, port],
-                'subprotocols': subprotocols,
+                "type": "websocket",
+                "path": unquote(path),
+                "root_path": "",
+                "scheme": scheme,
+                "query_string": query.encode(),
+                "headers": headers,
+                "client": ["testclient", 50000],
+                "server": [host, port],
+                "subprotocols": subprotocols,
             }
             session = WebSocketTestSession(self.app, scope)
             raise _Upgrade(session)
@@ -123,7 +120,9 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         async def send(message):
             nonlocal raw_kwargs, response_started, response_complete
             if message["type"] == "http.response.start":
-                assert (not response_started), 'Received multiple "http.response.start" messages'
+                assert (
+                    not response_started
+                ), 'Received multiple "http.response.start" messages'
                 raw_kwargs["version"] = 11
                 raw_kwargs["status"] = message["status"]
                 raw_kwargs["reason"] = _get_reason_phrase(message["status"])
@@ -136,8 +135,12 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 )
                 response_started = True
             elif message["type"] == "http.response.body":
-                assert response_started, 'Received "http.response.body" without "http.response.start".'
-                assert (not response_complete), 'Received "http.response.body" after response completed'
+                assert (
+                    response_started
+                ), 'Received "http.response.body" without "http.response.start".'
+                assert (
+                    not response_complete
+                ), 'Received "http.response.body" after response completed'
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
                 raw_kwargs["body"].write(body)
@@ -148,7 +151,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         response_started = False
         response_complete = False
         raw_kwargs = {"body": io.BytesIO()}
-        
+
         loop = asyncio.get_event_loop()
         try:
             connection = self.app(scope)
@@ -158,16 +161,16 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 raise exc from None
 
         if self.raise_server_exceptions:
-            assert response_started, 'TestClient did not receive any response'       
+            assert response_started, "TestClient did not receive any response"
         elif not response_started:
             raw_kwargs = {
-                'version': 11,
-                'status': 500,
-                'reason': 'Internal Server Error',
-                'headers': [],
-                'preload_content': False,
-                'original_response': _MockOriginalResponse([]),
-                'body': io.BytesIO(),
+                "version": 11,
+                "status": 500,
+                "reason": "Internal Server Error",
+                "headers": [],
+                "preload_content": False,
+                "original_response": _MockOriginalResponse([]),
+                "body": io.BytesIO(),
             }
 
         raw = requests.packages.urllib3.HTTPResponse(**raw_kwargs)
@@ -182,16 +185,16 @@ class WebSocketTestSession(object):
         self._receive_queue = queue.Queue()
         self._send_queue = queue.Queue()
         self._thread = threading.Thread(target=self._run)
-        self.send({'type': 'websocket.connect'})
+        self.send({"type": "websocket.connect"})
         self._thread.start()
-        
+
         message = self.receive()
         self._raise_on_close(message)
-        self.accepted_subprotocol = message.get('subprotocol', None)
-    
+        self.accepted_subprotocol = message.get("subprotocol", None)
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args):
         self.close(1000)
         self._thread.join()
@@ -199,7 +202,7 @@ class WebSocketTestSession(object):
             message = self.receive()
             if isinstance(message, BaseException):
                 raise message
-    
+
     def _run(self):
         try:
             asgi = self._instance(self._asgi_receive, self._asgi_send)
@@ -207,37 +210,35 @@ class WebSocketTestSession(object):
             self._loop.run_until_complete(task)
         except BaseException as exc:
             self.__sput(exc)
-    
+
     async def _asgi_receive(self):
         msg = self._receive_queue.get()
         return msg
-    
+
     async def _asgi_send(self, message):
         self.__sput(message)
-    
+
     def _raise_on_close(self, message):
-        if message['type'] == 'websocket.close':
-            raise WebSocketDisconnect(message.get('code', 1000))
-    
+        if message["type"] == "websocket.close":
+            raise WebSocketDisconnect(message.get("code", 1000))
+
     def send(self, value):
         if value is None:
-            raise RuntimeError('value is None')
+            raise RuntimeError("value is None")
         self._receive_queue.put(value)
-    
+
     def send_text(self, data: str):
-        self.send({'type': 'websocket.receive', 'text': data})
-    
+        self.send({"type": "websocket.receive", "text": data})
 
     def send_bytes(self, data: bytes):
-        self.send({'type': 'websocket.receive', 'bytes': data})
-    
+        self.send({"type": "websocket.receive", "bytes": data})
 
     def send_json(self, data):
-        _j = json.dumps(data).encode('utf-8')
+        _j = json.dumps(data).encode("utf-8")
         self.send_bytes(_j)
 
     def close(self, code=1000):
-        self.send({'type': 'websocket.disconnect', 'code': code})
+        self.send({"type": "websocket.disconnect", "code": code})
 
     def receive(self):
         message = self._send_queue.get()
@@ -248,29 +249,26 @@ class WebSocketTestSession(object):
     def receive_text(self):
         message = self.receive()
         self._raise_on_close(message)
-        return message['text']
-    
+        return message["text"]
+
     def receive_bytes(self) -> bytes:
         message = self.receive()
         self._raise_on_close(message)
-        return message['bytes']
-    
+        return message["bytes"]
+
     def receive_json(self):
-        return json.loads(self.receive_bytes().decode('utf-8'))
-    
+        return json.loads(self.receive_bytes().decode("utf-8"))
+
     def __sput(self, message):
         if message is None:
-            raise RuntimeError('value is None')
+            raise RuntimeError("value is None")
         self._send_queue.put(message)
-    
+
 
 class _TestClient(requests.Session):
     def __init__(
-            self,
-            app: typing.Callable,
-            base_url: str,
-            raise_server_exceptions = True
-        ) -> None:
+        self, app: typing.Callable, base_url: str, raise_server_exceptions=True
+    ) -> None:
         super().__init__()
         adapter = _ASGIAdapter(app, raise_server_exceptions)
         self.mount("http://", adapter)
@@ -284,31 +282,29 @@ class _TestClient(requests.Session):
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
-    def wsconnect(
-            self,url: str,
-            subprotocols=None,
-            **kwargs
-        ) -> WebSocketTestSession:
-        url = urljoin('ws://testserver', url)
-        headers = kwargs.get('headers', {})
-        headers.setdefault('connection', 'upgrade')
-        headers.setdefault('sec-websocket-key', 'testserver==')
-        headers.setdefault('sec-websocket-version', '13')
+    def wsconnect(self, url: str, subprotocols=None, **kwargs) -> WebSocketTestSession:
+        url = urljoin("ws://testserver", url)
+        headers = kwargs.get("headers", {})
+        headers.setdefault("connection", "upgrade")
+        headers.setdefault("sec-websocket-key", "testserver==")
+        headers.setdefault("sec-websocket-version", "13")
         if subprotocols is not None:
-            headers.setdefault('sec-websocket-protocol', ','.join(subprotocols))
-        
-        kwargs['headers'] = headers
+            headers.setdefault("sec-websocket-protocol", ",".join(subprotocols))
+
+        kwargs["headers"] = headers
 
         try:
-            self.request('GET', url, **kwargs)
+            self.request("GET", url, **kwargs)
         except _Upgrade as exc:
             return exc.session
         else:
-            raise RuntimeError('Expected WebSocket upgrade') # progma: on cover
-        
+            raise RuntimeError("Expected WebSocket upgrade")  # progma: on cover
+
 
 def TestClient(
-    app: typing.Callable, base_url: str = "http://testserver", raise_server_exceptions = True
+    app: typing.Callable,
+    base_url: str = "http://testserver",
+    raise_server_exceptions=True,
 ) -> _TestClient:
     """
     We have to work around py.test discovery attempting to pick up

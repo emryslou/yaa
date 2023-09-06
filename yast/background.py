@@ -2,17 +2,15 @@ import asyncio
 import functools
 import typing
 
+
 class BackgroundTask(object):
     def __init__(
-            self,
-            func: typing.Callable,
-            *args: typing.Any,
-            **kwargs: typing.Any
-        ) -> None:
+        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
+    ) -> None:
         self.func = func
         self.args = args
         self.kwargs = kwargs
-    
+
     async def __call__(self) -> None:
         if asyncio.iscoroutinefunction(self.func):
             await asyncio.ensure_future(self.func(*self.args, **self.kwargs))

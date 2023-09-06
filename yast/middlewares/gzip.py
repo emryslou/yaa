@@ -5,21 +5,21 @@ from yast.datastructures import Headers, MutableHeaders
 from yast.message_handler import MessageHandler, MessageType
 from yast.types import ASGIApp, ASGIInstance, Message, Scope, Receive, Send
 
+
 class GZipMiddleware(object):
     def __init__(self, app: ASGIApp, minimum_size: int = 500) -> None:
         self.app = app
         self.minimum_size = minimum_size
-    
+
     def __call__(self, scope: Scope) -> ASGIInstance:
-        if scope['type'] == 'http':
+        if scope["type"] == "http":
             headers = Headers(scope=scope)
-            if 'gzip' in headers.get('Accept-Encoding', ''):
+            if "gzip" in headers.get("Accept-Encoding", ""):
                 return GZipResponder(self.app, scope, self.minimum_size)
         return self.app(scope)
 
 
 class GZipResponder(object):
-    
     def __init__(self, app: ASGIApp, scope: Scope, minimum_size: int) -> None:
         self.inner = app(scope)
         self.minimum_size = minimum_size
@@ -27,65 +27,66 @@ class GZipResponder(object):
         self.init_message = {}
         self.started = False
         self.gzip_buffer = io.BytesIO()
-        self.gzip_file = gzip.GzipFile(mode='wb', fileobj=self.gzip_buffer)
+        self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer)
         self.msg_handler = MessageHandler()
 
     async def __call__(self, receive: Receive, send: Send) -> None:
         self.send = send
         await self.inner(receive, self._send)
 
-
     async def _send(self, message: Message):
-        @self.msg_handler.on_type('http.response.start')
+        @self.msg_handler.on_type("http.response.start")
         async def msg_http_response_start(message: Message):
             self.init_message = message
-        #endfunc
-        
-        @self.msg_handler.on_type('http.response.body')
+
+        # endfunc
+
+        @self.msg_handler.on_type("http.response.body")
         async def msg_http_response_body(message: Message):
             if not self.started:
                 self.started = True
-                body = message.get('body', b'')
-                more_body = message.get('more_body', False)
+                body = message.get("body", b"")
+                more_body = message.get("more_body", False)
                 if len(body) < self.minimum_size and not more_body:
                     pass
                 elif not more_body:
                     self.gzip_file.write(body)
                     self.gzip_file.close()
                     body = self.gzip_buffer.getbuffer()
-                    headers = MutableHeaders(raw=self.init_message['headers'])
-                    headers['Content-Encoding'] = 'gzip'
-                    headers['Content-Length'] = str(len(body))
-                    headers.add_vary_header('Accept-Encoding')
-                    message['body'] = body
+                    headers = MutableHeaders(raw=self.init_message["headers"])
+                    headers["Content-Encoding"] = "gzip"
+                    headers["Content-Length"] = str(len(body))
+                    headers.add_vary_header("Accept-Encoding")
+                    message["body"] = body
                 else:
-                    headers = MutableHeaders(raw=self.init_message['headers'])
-                    headers['Content-Encoding'] = 'gzip'
-                    headers.add_vary_header('Accept-Encoding')
-                    del headers['Content-Length']
+                    headers = MutableHeaders(raw=self.init_message["headers"])
+                    headers["Content-Encoding"] = "gzip"
+                    headers.add_vary_header("Accept-Encoding")
+                    del headers["Content-Length"]
                     self.gzip_file.write(body)
-                    message['body'] = self.gzip_buffer.getvalue()
+                    message["body"] = self.gzip_buffer.getvalue()
                     self.gzip_buffer.seek(0)
                     self.gzip_buffer.truncate()
-                #endif
+                # endif
 
                 await self.send(self.init_message)
                 await self.send(message)
             else:
-                body = message.get('body', b'')
-                more_body = message.get('more_body', False)
+                body = message.get("body", b"")
+                more_body = message.get("more_body", False)
 
                 self.gzip_file.write(body)
                 if not more_body:
                     self.gzip_file.close()
-                message['body'] = self.gzip_buffer.getvalue()
+                message["body"] = self.gzip_buffer.getvalue()
                 self.gzip_buffer.seek(0)
                 self.gzip_buffer.truncate()
                 await self.send(message)
-            #endif
-        #endfunc
+            # endif
+
+        # endfunc
         await self.msg_handler(message)
 
 
 async def unattached_send(_):
-    raise RuntimeError('send awaitable not set')
+    raise RuntimeError("send awaitable not set")

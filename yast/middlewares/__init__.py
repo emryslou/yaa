@@ -1,11 +1,11 @@
 __all__ = [
-    'ExceptionMiddleware',
-    'CORSMiddleware',
-    'GZipMiddleware',
-    'HttpsRedirectMiddleware',
-    'TrustedHostMiddleware',
-    'WSGIMiddleware',
-    'BaseHttpMiddleware',
+    "ExceptionMiddleware",
+    "CORSMiddleware",
+    "GZipMiddleware",
+    "HttpsRedirectMiddleware",
+    "TrustedHostMiddleware",
+    "WSGIMiddleware",
+    "BaseHttpMiddleware",
 ]
 
 from .base import BaseHttpMiddleware

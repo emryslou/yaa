@@ -5,16 +5,18 @@ from yast.middlewares import WSGIMiddleware
 from yast.middlewares.wsgi import build_environ
 from yast.testclient import TestClient
 
+
 def demo(environ, start_response):
-    status = '200 OK'
-    output = b'Hello Demo'
+    status = "200 OK"
+    output = b"Hello Demo"
     headers = [
-        ('Content-Type', 'text/plain; charser=utf-8'),
-        ('Content-Length', str(len(output))),
+        ("Content-Type", "text/plain; charser=utf-8"),
+        ("Content-Length", str(len(output))),
     ]
 
     start_response(status, headers)
     return [output]
+
 
 def echo_body(environ, start_response):
     status = "200 OK"
@@ -30,6 +32,7 @@ def echo_body(environ, start_response):
 def raise_exception(environ, start_response):
     raise RuntimeError("Something went wrong")
 
+
 def return_exc_info(environ, start_response):
     try:
         raise RuntimeError("Something went wrong")
@@ -44,14 +47,14 @@ def return_exc_info(environ, start_response):
         return [output]
 
 
-
 @pytest.mark.timeout(3)
 def test_get():
     app = WSGIMiddleware(demo)
     client = TestClient(app)
-    res = client.get('/')
+    res = client.get("/")
     assert res.status_code == 200
-    assert res.text == 'Hello Demo'
+    assert res.text == "Hello Demo"
+
 
 @pytest.mark.timeout(3)
 def test_wsgi_post():
@@ -61,6 +64,7 @@ def test_wsgi_post():
     assert response.status_code == 200
     assert response.text == '{"example": 123}'
 
+
 @pytest.mark.timeout(3)
 def test_wsgi_exception():
     # Note that we're testing the WSGI app directly here.
@@ -69,6 +73,7 @@ def test_wsgi_exception():
     client = TestClient(app)
     with pytest.raises(RuntimeError):
         response = client.get("/")
+
 
 @pytest.mark.timeout(3)
 def test_wsgi_exc_info():

@@ -7,78 +7,78 @@ from urllib.parse import unquote
 from yast.datastructures import URL, Headers, QueryParams
 from yast.types import Scope, Receive, Send, Message
 
+
 class WebSocketState(enum.Enum):
     CONNECTING = 0
     CONNECTED = 1
     DISCONNECTED = 2
 
+
 class WebSocketDisconnect(Exception):
     def __init__(self, code=1000):
         self.code = code
 
+
 class WebSocket(Mapping):
     def __init__(
-            self,
-            scope: Scope,
-            receive: Receive=None, send: Send=None
-        ) -> None:
-        assert scope['type'] == 'websocket'
+        self, scope: Scope, receive: Receive = None, send: Send = None
+    ) -> None:
+        assert scope["type"] == "websocket"
         self._scope = scope
         self._receive = receive
         self._send = send
         self.client_state = WebSocketState.CONNECTING
         self.application_state = WebSocketState.CONNECTING
-    
+
     def __getitem__(self, key: str) -> typing.Any:
         return self._scope[key]
-    
+
     def __iter__(self) -> iter:
         return iter(self._scope)
-    
+
     def __len__(self) -> int:
         return len(self._scope)
-    
+
     @property
     def url(self) -> URL:
-        if not hasattr(self, '_url'):
+        if not hasattr(self, "_url"):
             self._url = URL(scope=self._scope)
-        
+
         return self._url
-    
+
     @property
     def headers(self) -> Headers:
-        if not hasattr(self, '_headers'):
+        if not hasattr(self, "_headers"):
             self._headers = Headers(scope=self._scope)
-        
+
         return self._headers
-    
 
     @property
     def query_params(self) -> QueryParams:
-        if not hasattr(self, '_query_parmas'):
+        if not hasattr(self, "_query_parmas"):
             self._query_params = QueryParams(scope=self._scope)
-        
+
         return self._query_params
-    
+
     @property
     def path_params(self) -> dict:
-        return self._scope.get('path_params', {})
+        return self._scope.get("path_params", {})
 
     def url_for(self, name: str, **path_params: typing.Any) -> URL:
-        router = self._scope['router']
+        router = self._scope["router"]
         url = router.url_path_for(name, **path_params)
         return url.replace(secure=self.url.is_secure, netloc=self.url.netloc)
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:
             message = await self._receive()
-            assert message['type'] == 'websocket.connect'
+            assert message["type"] == "websocket.connect"
             self.client_state = WebSocketState.CONNECTED
             return message
         elif self.client_state == WebSocketState.CONNECTED:
             message = await self._receive()
-            assert message['type'] in {'websocket.receive', 'websocket.disconnect'}
-            if message['type'] == 'websocket.disconnect':
+            assert message["type"] in {"websocket.receive", "websocket.disconnect"}
+            if message["type"] == "websocket.disconnect":
                 self.client_state = WebSocketState.DISCONNECTED
             return message
         else:
@@ -88,72 +88,70 @@ class WebSocket(Mapping):
 
     async def send(self, message: Message) -> None:
         if self.application_state == WebSocketState.CONNECTING:
-            assert message['type'] in {'websocket.accept', 'websocket.close'}
+            assert message["type"] in {"websocket.accept", "websocket.close"}
 
-            if message['type'] == 'websocket.close':
+            if message["type"] == "websocket.close":
                 self.application_state = WebSocketState.DISCONNECTED
             else:
                 self.application_state = WebSocketState.CONNECTED
-            
+
             await self._send(message)
         elif self.application_state == WebSocketState.CONNECTED:
-            assert message['type'] in {'websocket.send', 'websocket.close'}
+            assert message["type"] in {"websocket.send", "websocket.close"}
 
-            if message['type'] == 'websocket.close':
+            if message["type"] == "websocket.close":
                 self.application_state = WebSocketState.DISCONNECTED
-                
+
             await self._send(message)
         else:
             raise RuntimeError('Cannot call "send" once a close message has been sent.')
-    
-    async def accept(self, subprotocol: str=None) -> None:
+
+    async def accept(self, subprotocol: str = None) -> None:
         if self.client_state == WebSocketState.CONNECTING:
             await self.receive()
-        await self.send(
-                {'type': 'websocket.accept', 'subprotocol': subprotocol}
-            )
-    
+        await self.send({"type": "websocket.accept", "subprotocol": subprotocol})
+
     def _raise_on_disconnect(self, message: Message):
         if message is None:
-            raise RuntimeError('Message is None')
-        if message['type'] == 'websocket.disconnect':
-            raise WebSocketDisconnect(message['code'])
-    
+            raise RuntimeError("Message is None")
+        if message["type"] == "websocket.disconnect":
+            raise WebSocketDisconnect(message["code"])
+
     async def receive_text(self) -> str:
         assert self.application_state == WebSocketState.CONNECTED
 
         message = await self.receive()
         self._raise_on_disconnect(message)
-        return message['text']
-    
+        return message["text"]
+
     async def receive_bytes(self) -> bytes:
         assert self.application_state == WebSocketState.CONNECTED
 
         message = await self.receive()
         self._raise_on_disconnect(message)
-        return message['bytes']
-    
+        return message["bytes"]
+
     async def receive_json(self) -> typing.Any:
         json_bytes = await self.receive_bytes()
-        return json.loads(json_bytes.decode('utf-8'))
-    
+        return json.loads(json_bytes.decode("utf-8"))
+
     async def send_text(self, data: str) -> None:
-        await self.send({'type': 'websocket.send', 'text': data})
-    
+        await self.send({"type": "websocket.send", "text": data})
+
     async def send_bytes(self, data: bytes) -> None:
-        await self.send({'type': 'websocket.send', 'bytes': data})
-    
+        await self.send({"type": "websocket.send", "bytes": data})
+
     async def send_json(self, data) -> None:
-        _j = json.dumps(data).encode('utf-8')
-        await self.send({'type': 'websocket.send', 'bytes': _j})
-    
+        _j = json.dumps(data).encode("utf-8")
+        await self.send({"type": "websocket.send", "bytes": _j})
+
     async def close(self, code=1000) -> None:
-        await self.send({'type': 'websocket.close', 'code': code})
-    
+        await self.send({"type": "websocket.close", "code": code})
+
 
 class WebSocketClose(object):
-    def __init__(self, code: int =1000):
+    def __init__(self, code: int = 1000):
         self.code = code
-    
+
     async def __call__(self, receive: Receive, send: Send) -> None:
-        await send({'type': 'websocket.close', 'code': self.code})
+        await send({"type": "websocket.close", "code": self.code})

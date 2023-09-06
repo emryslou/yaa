@@ -3,6 +3,7 @@ from yast.formparsers import FormParser, UploadFile
 from yast.requests import Request
 from yast.responses import Response, JSONResponse
 
+
 class ForceMultipartDict(dict):
     def __bool__(self):
         return True
@@ -19,9 +20,7 @@ def app(scope):
         for k, v in data.items():
             if isinstance(v, UploadFile):
                 content = await v.read()
-                output[k] = {
-                        'filename': v.filename, 'content': content.decode()
-                    }
+                output[k] = {"filename": v.filename, "content": content.decode()}
             else:
                 output[k] = v
         await req.close()
@@ -30,25 +29,26 @@ def app(scope):
 
     return asgi
 
+
 def test_formparsers_multipart_request_data(tmpdir):
     client = TestClient(app)
-    res = client.get('/', data={'some': 'data'}, files=FORCE_MULTIPART)
-    assert res.json() == {
-        'some': 'data'
-    }
+    res = client.get("/", data={"some": "data"}, files=FORCE_MULTIPART)
+    assert res.json() == {"some": "data"}
+
 
 def test_formparsers_multipart_request_files(tmpdir):
     import os
-    path = os.path.join(tmpdir, 'test.txt')
-    with open(path, 'wb') as f:
-        f.write(b'<file content>')
-    
+
+    path = os.path.join(tmpdir, "test.txt")
+    with open(path, "wb") as f:
+        f.write(b"<file content>")
+
     client = TestClient(app)
-    res = client.get('/', files={'test': open(path, 'rb')})
+    res = client.get("/", files={"test": open(path, "rb")})
     assert res.json() == {
-        'test': {
-            'filename': 'test.txt',
-            'content': '<file content>',
+        "test": {
+            "filename": "test.txt",
+            "content": "<file content>",
         }
     }
 
@@ -57,6 +57,7 @@ def test_urlencoded_request_data(tmpdir):
     client = TestClient(app)
     response = client.post("/", data={"some": "data"})
     assert response.json() == {"some": "data"}
+
 
 def test_no_request_data(tmpdir):
     client = TestClient(app)
