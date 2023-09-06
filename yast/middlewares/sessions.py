@@ -44,8 +44,6 @@ class SessionMiddleware(object):
                             self.session_cookie, data.decode("utf-8")
                         )
                     headers.append("Set-Cookie", header_value)
-                    print('debug  -- 01 - 0', headers)
-                    message['headers'] = headers.getlist()
                 elif not was_empty_session:
                     headers = MutableHeaders(scope=message)
                     header_value = "%s=%s" % (
