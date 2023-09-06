@@ -1,3 +1,5 @@
+import asyncio
+import enum
 import inspect
 import re
 import typing
@@ -17,8 +19,14 @@ class NoMatchFound(Exception):
     pass
 
 
+class Match(enum.Enum):
+    NONE = 0
+    PARTIAL = 1
+    FULL = 2
+
+
 class BaseRoute(object):
-    def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
+    def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         raise NotImplementedError()
 
     def url_path_for(self, name: str, **path_params: str) -> str:
@@ -46,7 +54,7 @@ class Route(BaseRoute):
         self.path = path
         self.endpoint = endpoint
         self.name = get_name(endpoint)
-        if inspect.isfunction(endpoint):
+        if inspect.isfunction(endpoint) or inspect.ismethod(endpoint):
             self.app = req_res(endpoint)
             if methods is None:
                 methods = ["GET"]
@@ -58,7 +66,7 @@ class Route(BaseRoute):
         self.path_regex = re.compile(regex)
         self.param_names = set(self.path_regex.groupindex.keys())
 
-    def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
+    def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "http":
             match = self.path_regex.match(scope["path"])
             if match:
@@ -66,14 +74,17 @@ class Route(BaseRoute):
                 path_params.update(match.groupdict())
                 child_scope = dict(scope)
                 child_scope["path_params"] = path_params
-                return True, child_scope
-        return False, {}
+                if self.methods and scope["method"] not in self.methods:
+                    return Match.PARTIAL, child_scope
+                return Match.FULL, child_scope
+        return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URL:
         if name != self.name or self.param_names != set(path_params.keys()):
             raise NoMatchFound()
-
-        return URL(scheme="http", path=replace_params(self.path, **path_params))
+        path, remaining_params = replace_params(self.path, **path_params)
+        assert not remaining_params
+        return URL(scheme="http", path=path)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         if self.methods and scope["method"] not in self.methods:
@@ -98,7 +109,7 @@ class WebSocketRoute(BaseRoute):
         self.endpoint = endpoint
         self.name = get_name(endpoint)
 
-        if inspect.isfunction(endpoint):
+        if inspect.isfunction(endpoint) or inspect.ismethod(endpoint):
             self.app = ws_session(endpoint)
         else:
             self.app = endpoint
@@ -108,7 +119,7 @@ class WebSocketRoute(BaseRoute):
         self.path_regex = re.compile(regex)
         self.param_names = set(self.path_regex.groupindex.keys())
 
-    def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
+    def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "websocket":
             match = self.path_regex.match(scope["path"])
             if match:
@@ -116,14 +127,15 @@ class WebSocketRoute(BaseRoute):
                 path_params.update(match.groupdict())
                 child_scope = dict(scope)
                 child_scope["path_params"] = path_params
-                return True, child_scope
-        return False, {}
+                return Match.FULL, child_scope
+        return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URL:
         if name != self.name or self.param_names != set(path_params.keys()):
             raise NoMatchFound()
-
-        return URL(scheme="ws", path=replace_params(self.path, **path_params))
+        path, remaining_params = replace_params(self.path, **path_params)
+        assert not remaining_params
+        return URL(scheme="ws", path=path)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         return self.app(scope)
@@ -154,7 +166,7 @@ class Mount(BaseRoute):
     def name(self):
         return "??"
 
-    def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
+    def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "http":
             match = self.path_regex.match(scope["path"])
             if match:
@@ -164,14 +176,15 @@ class Mount(BaseRoute):
                 child_scope["root_path"] = scope.get("root_path", "") + match.string
                 child_scope["path"] = scope["path"][match.span()[1] :]
                 child_scope["path_params"] = path_params
-                return True, child_scope
-        return False, {}
+                return Match.FULL, child_scope
+        return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URL:
+        path, remaining_params = replace_params(self.path, **path_params)
         for route in self.routes or []:
             try:
-                url = route.url_path_for(name, **path_params)
-                return URL(scheme=url.scheme, path=self.path + url.path)
+                url = route.url_path_for(name, **remaining_params)
+                return URL(scheme=url.scheme, path=path + url.path)
             except NoMatchFound as exc:
                 pass
 
@@ -194,7 +207,6 @@ class Router(object):
     ) -> None:
         self.routes = [] if routes is None else routes
         self.default = self.not_found if default is None else default
-        self.executor = ThreadPoolExecutor()
 
     def mount(self, path: str, app: ASGIApp) -> None:
         prefix = Mount(path, app=app)
@@ -252,12 +264,20 @@ class Router(object):
         if "router" not in scope:
             scope["router"] = self
 
+        partial = None
+
         for route in self.routes:
             match, child_scope = route.matches(scope)
-            if match:
+            if match == Match.FULL:
                 return route(child_scope)
+            elif match == Match.PARTIAL and partial is None:
+                partial = route
+                partial_scope = child_scope
 
-        return self.not_found(scope)
+        if partial is not None:
+            return partial(partial_scope)
+
+        return self.default(scope)
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, Router) and self.routes == other.routes
@@ -281,7 +301,8 @@ def req_res(func: typing.Callable):
             if is_coroutine:
                 res = await func(req)
             else:
-                res = func(req)
+                loop = asyncio.get_event_loop()
+                res = await loop.run_in_executor(None, func, req)
 
             await res(recv, send)
 
@@ -308,7 +329,9 @@ def get_name(endpoint: typing.Callable) -> str:
     return endpoint.__class__.__name__
 
 
-def replace_params(path: str, **path_params: str) -> str:
-    for _k, _v in path_params.items():
-        path = path.replace("{" + _k + "}", _v)
-    return path
+def replace_params(path: str, **path_params: str) -> typing.Tuple[Match, dict]:
+    for _k, _v in list(path_params.items()):
+        if "{" + _k + "}" in path:
+            path_params.pop(_k)
+            path = path.replace("{" + _k + "}", _v)
+    return path, path_params

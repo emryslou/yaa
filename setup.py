@@ -52,6 +52,6 @@ setup(
         ]
     },
     classifiers=[
-        'Programing LanguageLL Python :: 3.10.12',
+        'Programing Language Python :: 3.10.12',
     ],
 )

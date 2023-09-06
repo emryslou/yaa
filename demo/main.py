@@ -16,6 +16,7 @@ app = Yast()
 app.add_middleware(SessionMiddleware, secret_key='test')
 
 app.mount('/static', StaticFiles(directory='demo/static'))
+app.mount('/docs', StaticFiles(directory='demo/docs'))
 
 @app.route('/')
 def home(request: Request) -> Response:
@@ -63,7 +64,8 @@ app.add_route('/demo', route=Route('/', endpoint=Demo))
 
 @app.on_event('startup')
 def run_startup():
-    print('startup ...')
+    import mkdocs
+
 
 @app.on_event('cleanup')
 def run_cleanup():

@@ -9,7 +9,8 @@ repo_url: https://github.com/emryslou/yast
 edit_url: ''
 
 nav:
-  - Inroduction: 'index.md'
+  - 介绍: 'index.md'
+  - TestClient: 'testclient.md'
 
 markdown_extensions:
   - markdown.extensions.codehilite:

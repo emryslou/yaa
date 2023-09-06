@@ -33,6 +33,13 @@ test:
 	@export PYTHONPATH=`pwd`
 	python -m pytest $(pytest_params) $(pytest_fn) -s -vv
 
-
 demo:
 	python -m uvicorn demo.main:app --port 5505 --lifespan on --reload
+
+dist:
+	python setup.py sdist bdist_wheel
+
+doc:
+	python -m mkdocs build -f mkdocs.yml -d demo/docs
+docsvr:
+	python -m mkdocs serve

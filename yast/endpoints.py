@@ -29,7 +29,8 @@ class HttpEndPoint(object):
         if asyncio.iscoroutinefunction(handler):
             res = await handler(req)
         else:
-            res = handler(req)
+            loop = asyncio.get_event_loop()
+            res = await loop.run_in_executor(None, handler, req)
         return res
 
     async def method_not_allowed(self, req: Request):
