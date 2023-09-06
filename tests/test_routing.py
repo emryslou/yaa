@@ -158,3 +158,23 @@ def test_mixed_app():
     with client.wsconnect("/") as ss:
         text = ss.receive_text()
         assert text == "Hello, Ws"
+
+
+def test_url_for():
+    assert (
+        app.url_path_for("home").make_absolute_url(base_url="https://example.org")
+        == "https://example.org/"
+    )
+
+    assert (
+        app.url_path_for("users", username="tomchristie").make_absolute_url(
+            base_url="https://example.org"
+        )
+        == "https://example.org/users/tomchristie"
+    )
+    assert (
+        app.url_path_for("ws_endpoint").make_absolute_url(
+            base_url="https://example.org"
+        )
+        == "wss://example.org/ws"
+    )

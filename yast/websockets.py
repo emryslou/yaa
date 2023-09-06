@@ -4,7 +4,7 @@ import typing
 from typing import Mapping
 from urllib.parse import unquote
 
-from yast.datastructures import URL, Headers, QueryParams
+from yast.datastructures import URL, Headers, QueryParams, URLPath
 from yast.types import Message, Receive, Scope, Send
 
 
@@ -64,10 +64,12 @@ class WebSocket(Mapping):
     def path_params(self) -> dict:
         return self._scope.get("path_params", {})
 
-    def url_for(self, name: str, **path_params: typing.Any) -> URL:
+    def url_for(self, name: str, **path_params: typing.Any) -> str:
         router = self._scope["router"]
-        url = router.url_path_for(name, **path_params)
-        return url.replace(secure=self.url.is_secure, netloc=self.url.netloc)
+        url_path = router.url_path_for(name, **path_params)
+        return url_path.make_absolute_url(
+            secure=self.url.is_secure, netloc=self.url.netloc
+        )
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:

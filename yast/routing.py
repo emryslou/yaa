@@ -6,7 +6,7 @@ import typing
 from asyncio import iscoroutinefunction
 from concurrent.futures import ThreadPoolExecutor
 
-from yast.datastructures import URL
+from yast.datastructures import URL, URLPath
 from yast.exceptions import HttpException
 from yast.graphql import GraphQLApp
 from yast.requests import Request
@@ -29,7 +29,7 @@ class BaseRoute(object):
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         raise NotImplementedError()
 
-    def url_path_for(self, name: str, **path_params: str) -> str:
+    def url_path_for(self, name: str, **path_params: str) -> URLPath:
         raise NotImplementedError()
 
     def __call__(self, scope: Scope) -> ASGIInstance:
@@ -79,12 +79,12 @@ class Route(BaseRoute):
                 return Match.FULL, child_scope
         return Match.NONE, {}
 
-    def url_path_for(self, name: str, **path_params: str) -> URL:
+    def url_path_for(self, name: str, **path_params: str) -> URLPath:
         if name != self.name or self.param_names != set(path_params.keys()):
             raise NoMatchFound()
         path, remaining_params = replace_params(self.path, **path_params)
         assert not remaining_params
-        return URL(scheme="http", path=path)
+        return URLPath(protocol="http", path=path)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         if self.methods and scope["method"] not in self.methods:
@@ -130,12 +130,12 @@ class WebSocketRoute(BaseRoute):
                 return Match.FULL, child_scope
         return Match.NONE, {}
 
-    def url_path_for(self, name: str, **path_params: str) -> URL:
+    def url_path_for(self, name: str, **path_params: str) -> URLPath:
         if name != self.name or self.param_names != set(path_params.keys()):
             raise NoMatchFound()
         path, remaining_params = replace_params(self.path, **path_params)
         assert not remaining_params
-        return URL(scheme="ws", path=path)
+        return URLPath(protocol="websocket", path=path)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         return self.app(scope)
@@ -179,12 +179,12 @@ class Mount(BaseRoute):
                 return Match.FULL, child_scope
         return Match.NONE, {}
 
-    def url_path_for(self, name: str, **path_params: str) -> URL:
+    def url_path_for(self, name: str, **path_params: str) -> URLPath:
         path, remaining_params = replace_params(self.path, **path_params)
         for route in self.routes or []:
             try:
                 url = route.url_path_for(name, **remaining_params)
-                return URL(scheme=url.scheme, path=path + url.path)
+                return URLPath(protocol=url.protocol, path=path + str(url))
             except NoMatchFound as exc:
                 pass
 
@@ -250,7 +250,7 @@ class Router(object):
             raise HttpException(status_code=404)
         return PlainTextResponse("Not Found", 404)
 
-    def url_path_for(self, name: str, **path_params) -> URL:
+    def url_path_for(self, name: str, **path_params) -> URLPath:
         for route in self.routes:
             try:
                 return route.url_path_for(name, **path_params)

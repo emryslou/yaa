@@ -5,6 +5,7 @@
 4. middleware trustedhost: wildcards for domain
 5. add middlewares: session , basehttp
 6. support: clear session
+7. support: schema auto generate
 
 # v0.2.2
 1. middleware cors: support `allow_origin_regex`

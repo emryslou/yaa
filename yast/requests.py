@@ -104,6 +104,8 @@ class Request(Mapping):
 
     def url_for(self, name: str, **path_params: typing.Any) -> URL:
         router = self._scope["router"]
+
+        # todo: routing
         url = router.url_path_for(name, **path_params)
         return url.replace(secure=self.url.is_secure, netloc=self.url.netloc)
 

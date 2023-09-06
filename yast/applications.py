@@ -2,6 +2,7 @@ import inspect
 import typing
 from asyncio import iscoroutinefunction
 
+from yast.datastructures import URL, URLPath
 from yast.graphql import GraphQLApp
 from yast.lifespan import EventType, LifeSpanHandler
 from yast.middlewares import ExceptionMiddleware
@@ -15,10 +16,16 @@ class Yast(object):
         self.lifespan_handler = LifeSpanHandler()
         self.app = self.router
         self.exception_middleware = ExceptionMiddleware(self.router, debug=debug)
+        self.schema_generator = None
 
     @property
     def routes(self) -> typing.List[BaseRoute]:
-        return self.router.routes()
+        return self.router.routes
+
+    @property
+    def schema(self) -> dict:
+        assert self.schema_generator is not None
+        return self.schema_generator.get_schema(self.routes)
 
     @property
     def debug(self) -> bool:
@@ -82,7 +89,7 @@ class Yast(object):
 
         return decorator
 
-    def url_path_for(self, name, **path_params: str) -> str:
+    def url_path_for(self, name, **path_params: str) -> URLPath:
         return self.router.url_path_for(name=name, **path_params)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
