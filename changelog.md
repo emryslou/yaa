@@ -3,7 +3,7 @@
 2. add route: suport graphql
 3. lifespan: event_type support `shutdown`
 4. middleware trustedhost: wildcards for domain
-5. add basemiddleware
+5. add middlewares: session , basehttp
 
 # v0.2.2
 1. middleware cors: support `allow_origin_regex`
