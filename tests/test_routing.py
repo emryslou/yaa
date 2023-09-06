@@ -3,16 +3,17 @@ import pytest
 
 from yast import TestClient
 from yast.responses import Response, JSONResponse
-from yast.routing import Router, Path, PathPrefix, ProtocalRouter
+from yast.routing import Route, Mount, NoMatchFound, Router, WebSocketRoute
 from yast.staticfiles import StaticFiles
+import yast.status as http_status
 from yast.websockets import WebSocket, WebSocketDisconnect
 
 
-def home(scope):
+def home(_):
     return Response('Hello Home', media_type='text/plain')
 
-def user(scope):
-    content = scope['kwargs'].get('username', None)
+def users(req):
+    content = req.path_params.get('username', None)
     if content is None:
         content = 'All Users'
     else:
@@ -20,146 +21,127 @@ def user(scope):
     return Response(content, media_type='text/plain')
 
 
-def staticfiles(scope):
+def staticfiles(req):
     return Response('xxxx', media_type='image/ping')
 
 
-def http_endpoint(scope):
+def http_endpoint(req):
     return Response('Hello, Http', media_type='text/plain')
 
-def websocket_endpoint(scope):
-    async def asgi(receive, send):
-        session = WebSocket(scope, receive, send)
-        await session.accept()
-        await session.send_json({"hello": "websocket"})
-        await session.close()
-    
-    return asgi
+app = Router(routes=[
+    Route('/', endpoint=home, methods=['GET']),
+    Mount(
+        '/users',
+        app=Router(routes=[
+            Route('', endpoint=users),
+            Route('/{username}', endpoint=users)
+        ])
+    ),
+    Mount('/static', app=staticfiles)
+])
 
-def test_routing_not_found():
-    
-    app = Router()
-    client = TestClient(app)
-
-    res = client.get('/')
-    assert res.status_code == 404
-    assert res.text == 'Not Found'
+@app.route('/func')
+def func_home(req):
+    return Response('func home', media_type='text/plain')
 
 
-def test_routing_path():
-    app = Router([
-        Path('/', app=home, methods=['GET']),
-        Path('/index', app=home, methods=['GET']),
-    ])
-    client = TestClient(app)
+@app.route_ws('/ws')
+async def ws_endpoint(ss):
+    await ss.accept()
+    await ss.send_text('Hello, Ws')
+    await ss.close()
 
+@app.route_ws('/ws/{room}')
+async def ws_endpoint_room(ss):
+    await ss.accept()
+    await ss.send_text(f'Hello, Ws at {ss.path_params["room"]}')
+    await ss.close()
+
+client = TestClient(app)
+
+def test_router():
     res = client.get('/')
     assert res.status_code == 200
     assert res.text == 'Hello Home'
-    res = client.get('/index')
-    assert res.status_code == 200
-    assert res.text == 'Hello Home'
 
-    res = client.post('/')
-    assert res.status_code == 405
+    res = client.get('/func')
+    assert res.status_code == 200
+    assert res.text == 'func home'
+
+    res = client.post('/func')
+    assert res.status_code == http_status.HTTP_405_METHOD_NOT_ALLOWED
     assert res.text == 'Method Not Allowed'
 
-    res = client.get('/nope')
-    assert res.status_code == 404
-    assert res.text == 'Not Found'
-
-def test_routing_pathprefix():
-    app = Router([
-        PathPrefix(
-            '/user',
-            app=Router([
-                Path('', app=user),
-                Path('/{username}', app=user),
-            ]),
-            methods=['GET']
-        ),
-        PathPrefix('/static', app=staticfiles, methods=['GET'])
-    ])
-    client = TestClient(app)
-
-    res = client.get('/user')
+    res = client.get('/users')
+    assert res.status_code == 200
     assert res.text == 'All Users'
 
-    res = client.get('/user/aaaa')
-    assert res.text == 'User aaaa'
+    res = client.get('/users/Aa')
+    assert res.status_code == 200
+    assert res.text == 'User Aa'
 
-    res = client.post('/static/123')
-    assert res.status_code == 405
-    assert res.text == 'Method Not Allowed'
+    res = client.get('/static')
+    assert res.status_code == 200
+    assert res.text == 'xxxx'
 
 
-def test_demo(tmpdir):
-    ex_file = os.path.join(tmpdir, 'ex_file.txt')
+def test_websocket():
+    with client.wsconnect('/ws') as ss:
+        text = ss.receive_text()
+        assert text == 'Hello, Ws'
+    with client.wsconnect('/ws/abcd') as ss:
+        text = ss.receive_text()
+        assert text == 'Hello, Ws at abcd'
 
-    with open(ex_file, 'wb') as file:
-        file.write(b'<ex_file content>')
+def test_url_for():
+    assert app.url_for('home') == '/'
+    assert app.url_for('users', username='eml') == '/users/eml'
+    assert app.url_for('users') == '/users'
+
+
+def test_endpoint():
+    from yast.endpoints import HttpEndPoint
+    from yast.responses import HTMLResponse
+
+    class DemoEndpoint(HttpEndPoint):
+        def get(self, req):
+            return HTMLResponse(self.__class__.__name__ + ' OK')
     
-    app = Router([
-        Path('/', app=home, methods=['GET']),
-        PathPrefix(
-            '/user',
-            app=Router([
-                Path('', app=user),
-                Path('/{username}', app=user),
-            ]),
-            methods=['GET']
-        ),
-        PathPrefix('/static', app=StaticFiles(directory=tmpdir), methods=['GET'])
+    app.add_route('/demo', DemoEndpoint)
+
+    res = client.get('/demo')
+    assert res.status_code == 200
+    assert res.text == 'DemoEndpoint OK'
+    res = client.post('/demo')
+    assert res.status_code == http_status.HTTP_405_METHOD_NOT_ALLOWED
+
+@pytest.mark.timeout(3)
+def test_websocket_endpoint():
+    from yast.endpoints import WebSocketEndpoint
+    class WsApp(WebSocketEndpoint):
+        encoding = 'text'
+        async def on_receive(self, data):
+            await self.send(data + self.__class__.__name__, 'text')
+    
+    app.add_route_ws('/ws_app', WsApp)
+    with client.wsconnect('/ws_app') as ss:
+        ss.send_text('hello')
+        text = ss.receive_text()
+        assert text == 'helloWsApp'
+
+@pytest.mark.timeout(3)
+def test_mixed_app():
+    from yast.routing import Route, WebSocketRoute
+    mixed_app = Router([
+        Route('/', endpoint=http_endpoint),
+        WebSocketRoute('/', endpoint=ws_endpoint)
     ])
-    client = TestClient(app)
 
-    res = client.get('/static/ex_file.txt')
-    assert res.status_code == 200
-    assert res.text == '<ex_file content>'
-
-    res = client.get('/')
-    assert res.status_code == 200
-    assert res.content == b'Hello Home'
-
-
-def test_protocal_switch():
-    mixed_protocal_app = ProtocalRouter({
-        'http': Router([Path('/', app=http_endpoint)]),
-        'websocket': Router([Path('/', app=websocket_endpoint)]),
-    })
-
-    client = TestClient(mixed_protocal_app)
+    client = TestClient(mixed_app)
     res = client.get('/')
     assert res.status_code == 200
     assert res.text == 'Hello, Http'
 
-    with client.wsconnect('/') as session:
-        assert session.receive_json() == {"hello": 'websocket'}
-    
-    with pytest.raises(WebSocketDisconnect):
-        client.wsconnect('/404')
-
-
-def test_router():
-    from yast import Yast
-    app = Yast()
-
-    @app.route('/func')
-    def func_homepage(_):
-        return Response('Hello Func HomePage', media_type='text/plain')
-    
-    @app.ws_route('/ws')
-    async def ws_endpoint(ss):
-        await ss.accept()
-        await ss.send_text('Hello, Ws')
-        await ss.close()
-    
-    client = TestClient(app)
-    res = client.get('/func')
-    assert res.status_code == 200
-    assert res.text == 'Hello Func HomePage'
-
-    with client.wsconnect('/ws') as ss:
+    with client.wsconnect('/') as ss:
         text = ss.receive_text()
         assert text == 'Hello, Ws'
-    

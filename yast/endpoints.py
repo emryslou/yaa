@@ -17,21 +17,21 @@ class HttpEndPoint(object):
     
     async def __call__(self, receive: Receive, send: Send) -> None:
         req = Request(self.scope, receive) 
-        res = await self.dispatch(req, **self.scope.get('kwargs', {}))
+        res = await self.dispatch(req)
 
         await res(receive, send)
     
-    async def dispatch(self, req: Request, **kwargs: typing.Any) -> Response:
+    async def dispatch(self, req: Request) -> Response:
         handler_name = 'get' if req.method == 'HEAD' else req.method.lower()
         handler = getattr(self, handler_name, self.method_not_allowed)
 
         if asyncio.iscoroutinefunction(handler):
-            res = await handler(req, **kwargs)
+            res = await handler(req)
         else:
-            res = handler(req, **kwargs)
+            res = handler(req)
         return res
     
-    async def method_not_allowed(self, req: Request, **kwargs: typing.Any):
+    async def method_not_allowed(self, req: Request):
         if 'app' in self.scope:
             raise HttpException(status_code=405)
         return PlainTextResponse('Method Not Allowed', 405)

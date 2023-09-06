@@ -26,12 +26,12 @@ def _add_router():
         return PlainTextResponse('Hello, afun')
 
     @app.route('/kwargs/{arg0}')
-    def func_kwargs(request, **kwargs):
-        return JSONResponse({'func': 'func_kwargs', 'kwargs': kwargs})
+    def func_kwargs(request):
+        return JSONResponse({'func': 'func_kwargs', 'path_params': request.path_params})
 
     @app.route('/kwargs1/{arg1}')
-    def func_kwargs(request, arg1):
-        return JSONResponse({'func': 'func_kwargs', 'arg1': arg1})
+    def func_kwargs(request):
+        return JSONResponse({'func': 'func_kwargs', 'arg1': request.path_params['arg1']})
 
 def test_func_route():
     
@@ -47,7 +47,7 @@ def test_func_route():
 
     res = client.get('/kwargs/aaa')
     assert res.status_code == 200
-    assert res.json() == {'func': 'func_kwargs', 'kwargs': {'arg0': 'aaa'}}
+    assert res.json() == {'func': 'func_kwargs', 'path_params': {'arg0': 'aaa'}}
 
     res = client.get('/kwargs1/aaa')
     assert res.status_code == 200

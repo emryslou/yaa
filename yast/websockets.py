@@ -60,6 +60,9 @@ class WebSocket(Mapping):
         
         return self._query_params
     
+    @property
+    def path_params(self) -> dict:
+        return self._scope.get('path_params', {})
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:

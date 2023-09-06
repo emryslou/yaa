@@ -5,7 +5,7 @@ import typing
 from yast.graphql import GraphQLApp
 from yast.lifespan import LifeSpanHandler, EventType
 from yast.middlewares import ExceptionMiddleware
-from yast.routing import Route, Router
+from yast.routing import Route, Router, BaseRoute
 from yast.types import ASGIApp, Scope, ASGIInstance
 
 class Yast(object):
@@ -16,6 +16,11 @@ class Yast(object):
         self.exception_middleware = ExceptionMiddleware(
                 self.router, debug=debug
             )
+    
+    @property
+    def routes(self) -> typing.List[BaseRoute]:
+        return self.router.routes()
+
     @property
     def debug(self) -> bool:
         return self.exception_middleware.debug
@@ -33,11 +38,8 @@ class Yast(object):
     def debug(self, val: bool) -> None:
         self.exception_middleware.debug = val
     
-    def mount(
-            self, path: str,
-            app: ASGIApp, methods:list[str] = None
-        ) -> None:
-        self.router.mount(path, app=app, methods=methods)
+    def mount(self, path: str, app: ASGIApp) -> None:
+        self.router.mount(path, app=app)
     
     def add_exception_handler(
             self, exc_class: type,
@@ -54,14 +56,14 @@ class Yast(object):
     
     def add_route(
             self, path: str,
-            route: typing.Union[typing.Callable, Route],
+            route: typing.Union[typing.Callable, BaseRoute],
             methods: list[str] = None
         ) -> None:    
         self.router.add_route(path, route, methods=methods)
     
     def add_route_ws(
             self, path: str,
-            route: typing.Union[typing.Callable, Route]
+            route: typing.Union[typing.Callable, BaseRoute]
         ) -> None:
         self.router.add_route_ws(path, route)
     
@@ -92,6 +94,9 @@ class Yast(object):
             return func
         
         return decorator
+
+    def url_for(self, name, **path_params: str) -> str:
+        return self.router.url_for(name=name, **path_params)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope['app'] = self

@@ -24,6 +24,13 @@ class BaseRoute(object):
     
     def __call__(self, scope: Scope) -> ASGIInstance:
         raise NotImplementedError()
+    
+    def __str__(self) -> str:
+        return '%s(path=%s,endpoint=%s)' % (
+                self.__class__.__name__,
+                getattr(self, 'path', ''),
+                getattr(self, 'name', '')
+            )
 
 
 class Route(BaseRoute):
@@ -37,9 +44,11 @@ class Route(BaseRoute):
         self.name = get_name(endpoint)
         if inspect.isfunction(endpoint):
             self.app = req_res(endpoint)
+            if methods is None:
+                methods = ['GET']
         else:
             self.app = endpoint
-
+        self.methods = methods
         regex = '^' + path + '$'
         regex = re.sub('{([a-zA-Z_][a-zA-Z0-9_]*)}', r"(?P<\1>[^/]+)", regex)
         self.path_regex = re.compile(regex)
@@ -144,6 +153,9 @@ class Mount(BaseRoute):
     def routes(self):
         return getattr(self.app, 'routes', None)
     
+    @property
+    def name(self):
+        return '??'
 
     def matches(self, scope: Scope) -> typing.Tuple[bool, Scope]:
         if scope['type'] == 'http':
@@ -191,6 +203,22 @@ class Router(object):
         prefix = Mount(path, app=app)
         self.routes.append(prefix)
     
+    def route(
+            self, path: str, methods: typing.Sequence[str] = None
+        ) -> typing.Callable:
+            def decorator(func: typing.Callable) -> typing.Callable:
+                self.add_route(path, func, methods=methods)
+                return func
+            
+            return decorator
+
+    def route_ws(self, path: str) -> typing.Callable:
+        def decorator(func: typing.Callable) -> typing.Callable:
+            self.add_route_ws(path, func)
+            return func
+            
+        return decorator
+
     def add_route(
             self, path: str, endpoint: typing.Callable, 
             methods: typing.Sequence[str] = None
@@ -203,20 +231,11 @@ class Router(object):
             executor: typing.Any = None
         ) -> None:
         route = GraphQLApp(schema=schema, executor=executor)
-        self.add_route(path=path, route=route)
+        self.add_route(path=path, endpoint=route)
     
     def add_route_ws(self, path, route: typing.Callable) -> None:
         instance = WebSocketRoute(path, endpoint=route)
         self.routes.append(instance)
-
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        assert scope['type'] in ('http', 'websocket')
-        for route in self.routes:
-            match, child_scope = route.matches(scope)
-            if match:
-                return route(child_scope)
-        
-        return self.not_found(scope)
     
     def not_found(self, scope: Scope) -> ASGIInstance:
         if scope['type'] == 'websocket':
@@ -225,7 +244,26 @@ class Router(object):
         if 'app' in scope:
             raise HttpException(status_code=404)
         return PlainTextResponse('Not Found', 404)
+    def url_for(self, name: str, **path_params) -> str:
+        for route in self.routes:
+            try:
+                return route.url_for(name, **path_params)
+            except NoMatchFound:
+                pass
+        
+        raise NoMatchFound()
 
+    def __call__(self, scope: Scope) -> ASGIInstance:
+        assert scope['type'] in ('http', 'websocket')
+        for route in self.routes:
+            match,child_scope = route.matches(scope)
+            if match:
+                return route(child_scope)
+        
+        return self.not_found(scope)
+    
+    def __eq__(self, other: typing.Any) -> bool:
+        return isinstance(other, Router) and self.routes == other.routes
 
 class ProtocalRouter(object):
     def __init__(self, protocals: typing.Dict[str, ASGIApp]) -> None:
@@ -242,9 +280,9 @@ def req_res(func: typing.Callable):
             req = Request(scope, recv)
             kwargs = scope.get('kwargs', {})
             if is_coroutine:
-                res = await func(req, **kwargs)
+                res = await func(req)
             else:    
-                res = func(req, **kwargs)
+                res = func(req)
             
             await res(recv, send)
 
@@ -256,7 +294,7 @@ def ws_session(func: typing.Callable):
     def app(scope: Scope) -> ASGIInstance:
         async def awaitable(recv: Receive, send: Send) -> None:
             session = WebSocket(scope, recv, send)
-            await func(session, **scope.get('kwargs', {}))
+            await func(session)
 
         return awaitable
 

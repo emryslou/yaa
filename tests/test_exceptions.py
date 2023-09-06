@@ -4,7 +4,7 @@ from yast import TestClient
 from yast.middlewares import ExceptionMiddleware
 from yast.exceptions import HttpException
 from yast.responses import PlainTextResponse
-from yast.routing import Router, Path
+from yast.routing import Router, Route
 
 
 def raise_runtime_error(scope):
@@ -35,10 +35,10 @@ def handled_exc_after_response(scope):
     return asgi
 
 router = Router([
-    Path('/runtime_error', app=raise_runtime_error),
-    Path('/not_acceptable', app=not_acceptable),
-    Path('/not_modified', app=not_modified),
-    Path('/handled_exc_after_response', app=handled_exc_after_response)
+    Route('/runtime_error', endpoint=raise_runtime_error),
+    Route('/not_acceptable', endpoint=not_acceptable),
+    Route('/not_modified', endpoint=not_modified),
+    Route('/handled_exc_after_response', endpoint=handled_exc_after_response)
 ])
 
 app = ExceptionMiddleware(router)
@@ -75,7 +75,8 @@ def test_not_modified():
     assert "" == res.text
 
 def test_websockets_should_raise():
-    with pytest.raises(RuntimeError):
+    from yast.websockets import WebSocketDisconnect
+    with pytest.raises(WebSocketDisconnect):
         with client.wsconnect('/runtime_error') as _:
             pass
             
