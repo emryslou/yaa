@@ -49,11 +49,13 @@ class Route(BaseRoute):
         path: str,
         *,
         endpoint: typing.Callable,
-        methods: typing.Sequence[str] = None
+        methods: typing.Sequence[str] = None,
+        include_in_schema: bool = True
     ) -> None:
         self.path = path
         self.endpoint = endpoint
         self.name = get_name(endpoint)
+        self.include_in_schema = include_in_schema
         if inspect.isfunction(endpoint) or inspect.ismethod(endpoint):
             self.app = req_res(endpoint)
             if methods is None:
@@ -212,9 +214,16 @@ class Router(object):
         prefix = Mount(path, app=app)
         self.routes.append(prefix)
 
-    def route(self, path: str, methods: typing.Sequence[str] = None) -> typing.Callable:
+    def route(
+        self,
+        path: str,
+        methods: typing.Sequence[str] = None,
+        include_in_schema: bool = True,
+    ) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
-            self.add_route(path, func, methods=methods)
+            self.add_route(
+                path, func, methods=methods, include_in_schema=include_in_schema
+            )
             return func
 
         return decorator
@@ -227,9 +236,18 @@ class Router(object):
         return decorator
 
     def add_route(
-        self, path: str, endpoint: typing.Callable, methods: typing.Sequence[str] = None
+        self,
+        path: str,
+        endpoint: typing.Callable,
+        methods: typing.Sequence[str] = None,
+        include_in_schema: bool = True,
     ) -> None:
-        instance = Route(path, endpoint=endpoint, methods=methods)
+        instance = Route(
+            path,
+            endpoint=endpoint,
+            methods=methods,
+            include_in_schema=include_in_schema,
+        )
         self.routes.append(instance)
 
     def add_route_graphql(

@@ -6,6 +6,7 @@
 5. add middlewares: session , basehttp
 6. support: clear session
 7. support: schema auto generate
+8. schema generate switch: default: on
 
 # v0.2.2
 1. middleware cors: support `allow_origin_regex`

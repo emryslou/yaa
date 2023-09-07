@@ -30,26 +30,31 @@ setup(
         "yast": "yast",
     },
     extras_requires = {
-        'full': [
+        'standard': [
             'requests',
             'aiofiles',
             'ujson',
             'python-multipart',
+            'itsdangerous',
+        ],
+        'graphql': [
             'graphql-core < 3',
             'graphene',
-            'isort',
-            'itsdangerous',
+        ],
+        'schema': [
+            'pyyaml',
         ],
         'test': [
             'pytest',
             'pytest-cov',
             'pytest-timeout',
-            'black',
         ],
-        'docs': [
+        'dev': [
+            'black',
+            'isort',
             'mkdocs',
             'mkdocs-material',
-        ]
+        ],
     },
     classifiers=[
         'Programing Language Python :: 3.10.12',

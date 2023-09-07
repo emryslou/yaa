@@ -6,6 +6,7 @@ try:
 except ImportError:
     yaml = None
 
+from yast.responses import Response
 from yast.routing import BaseRoute, Route
 
 
@@ -23,7 +24,7 @@ class SchemaGenerator(BaseSchemaGenerator):
         paths = {}
 
         for route in routes:
-            if not isinstance(route, Route):
+            if not isinstance(route, Route) or not route.include_in_schema:
                 continue
 
             if inspect.isfunction(route.endpoint) or inspect.ismethod(route.endpoint):
@@ -49,3 +50,15 @@ class SchemaGenerator(BaseSchemaGenerator):
         schema = dict(self.base_schema)
         schema["paths"] = paths
         return schema
+
+
+class OpenAPIResponse(Response):
+    media_type = "application/vnd.oai.openapi"
+
+    def render(self, content: typing.Any) -> bytes:
+        assert yaml is not None, "`pyyaml` must be installed to use OpenAPIResponse"
+        assert isinstance(
+            content, dict
+        ), "The schema passed to OpenAPIResponse should be a dict"
+
+        return yaml.dump(content, default_flow_style=False).encode("utf-8")

@@ -59,8 +59,11 @@ class Yast(object):
         path: str,
         route: typing.Union[typing.Callable, BaseRoute],
         methods: list[str] = None,
+        include_in_schema: bool = True,
     ) -> None:
-        self.router.add_route(path, route, methods=methods)
+        self.router.add_route(
+            path, route, methods=methods, include_in_schema=include_in_schema
+        )
 
     def add_route_ws(
         self, path: str, route: typing.Union[typing.Callable, BaseRoute]
@@ -75,9 +78,13 @@ class Yast(object):
     def add_middleware(self, middleware_class: type, **kwargs: typing.Any) -> None:
         self.exception_middleware.app = middleware_class(self.app, **kwargs)
 
-    def route(self, path: str, methods: list[str] = None) -> typing.Callable:
+    def route(
+        self, path: str, methods: list[str] = None, include_in_schema: bool = True
+    ) -> typing.Callable:
         def decorator(func):
-            self.router.add_route(path, func, methods)
+            self.router.add_route(
+                path, func, methods, include_in_schema=include_in_schema
+            )
             return func
 
         return decorator
