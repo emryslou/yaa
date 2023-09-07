@@ -70,11 +70,6 @@ class Yast(object):
     ) -> None:
         self.router.add_route_ws(path, route)
 
-    def add_route_graphql(
-        self, path: str, schema: typing.Any, executor: typing.Any = None
-    ) -> None:
-        self.router.add_route_graphql(path, schema=schema)
-
     def add_middleware(self, middleware_class: type, **kwargs: typing.Any) -> None:
         self.exception_middleware.app = middleware_class(self.app, **kwargs)
 

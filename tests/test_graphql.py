@@ -3,7 +3,7 @@ import graphene
 try:
     from graphql.execution.executors.asyncio import AsyncioExecutor
 except ImportError:
-    print(graphql.__dir__())
+    pass
 
 from yast.graphql import GraphQLApp
 from yast.testclient import TestClient
@@ -96,7 +96,7 @@ def test_add_graphql_route():
     from yast import Yast
 
     app = Yast()
-    app.add_route_graphql("/", schema)
+    app.add_route("/", GraphQLApp(schema=schema))
     client = TestClient(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200

@@ -250,12 +250,6 @@ class Router(object):
         )
         self.routes.append(instance)
 
-    def add_route_graphql(
-        self, path: str, schema: typing.Any, executor: typing.Any = None
-    ) -> None:
-        route = GraphQLApp(schema=schema, executor=executor)
-        self.add_route(path=path, endpoint=route)
-
     def add_route_ws(self, path, route: typing.Callable) -> None:
         instance = WebSocketRoute(path, endpoint=route)
         self.routes.append(instance)
