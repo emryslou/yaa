@@ -96,7 +96,6 @@ class Yast(object):
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope["app"] = self
-        scope["router"] = self.router
         if scope["type"] == "lifespan":
             return self.lifespan_handler(scope)
 
