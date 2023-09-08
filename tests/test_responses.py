@@ -1,22 +1,45 @@
+import asyncio
 import os
 
 import pytest
 
+from yast.background import BackgroundTask
 from yast.responses import FileResponse, RedirectResponse, Response, StreamingResponse
 from yast.testclient import TestClient
 
 
 def test_response_text():
+    filled_by_bg_task = ""
+
     def app(scope):
+        async def numbers(min, max):
+            for i in range(min, max + 1):
+                yield str(i)
+                if i != max:
+                    yield ","
+                await asyncio.sleep(0)
+
+        async def numbers_for_cleanup(start=1, stop=5):
+            nonlocal filled_by_bg_task
+            async for thing in numbers(start, stop):
+                filled_by_bg_task = filled_by_bg_task + thing
+
+        cleanup_task = BackgroundTask(numbers_for_cleanup, start=6, stop=9)
+
         async def asgi(recv, send):
-            response = Response("Hello, Response", media_type="text/plain")
+            genrator = numbers(1, 5)
+            response = StreamingResponse(
+                genrator, media_type="text/plain", background=cleanup_task
+            )
             await response(recv, send)
 
         return asgi
 
+    assert filled_by_bg_task == ""
     client = TestClient(app)
     res = client.get("/")
-    assert res.text == "Hello, Response"
+    assert res.text == "1,2,3,4,5"
+    assert filled_by_bg_task == "6,7,8,9"
 
 
 def test_response_bytes():
@@ -99,8 +122,24 @@ def test_file_response(tmpdir):
     with open(path, "wb") as file:
         file.write(content)
 
+    filled_by_bg_task = ""
+
+    async def numbers(minimum, maximum):
+        for i in range(minimum, maximum + 1):
+            yield str(i)
+            if i != maximum:
+                yield ","
+            await asyncio.sleep(0)
+
+    async def numbers_for_cleanup(start=1, stop=5):
+        nonlocal filled_by_bg_task
+        async for thing in numbers(start, stop):
+            filled_by_bg_task = filled_by_bg_task + thing
+
+    cleanup_task = BackgroundTask(numbers_for_cleanup, start=6, stop=9)
+
     def app(scope):
-        return FileResponse(path=path, filename="example.png")
+        return FileResponse(path=path, filename="example.png", background=cleanup_task)
 
     client = TestClient(app)
 
@@ -110,6 +149,7 @@ def test_file_response(tmpdir):
     assert res.headers["content-type"] == "image/png"
     assert res.headers["content-disposition"] == 'attachment; filename="example.png"'
     assert "content-length" in res.headers
+    assert filled_by_bg_task == "6,7,8,9"
 
 
 def test_redirect():

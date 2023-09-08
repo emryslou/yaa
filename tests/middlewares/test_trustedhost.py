@@ -61,3 +61,17 @@ def test_wildcard():
     client = TestClient(app, base_url="http://ff.aa.com")
     res = client.get("/")
     assert res.status_code == 400
+
+
+def test_www_redirect():
+    app = Yast()
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["www.example.com"])
+
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse("OK", status_code=200)
+
+    client = TestClient(app, base_url="https://example.com")
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.url == "https://www.example.com/"
