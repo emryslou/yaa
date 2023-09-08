@@ -22,7 +22,7 @@ def list_users(request):
       200:
         description: A list of users.
         examples:
-          [{"username": "tom"}, {"username": "lucy"}]
+          [{"username": "ZS"}, {"username": "Cuihua"}]
     """
     pass  # pragma: no cover
 
@@ -34,7 +34,7 @@ def create_user(request):
       200:
         description: A user.
         examples:
-          {"username": "tom"}
+          {"username": "ZS"}
     """
     pass  # pragma: no cover
 
@@ -95,13 +95,13 @@ def test_schema_generation():
                     "responses": {
                         200: {
                             "description": "A list of users.",
-                            "examples": [{"username": "tom"}, {"username": "lucy"}],
+                            "examples": [{"username": "ZS"}, {"username": "Cuihua"}],
                         }
                     }
                 },
                 "post": {
                     "responses": {
-                        200: {"description": "A user.", "examples": {"username": "tom"}}
+                        200: {"description": "A user.", "examples": {"username": "ZS"}}
                     }
                 },
             },
@@ -135,14 +135,14 @@ paths:
         200:
           description: A list of users.
           examples:
-          - username: tom
-          - username: lucy
+          - username: ZS
+          - username: Cuihua
     post:
       responses:
         200:
           description: A user.
           examples:
-            username: tom
+            username: ZS
 """
 
 

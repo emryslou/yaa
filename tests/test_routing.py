@@ -4,7 +4,7 @@ import pytest
 
 import yast.status as http_status
 from yast import TestClient
-from yast.responses import JSONResponse, Response
+from yast.responses import JSONResponse, PlainTextResponse, Response
 from yast.routing import Mount, NoMatchFound, Route, Router, WebSocketRoute
 from yast.staticfiles import StaticFiles
 from yast.websockets import WebSocket, WebSocketDisconnect
@@ -37,7 +37,10 @@ app = Router(
         Mount(
             "/users",
             app=Router(
-                routes=[Route("", endpoint=users), Route("/{username}", endpoint=users)]
+                routes=[
+                    Route("/", endpoint=users),
+                    Route("/{username}", endpoint=users),
+                ]
             ),
         ),
         Mount("/static", app=staticfiles),
@@ -177,4 +180,32 @@ def test_url_for():
             base_url="https://example.org"
         )
         == "wss://example.org/ws"
+    )
+
+
+def ok(request):
+    return PlainTextResponse("OK")
+
+
+def test_mount_urls():
+    mounted = Router([Mount("/users", ok, name="users")])
+    client = TestClient(mounted)
+    assert client.get("/users").status_code == 200
+    assert client.get("/users").url == "http://testserver/users/"
+    assert client.get("/users/").status_code == 200
+    assert client.get("/users/a").status_code == 200
+    assert client.get("/usersa").status_code == 404
+
+
+def test_reverse_mount_urls():
+    mounted = Router([Mount("/users", ok, name="users")])
+    assert mounted.url_path_for("users", path="/a") == "/users/a"
+    users = Router([Route("/{username}", ok, name="user")])
+    mounted = Router([Mount("/{subpath}/users", users, name="users")])
+    assert (
+        mounted.url_path_for("users:user", subpath="test", username="tom")
+        == "/test/users/tom"
+    )
+    assert (
+        mounted.url_path_for("users", subpath="test", path="/tom") == "/test/users/tom"
     )

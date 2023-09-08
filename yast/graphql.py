@@ -57,7 +57,6 @@ class GraphQLApp(object):
                     status_code=web_status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 )
         else:
-            print("debug -- 01", req.method)
             return PlainTextResponse(
                 "Method Not Allowed", status_code=web_status.HTTP_405_METHOD_NOT_ALLOWED
             )
