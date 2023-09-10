@@ -170,18 +170,18 @@ class Mount(BaseRoute):
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "http":
-            path = scope['path']
+            path = scope["path"]
             match = self.path_regex.match(path)
             if match:
                 matched_params = match.groupdict()
-                remaining_path = matched_params.pop('path')
-                matched_path = path[:-len(remaining_path)]
+                remaining_path = matched_params.pop("path")
+                matched_path = path[: -len(remaining_path)]
                 path_params = dict(scope.get("path_params", {}))
                 path_params.update(matched_params)
                 child_scope = {
-                    'path_param': path_params,
-                    'root_path': scope.get('root_path', '') + matched_path,
-                    'path': remaining_path,
+                    "path_param": path_params,
+                    "root_path": scope.get("root_path", "") + matched_path,
+                    "path": remaining_path,
                 }
                 return Match.FULL, child_scope
         return Match.NONE, {}
