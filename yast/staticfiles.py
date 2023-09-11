@@ -8,7 +8,11 @@ from yast.types import Scope
 
 
 class StaticFiles(object):
-    def __init__(self, *, directory) -> None:
+    def __init__(self, *, directory, check_dir: bool = True) -> None:
+        if check_dir:
+            assert os.path.isdir(directory), 'Directory "%s" does not exists' % (
+                directory
+            )
         self.directory = directory
         self.config_checked = False
 
