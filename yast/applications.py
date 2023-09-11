@@ -41,8 +41,8 @@ class Yast(object):
     def debug(self, val: bool) -> None:
         self.exception_middleware.debug = val
 
-    def mount(self, path: str, app: ASGIApp) -> None:
-        self.router.mount(path, app=app)
+    def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
+        self.router.mount(path, app=app, name=name)
 
     def add_exception_handler(self, exc_class: type, handler: typing.Callable) -> None:
         self.exception_middleware.add_exception_handler(exc_class, handler)

@@ -15,6 +15,7 @@ except ImportError:
     GraphQLError = None
 
 import yast.status as web_status
+from yast.concurrency import run_in_threadpool
 from yast.requests import Request
 from yast.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from yast.types import ASGIInstance, Receive, Scope, Send
@@ -99,11 +100,12 @@ class GraphQLApp(object):
                 return_promise=True,
             )
         else:
-            func = functools.partial(
-                self.schema.execute, variable=variable, operation_name=operation_name
+            return await run_in_threadpool(
+                self.schema.execute,
+                query,
+                variable=variable,
+                operation_name=operation_name,
             )
-            loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(None, func, query)
 
 
 GRAPHIQL = """

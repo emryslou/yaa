@@ -4,6 +4,7 @@ import typing
 import ujson as json
 
 import yast.status as status
+from yast.concurrency import run_in_threadpool
 from yast.exceptions import HttpException
 from yast.requests import Request
 from yast.responses import PlainTextResponse, Response
@@ -29,8 +30,7 @@ class HttpEndPoint(object):
         if asyncio.iscoroutinefunction(handler):
             res = await handler(req)
         else:
-            loop = asyncio.get_event_loop()
-            res = await loop.run_in_executor(None, handler, req)
+            res = await run_in_threadpool(handler, req)
         return res
 
     async def method_not_allowed(self, req: Request):

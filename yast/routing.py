@@ -4,8 +4,8 @@ import inspect
 import re
 import typing
 from asyncio import iscoroutinefunction
-from concurrent.futures import ThreadPoolExecutor
 
+from yast.concurrency import run_in_threadpool
 from yast.datastructures import URL, URLPath
 from yast.exceptions import HttpException
 from yast.graphql import GraphQLApp
@@ -232,8 +232,8 @@ class Router(object):
         self.redirect_slashes = redirect_slashes
         self.default = self.not_found if default is None else default
 
-    def mount(self, path: str, app: ASGIApp) -> None:
-        prefix = Mount(path, app=app)
+    def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
+        prefix = Mount(path, app=app, name=name)
         self.routes.append(prefix)
 
     def route(
@@ -347,8 +347,7 @@ def req_res(func: typing.Callable):
             if is_coroutine:
                 res = await func(req)
             else:
-                loop = asyncio.get_event_loop()
-                res = await loop.run_in_executor(None, func, req)
+                res = await run_in_threadpool(func, req)
 
             await res(recv, send)
 
