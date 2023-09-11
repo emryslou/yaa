@@ -5,7 +5,7 @@ from asyncio import iscoroutinefunction
 from yast.datastructures import URL, URLPath
 from yast.graphql import GraphQLApp
 from yast.lifespan import EventType, LifeSpanHandler
-from yast.middlewares import ExceptionMiddleware
+from yast.middlewares import BaseHttpMiddleware, ExceptionMiddleware
 from yast.routing import BaseRoute, Route, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
@@ -87,6 +87,16 @@ class Yast(object):
     def ws_route(self, path: str) -> typing.Callable:
         def decorator(func):
             self.router.add_route_ws(path, func)
+            return func
+
+        return decorator
+
+    def middleware(self, middleware_type: str) -> typing.Callable:
+        assert middleware_type == "http", 'Current only middleware("http") is supported'
+
+        def decorator(func: typing.Callable) -> typing.Callable:
+            self.add_middleware(BaseHttpMiddleware, dispatch=func)
+
             return func
 
         return decorator

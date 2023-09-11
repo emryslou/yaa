@@ -76,7 +76,7 @@ class Route(BaseRoute):
             if match:
                 path_params = dict(scope.get("path_params", {}))
                 path_params.update(match.groupdict())
-                child_scope = {"path_params": path_params}
+                child_scope = {"endpoint": self.endpoint, "path_params": path_params}
                 if self.methods and scope["method"] not in self.methods:
                     return Match.PARTIAL, child_scope
                 return Match.FULL, child_scope
@@ -131,7 +131,7 @@ class WebSocketRoute(BaseRoute):
             if match:
                 path_params = dict(scope.get("path_params", {}))
                 path_params.update(match.groupdict())
-                child_scope = {"path_params": path_params}
+                child_scope = {"endpoint": self.endpoint, "path_params": path_params}
                 return Match.FULL, child_scope
         return Match.NONE, {}
 
@@ -182,6 +182,7 @@ class Mount(BaseRoute):
                     "path_param": path_params,
                     "root_path": scope.get("root_path", "") + matched_path,
                     "path": remaining_path,
+                    "endpoint": self.app,
                 }
                 return Match.FULL, child_scope
         return Match.NONE, {}

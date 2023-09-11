@@ -6,10 +6,16 @@ from yast.requests import Request
 from yast.responses import StreamingResponse
 from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
 
+RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[ASGIInstance]]
+DispatchFunction = typing.Callable[
+    [Request, RequestResponseEndpoint], typing.Awaitable[ASGIInstance]
+]
+
 
 class BaseHttpMiddleware(object):
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, dispatch: DispatchFunction = None) -> None:
         self.app = app
+        self.dispatch_func = dispatch if dispatch is not None else self.dispath
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         if scope["type"] != "http":
@@ -19,7 +25,7 @@ class BaseHttpMiddleware(object):
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         req = Request(scope, receive=receive)
-        res = await self.dispath(req, self.call_next)
+        res = await self.dispatch_func(req, self.call_next)
         await res(receive, send)
 
     async def call_next(self, req: Request) -> ASGIInstance:
@@ -55,5 +61,7 @@ class BaseHttpMiddleware(object):
         res.raw_headers = message["headers"]
         return res
 
-    async def dispath(self, req: Request, call_next: typing.Callable) -> ASGIInstance:
+    async def dispath(
+        self, req: Request, call_next: RequestResponseEndpoint
+    ) -> ASGIInstance:
         raise NotImplementedError()

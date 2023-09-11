@@ -68,3 +68,27 @@ def test_vendor():
 
     with pytest.raises(RuntimeError):
         client.get("/no_res")
+
+
+def test_decorator():
+    app = Yast()
+
+    @app.route("/homepage")
+    def _(_):
+        return PlainTextResponse("Homepage")
+
+    @app.middleware("http")
+    async def plaintext(req, call_next):
+        if req.url.path == "/":
+            return PlainTextResponse("OK")
+        res = await call_next(req)
+        res.headers["Handler"] = "@Func"
+        return res
+
+    client = TestClient(app)
+    res = client.get("/")
+    assert res.text == "OK"
+
+    res = client.get("/homepage")
+    assert res.text == "Homepage"
+    assert res.headers["Handler"] == "@Func"
