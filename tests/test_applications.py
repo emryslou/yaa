@@ -192,3 +192,39 @@ def test_add_ws():
     with client.wsconnect("/homepage") as ss:
         text = ss.receive_text()
         assert text == "Hello Ws"
+
+
+def test_exception_handler():
+    from yast import TestClient
+    from yast.responses import PlainTextResponse
+
+    app = Yast()
+
+    @app.exception_handler(500)
+    async def err_500(req, _):
+        return PlainTextResponse("Err 500", status_code=500)
+
+    @app.exception_handler(405)
+    async def err_405(req, _):
+        return PlainTextResponse("Err 405", status_code=405)
+
+    @app.route("/500")
+    def _(_):
+        raise RuntimeError("RtErr")
+
+    @app.route("/405", methods=["GET"])
+    def _405(_):
+        return PlainTextResponse("405")
+
+    client = TestClient(app, raise_server_exceptions=False)
+    res = client.get("/500")
+    assert res.status_code == 500
+    assert res.text == "Err 500"
+
+    res = client.get("/405")
+    assert res.status_code == 200
+    assert res.text == "405"
+
+    res = client.post("/405")
+    assert res.status_code == 405
+    assert res.text == "Err 405"

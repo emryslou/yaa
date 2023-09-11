@@ -5,17 +5,26 @@ from asyncio import iscoroutinefunction
 from yast.datastructures import URL, URLPath
 from yast.graphql import GraphQLApp
 from yast.lifespan import EventType, LifeSpanHandler
-from yast.middlewares import BaseHttpMiddleware, ExceptionMiddleware
+from yast.middlewares import (
+    BaseHttpMiddleware,
+    ExceptionMiddleware,
+    ServerErrorMiddleware,
+)
 from yast.routing import BaseRoute, Route, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
 
 class Yast(object):
     def __init__(self, debug: bool = False) -> None:
+        self._debug = debug
         self.router = Router(routes=[])
         self.lifespan_handler = LifeSpanHandler()
         self.app = self.router
         self.exception_middleware = ExceptionMiddleware(self.router, debug=debug)
+        self.error_middleware = ServerErrorMiddleware(
+            self.exception_middleware,
+            debug=debug,
+        )
         self.schema_generator = None
 
     @property
@@ -29,7 +38,7 @@ class Yast(object):
 
     @property
     def debug(self) -> bool:
-        return self.exception_middleware.debug
+        return self._debug
 
     def on_event(self, event_type: EventType) -> None:
         return self.lifespan_handler.on_event(event_type)
@@ -39,17 +48,30 @@ class Yast(object):
 
     @debug.setter
     def debug(self, val: bool) -> None:
+        self._debug = val
         self.exception_middleware.debug = val
+        self.error_middleware.debug = val
 
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
         self.router.mount(path, app=app, name=name)
 
-    def add_exception_handler(self, exc_class: type, handler: typing.Callable) -> None:
-        self.exception_middleware.add_exception_handler(exc_class, handler)
+    def add_exception_handler(
+        self,
+        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
+        handler: typing.Callable,
+    ) -> None:
+        if exc_class_or_status_code in (500, Exception):
+            self.error_middleware.handler = handler
+        else:
+            self.exception_middleware.add_exception_handler(
+                exc_class_or_status_code, handler
+            )
 
-    def exception_handler(self, exc_class: type) -> typing.Callable:
+    def exception_handler(
+        self, exc_class_or_status_code: typing.Union[int, typing.Type[Exception]]
+    ) -> typing.Callable:
         def decorator(func):
-            self.add_exception_handler(exc_class, func)
+            self.add_exception_handler(exc_class_or_status_code, func)
             return func
 
         return decorator
@@ -71,7 +93,9 @@ class Yast(object):
         self.router.add_route_ws(path, route)
 
     def add_middleware(self, middleware_class: type, **kwargs: typing.Any) -> None:
-        self.exception_middleware.app = middleware_class(self.app, **kwargs)
+        self.error_middleware.app = middleware_class(
+            self.error_middleware.app, **kwargs
+        )
 
     def route(
         self, path: str, methods: list[str] = None, include_in_schema: bool = True
@@ -109,4 +133,4 @@ class Yast(object):
         if scope["type"] == "lifespan":
             return self.lifespan_handler(scope)
 
-        return self.exception_middleware(scope)
+        return self.error_middleware(scope)

@@ -51,6 +51,7 @@ class NoResApp:
         pass
 
 
+@pytest.mark.timeout(3)
 def test_vendor():
     client = TestClient(app)
     res = client.get("/")
@@ -70,6 +71,7 @@ def test_vendor():
         client.get("/no_res")
 
 
+@pytest.mark.timeout(3)
 def test_decorator():
     app = Yast()
 

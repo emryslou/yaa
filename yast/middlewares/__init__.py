@@ -6,10 +6,12 @@ __all__ = [
     "TrustedHostMiddleware",
     "WSGIMiddleware",
     "BaseHttpMiddleware",
+    "ServerErrorMiddleware",
 ]
 
 from .base import BaseHttpMiddleware
 from .cors import CORSMiddleware
+from .errors import ServerErrorMiddleware
 from .exception import ExceptionMiddleware
 from .gzip import GZipMiddleware
 from .httpsredirect import HttpsRedirectMiddleware

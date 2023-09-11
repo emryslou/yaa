@@ -1,7 +1,7 @@
 import asyncio
 import typing
 
-from yast.debug import get_debug_response
+from yast.concurrency import run_in_threadpool
 from yast.exceptions import HttpException
 from yast.requests import Request
 from yast.responses import PlainTextResponse, Response
@@ -12,26 +12,33 @@ class ExceptionMiddleware(object):
     def __init__(self, app: ASGIApp, debug: bool = False) -> None:
         self.app = app
         self.debug = debug
+        self._status_handlers: typing.Dict[int, typing.Callable] = {}
         self._exception_handlers = {
-            Exception: self.server_error,
             HttpException: self.http_exception,
         }
 
-    def add_exception_handler(self, exc_class: type, handler: typing.Callable) -> None:
-        assert issubclass(exc_class, Exception)
-        self._exception_handlers[exc_class] = handler
+    def add_exception_handler(
+        self,
+        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
+        handler: typing.Callable,
+    ) -> None:
+        if isinstance(exc_class_or_status_code, Exception):
+            self._exception_handlers[exc_class_or_status_code] = handler
+        elif isinstance(exc_class_or_status_code, int):
+            self._status_handlers[exc_class_or_status_code] = handler
 
     def _lookup_exception_handler(
-        self, exc: type
-    ) -> typing.Tuple[typing.Callable, Exception]:
+        self, exc: Exception
+    ) -> typing.Optional[typing.Callable]:
         for cls in type(exc).__mro__:
             handler = self._exception_handlers.get(cls)
             if handler:
-                return handler, cls
+                return handler
+        return None
 
     def __call__(self, scope: Scope):
         if scope["type"] != "http":
-            self.app(scope)
+            return self.app(scope)
 
         async def app(receive: Receive, send: Send):
             responsed_started = False
@@ -43,40 +50,31 @@ class ExceptionMiddleware(object):
                 await send(message)
 
             try:
-                try:
-                    await self.app(scope)(receive, sender)
-                except BaseException as exc:
-                    handler, cls = self._lookup_exception_handler(exc)
-                    if cls is Exception:
-                        raise exc from None
-                    if responsed_started:
-                        raise RuntimeError(
-                            "Caught handled exception, but response already started"
-                        )
-
-                    req = Request(scope, receive)
-                    if asyncio.iscoroutinefunction(handler):
-                        res = await handler(req, exc)
-                    else:
-                        res = handler(req, exc)
-
-                    await res(receive, sender)
-
+                await self.app(scope)(receive, sender)
             except Exception as exc:
-                if self.debug:
-                    handler = get_debug_response
-                else:
-                    handler = self._exception_handlers[Exception]
+                handler = None
+                if isinstance(exc, HttpException):
+                    handler = self._status_handlers.get(exc.status_code)
+                if handler is None:
+                    handler = self._lookup_exception_handler(exc)
+
+                if handler is None:
+                    raise exc from None
+
+                if responsed_started:
+                    raise RuntimeError(
+                        "Caught handled exception, but response already started"
+                    )
+
                 req = Request(scope, receive)
                 if asyncio.iscoroutinefunction(handler):
                     res = await handler(req, exc)
                 else:
-                    res = handler(req, exc)
+                    res = await run_in_threadpool(handler, req, exc)
 
-                if not responsed_started:
-                    await res(receive, send)
+                await res(receive, sender)
 
-                raise
+        # endapp
 
         return app
 
@@ -86,6 +84,3 @@ class ExceptionMiddleware(object):
             return Response(b"", status_code=exc.status_code)
 
         return PlainTextResponse(exc.detail, status_code=exc.status_code)
-
-    def server_error(self, req: Request, exc: type) -> Response:
-        return PlainTextResponse("Internal Server Error", status_code=500)

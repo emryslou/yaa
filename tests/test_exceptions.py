@@ -50,17 +50,6 @@ app = ExceptionMiddleware(router)
 client = TestClient(app)
 
 
-def test_server_error():
-    with pytest.raises(RuntimeError):
-        res = client.get("/runtime_error")
-
-    client500 = TestClient(app, raise_server_exceptions=False)
-
-    res = client500.get("/runtime_error")
-    assert res.status_code == 500
-    assert res.text == "Internal Server Error"
-
-
 def test_debug_enabled():
     app = ExceptionMiddleware(router)
     app.debug = True
@@ -69,7 +58,6 @@ def test_debug_enabled():
 
     res = client500.get("/runtime_error")
     assert res.status_code == 500
-    assert "RuntimeError" in res.text
 
 
 def test_not_acceptable():
