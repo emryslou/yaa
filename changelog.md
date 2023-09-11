@@ -1,3 +1,5 @@
+# v0.2.4
+
 # v0.2.3
 1. graphql: add graphiql
 2. add route: suport graphql
