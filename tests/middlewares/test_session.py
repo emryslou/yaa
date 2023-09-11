@@ -2,39 +2,48 @@ from yast import TestClient, Yast
 from yast.middlewares import SessionMiddleware
 from yast.responses import JSONResponse
 
-app = Yast()
-app.add_middleware(SessionMiddleware, secret_key="aaccxx", session_cookie="just")
+
+def view_session(request):
+    return JSONResponse({"session": request.session})
 
 
-@app.route("/vs")
-def vs(req):
-    return JSONResponse({"session": req.session})
+async def update_session(request):
+    data = await request.json()
+    request.session.update(data)
+    return JSONResponse({"session": request.session})
 
 
-@app.route("/us", methods=["POST"])
-async def us(req):
-    data = await req.json()
-    req.session.update(data)
-    return JSONResponse({"session": req.session})
+async def clear_session(request):
+    request.session.clear()
+    return JSONResponse({"session": request.session})
 
 
-@app.route("/cs", methods=["POST"])
-async def cs(req):
-    req.session.clear()
-    return JSONResponse({"session": req.session})
+def create_app():
+    app = Yast()
+    app.add_route("/view_session", view_session)
+    app.add_route("/update_session", update_session, methods=["POST"])
+    app.add_route("/clear_session", clear_session, methods=["POST"])
+    return app
 
 
 def test_session():
+    app = create_app()
+    app.add_middleware(SessionMiddleware, secret_key="example")
     client = TestClient(app)
-    res = client.get("/vs")
-    assert res.status_code == 200
-    assert res.json() == {"session": {}}
 
-    res = client.post("/us", json={"hello": "session"})
-    assert res.status_code == 200
-    assert res.json() == {"session": {"hello": "session"}}
+    response = client.get("/view_session")
 
-    response = client.post("/cs")
+    response = client.get("/view_session")
     assert response.json() == {"session": {}}
-    response = client.get("/vs")
+
+
+def test_session_expires():
+    app = create_app()
+    app.add_middleware(SessionMiddleware, secret_key="example", max_age=-1)
+    client = TestClient(app)
+
+    response = client.post("/update_session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data"}}
+
+    response = client.get("/view_session")
     assert response.json() == {"session": {}}

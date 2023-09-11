@@ -43,3 +43,8 @@ doc:
 	python -m mkdocs build -f mkdocs.yml -d demo/docs
 docsvr:
 	python -m mkdocs serve
+
+gadd:
+	./scripts/lint
+	make tests -B
+	git add `pwd`/

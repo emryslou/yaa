@@ -69,6 +69,7 @@ class WSGIResponser(object):
         self.loop = asyncio.get_event_loop()
         self.response_started = False
         self.exc_info = None
+        self._running = True
 
     async def __call__(self, receive: Receive, send: Send) -> None:
         body = b""
@@ -93,14 +94,18 @@ class WSGIResponser(object):
 
     async def sender(self, send: Send) -> None:
         while True:
-            if self.send_queue:
-                message = self.send_queue.pop(0)
-                if message is None:
-                    return
-                await send(message)
-            else:
-                await self.send_event.wait()
-                self.send_event.clear()
+            try:
+                if self.send_queue:
+                    message = self.send_queue.pop(0)
+                    if message is None:
+                        return
+                    await send(message)
+                else:
+                    await self.send_event.wait()
+                    self.send_event.clear()
+            except asyncio.CancelledError as exc:
+                print("debug -- 01", exc)
+                raise exc
 
     def start_response(
         self,
