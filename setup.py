@@ -37,6 +37,9 @@ setup(
             'python-multipart',
             'itsdangerous',
         ],
+        'template': [
+            'jinja2',
+        ],
         'graphql': [
             'graphql-core < 3',
             'graphene',

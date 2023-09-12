@@ -226,14 +226,23 @@ class FileResponse(Response):
             self.set_stat_headers(stat_result)
 
     def set_stat_headers(self, stat_result: os.stat_result):
+        stat_headers = self.get_stat_headers(stat_result)
+        for _name, _value in stat_headers.items():
+            if self.send_header_only and _name == "content-length":
+                continue
+            self.headers.setdefault(_name, _value)
+
+    @classmethod
+    def get_stat_headers(cls, stat_result: os.stat_result) -> typing.Dict[str, str]:
         content_length = str(stat_result.st_size)
         last_modified = formatdate(stat_result.st_mtime, usegmt=True)
         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
         etag = hashlib.md5(etag_base.encode()).hexdigest()
-        if not self.send_header_only:
-            self.headers.setdefault("content-length", content_length)
-        self.headers.setdefault("last-modified", last_modified)
-        self.headers.setdefault("etag", etag)
+        return {
+            "content-length": content_length,
+            "last-modified": last_modified,
+            "etag": etag,
+        }
 
     async def __call__(self, receive: Receive, send: Send) -> None:
         if self.stat_result is None:

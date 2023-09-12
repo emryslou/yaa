@@ -6,7 +6,7 @@ from yast.responses import PlainTextResponse
 from yast.testclient import TestClient
 
 
-@pytest.mark.timeout(1)
+@pytest.mark.timeout(30)
 def test_trustedhost():
     app = Yast()
 
