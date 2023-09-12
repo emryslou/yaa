@@ -3,7 +3,7 @@ import enum
 import io
 import tempfile
 import typing
-from urllib.parse import unquote
+from urllib.parse import unquote_plus
 
 try:
     import multipart
@@ -111,7 +111,7 @@ class FormParser(object):
                 elif msg_type == FormMessage.FIELD_DATA:
                     field_value += msg_bytes
                 elif msg_type == FormMessage.FIELD_END:
-                    result[field_name.decode("latin-1")] = unquote(
+                    result[field_name.decode("latin-1")] = unquote_plus(
                         field_value.decode("latin-1")
                     )
                 elif msg_type == FormMessage.END:

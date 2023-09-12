@@ -6,10 +6,10 @@ class Convertor(object):
     regex = ""
 
     def convert(self, value: str) -> typing.Any:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def to_string(self, value: typing.Any) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
 
 class StringConvertor(Convertor):
@@ -43,7 +43,7 @@ class IntegerConvertor(Convertor):
     def to_string(self, value: typing.Any) -> str:
         value = int(value)
         assert value >= 0, "Negative integers are not supported"
-        return value
+        return str(value)
 
 
 class FloatConvertor(Convertor):

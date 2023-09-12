@@ -28,11 +28,12 @@ help:
 tests:
 	@export PYTHONPATH=`pwd`
 	python -m coverage run -m pytest .
+	python -m coverage html -d demo/code_coverage
 	python -m coverage report -m
 
 test:
 	@export PYTHONPATH=`pwd`
-	python -m pytest $(pytest_params) $(pytest_fn) -s -vv
+	python -m coverage run -m pytest $(pytest_params) $(pytest_fn) -s -vv
 
 demo:
 	python -m uvicorn demo.main:app --port 5505 --lifespan on --reload

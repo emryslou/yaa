@@ -279,3 +279,26 @@ def test_response_no_content():
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == ""
+
+
+def test_form_urlencode():
+    from yast.requests import Request
+    from yast.responses import JSONResponse
+
+    def app(scope):
+        async def asgi(rec, send):
+            req = Request(scope=scope, receive=rec)
+            body = b""
+            form = await req.form()
+            res = JSONResponse({"form": form})
+            await res(receive=rec, send=send)
+
+        return asgi
+
+    client = TestClient(app)
+
+    res = client.post("/")
+    assert res.json() == {"form": {}}
+
+    res = client.post("/", data={"abc": "123 @ aaa"})
+    assert res.json() == {"form": {"abc": "123 @ aaa"}}
