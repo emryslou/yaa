@@ -11,7 +11,9 @@ from yast.websockets import WebSocket, WebSocketDisconnect
 from yast.middlewares import SessionMiddleware, BaseHttpMiddleware
 
 
-app = Yast()
+app = Yast(
+    debug=True,
+)
 
 app.add_middleware(SessionMiddleware, secret_key='test')
 
@@ -42,6 +44,10 @@ class WsApp(WebSocketEndpoint):
     encoding = 'text'
     async def on_receive(self, data):
         await self.send('data received ' + data, 'text')
+
+@app.route('/aa')
+def aa(req):
+    raise RuntimeError('AAA')
 
 class YaWs(object):
     def __init__(self, scope):

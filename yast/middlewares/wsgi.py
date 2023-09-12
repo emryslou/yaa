@@ -104,7 +104,6 @@ class WSGIResponser(object):
                     await self.send_event.wait()
                     self.send_event.clear()
             except asyncio.CancelledError as exc:
-                print("debug -- 01", exc)
                 raise exc
 
     def start_response(

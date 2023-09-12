@@ -5,7 +5,6 @@ ujson
 python-multipart
 graphql-core < 3
 graphene
-isort
 itsdangerous
 pyyaml
 
@@ -13,8 +12,12 @@ pyyaml
 pytest
 pytest-cov
 pytest-timeout
-black
+
 
 # Documentation
 mkdocs
 mkdocs-material
+
+#Developing
+isort
+black

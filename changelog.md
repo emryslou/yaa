@@ -1,4 +1,5 @@
 # v0.2.4
+1. support template: default jinja2
 
 # v0.2.3
 1. graphql: add graphiql

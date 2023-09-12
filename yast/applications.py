@@ -15,7 +15,7 @@ from yast.types import ASGIApp, ASGIInstance, Scope
 
 
 class Yast(object):
-    def __init__(self, debug: bool = False) -> None:
+    def __init__(self, debug: bool = False, template_directory: str = None) -> None:
         self._debug = debug
         self.router = Router(routes=[])
         self.lifespan_handler = LifeSpanHandler()
@@ -26,6 +26,7 @@ class Yast(object):
             debug=debug,
         )
         self.schema_generator = None
+        self.template_env = self.load_template_env(template_directory)
 
     @property
     def routes(self) -> typing.List[BaseRoute]:
@@ -127,6 +128,25 @@ class Yast(object):
 
     def url_path_for(self, name, **path_params: str) -> URLPath:
         return self.router.url_path_for(name=name, **path_params)
+
+    def load_template_env(self, template_directory: str = None) -> typing.Any:
+        if template_directory is None:
+            return None
+
+        import jinja2
+
+        @jinja2.pass_context
+        def url_for(context: dict, name: str, **path_params: typing.Any) -> str:
+            req = context["request"]
+            return req.url_for(name, **path_params)
+
+        loader = jinja2.FileSystemLoader(str(template_directory))
+        env = jinja2.Environment(loader=loader, autoescape=True)
+        env.globals["url_for"] = url_for
+        return env
+
+    def get_template(self, name: str) -> typing.Any:
+        return self.template_env.get_template(name)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope["app"] = self

@@ -93,7 +93,6 @@ class URL(object):
                 kwargs["netloc"] = hostname
             else:
                 kwargs["netloc"] = "%s:%d" % (hostname, port)
-
         components = self.components._replace(**kwargs)
         return URL(components.geturl())
 

@@ -12,6 +12,7 @@ nav:
   - 介绍: 'index.md'
   - TestClient: 'testclient.md'
   - Schemas: 'schemas.md'
+  - WebSocket: 'websockets.md'
 
 markdown_extensions:
   - markdown.extensions.codehilite:
