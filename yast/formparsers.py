@@ -1,4 +1,3 @@
-import asyncio
 import enum
 import io
 import tempfile
@@ -8,7 +7,7 @@ from urllib.parse import unquote_plus
 try:
     import multipart
     from multipart.multipart import parse_options_header
-except ImportError as ierr:
+except ImportError:
     parse_options_header = None
     multipart = None
 

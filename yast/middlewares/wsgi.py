@@ -2,7 +2,6 @@ import asyncio
 import io
 import sys
 import typing
-from concurrent.futures import ThreadPoolExecutor
 
 from yast.concurrency import run_in_threadpool
 from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send

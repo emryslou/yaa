@@ -2,9 +2,8 @@ import enum
 import json
 import typing
 from typing import Mapping
-from urllib.parse import unquote
 
-from yast.datastructures import URL, Headers, QueryParams, URLPath
+from yast.datastructures import URL, Headers, QueryParams
 from yast.types import Message, Receive, Scope, Send
 
 

@@ -1,4 +1,3 @@
-import asyncio
 import functools
 import typing
 
@@ -65,7 +64,7 @@ class GraphQLApp(object):
         try:
             query = data["query"]
             variables = data.get("variables")
-            operation_name = data.get("operationName")
+            # operation_name = data.get("operationName")
         except KeyError:
             return PlainTextResponse(
                 "No Graphql query found in the request",

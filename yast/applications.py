@@ -1,16 +1,13 @@
-import inspect
 import typing
-from asyncio import iscoroutinefunction
 
-from yast.datastructures import URL, URLPath
-from yast.graphql import GraphQLApp
+from yast.datastructures import URLPath
 from yast.lifespan import EventType, LifeSpanHandler
 from yast.middlewares import (
     BaseHttpMiddleware,
     ExceptionMiddleware,
     ServerErrorMiddleware,
 )
-from yast.routing import BaseRoute, Route, Router
+from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
 

@@ -4,7 +4,7 @@ import typing
 
 from yast.datastructures import Headers, MutableHeaders
 from yast.responses import PlainTextResponse, Response
-from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
+from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 ALL_METHODS = (
     "DELETE",
@@ -108,7 +108,7 @@ class CORSMiddleware(object):
         req_origin = request_headers["origin"]
         req_method = request_headers["access-control-request-method"]
         req_headers = request_headers.get("access-control-request-headers")
-        req_cookie = "cookie" in request_headers  # todo: how to handle???
+        # req_cookie = "cookie" in request_headers  # todo: how to handle???
 
         headers = dict(self.preflight_headers)
         failures = []

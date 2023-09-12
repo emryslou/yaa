@@ -12,6 +12,7 @@ pyyaml
 pytest
 pytest-cov
 pytest-timeout
+pyflakes
 
 
 # Documentation

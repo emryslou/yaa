@@ -1,4 +1,3 @@
-import asyncio
 import enum
 import inspect
 import re
@@ -9,9 +8,8 @@ from yast.concurrency import run_in_threadpool
 from yast.convertors import CONVERTOR_TYPES, Convertor
 from yast.datastructures import URL, URLPath
 from yast.exceptions import HttpException
-from yast.graphql import GraphQLApp
 from yast.requests import Request
-from yast.responses import PlainTextResponse, RedirectResponse, Response
+from yast.responses import PlainTextResponse, RedirectResponse
 from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
 from yast.websockets import WebSocket, WebSocketClose
 
@@ -267,7 +265,7 @@ class Mount(BaseRoute):
                     return URLPath(
                         protocol=url.protocol, path=path.rstrip("/") + str(url)
                     )
-                except NoMatchFound as exc:
+                except NoMatchFound:
                     pass
 
         raise NoMatchFound()
@@ -412,7 +410,7 @@ def req_res(func: typing.Callable):
     def app(scope: Scope) -> ASGIInstance:
         async def awaitable(recv: Receive, send: Send) -> None:
             req = Request(scope, recv)
-            kwargs = scope.get("kwargs", {})
+            # kwargs = scope.get("kwargs", {})
             if is_coroutine:
                 res = await func(req)
             else:

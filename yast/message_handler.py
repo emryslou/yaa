@@ -1,6 +1,4 @@
 import enum
-import typing
-from typing import Callable
 
 from yast.types import Message
 

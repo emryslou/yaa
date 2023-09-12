@@ -2,7 +2,7 @@ import gzip
 import io
 
 from yast.datastructures import Headers, MutableHeaders
-from yast.message_handler import MessageHandler, MessageType
+from yast.message_handler import MessageHandler
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 

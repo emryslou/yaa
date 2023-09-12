@@ -53,7 +53,8 @@ class LifeSpanHandler(object):
         for it in self.handlers.keys():
             if it == EventType.CLEANUP:
                 continue
-            message = await receive()
+            # message = await receive()
+            await receive()
             await self.run_handler(it)
             await send({"type": f"lifespan.{it.value}.complete"})
 

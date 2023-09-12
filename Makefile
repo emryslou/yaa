@@ -27,6 +27,7 @@ help:
 
 tests:
 	@export PYTHONPATH=`pwd`
+	python -m pyflakes yast/
 	python -m coverage run -m pytest .
 	python -m coverage html -d demo/code_coverage
 	python -m coverage report -m

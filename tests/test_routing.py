@@ -230,21 +230,21 @@ def test_path_params_convert():
     res = client.get("/int/12")
     assert res.status_code == 200
     assert res.json() == {"int": 12}
-    assert app.url_path_for('int_conv', param=12) == '/int/12'
+    assert app.url_path_for("int_conv", param=12) == "/int/12"
     with pytest.raises(AssertionError) as exc:
-        assert app.url_path_for('int_conv', param=-12)
-    assert 'Negative integers' in str(exc)
+        assert app.url_path_for("int_conv", param=-12)
+    assert "Negative integers" in str(exc)
 
     res = client.get("/float/12.12")
     assert res.status_code == 200
     assert res.json() == {"float": 12.12}
-    assert app.url_path_for('float_conv', param=12.0) == '/float/12'
+    assert app.url_path_for("float_conv", param=12.0) == "/float/12"
     with pytest.raises(AssertionError) as exc:
-        app.url_path_for('float_conv', param=-12.4)
-    assert 'Negative floats' in str(exc)
+        app.url_path_for("float_conv", param=-12.4)
+    assert "Negative floats" in str(exc)
     with pytest.raises(AssertionError) as exc:
-        app.url_path_for('float_conv', param='nan')
-    assert 'Negative floats' in str(exc)
+        app.url_path_for("float_conv", param="nan")
+    assert "Negative floats" in str(exc)
 
     res = client.get("/float/12.345")
     assert res.status_code == 200

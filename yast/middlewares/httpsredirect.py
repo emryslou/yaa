@@ -1,6 +1,6 @@
 from yast.datastructures import URL
 from yast.responses import RedirectResponse, Response
-from yast.types import ASGIApp, Scope
+from yast.types import ASGIApp
 
 
 class HttpsRedirectMiddleware(object):

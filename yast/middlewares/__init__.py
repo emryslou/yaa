@@ -7,6 +7,7 @@ __all__ = [
     "WSGIMiddleware",
     "BaseHttpMiddleware",
     "ServerErrorMiddleware",
+    "SessionMiddleware",
 ]
 
 from .base import BaseHttpMiddleware

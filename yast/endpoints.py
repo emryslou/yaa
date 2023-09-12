@@ -114,7 +114,7 @@ class WebSocketEndpoint(object):
 
     async def on_receive(self, data):
         """Override to handle an incoming websocket message"""
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     async def on_disconnect(self, code: int):
         """Override to handle a disconnecting websocket"""

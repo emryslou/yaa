@@ -1,7 +1,7 @@
 import typing
 from urllib.parse import ParseResult, parse_qsl, unquote, urlencode, urlparse
 
-from yast.types import Scope, StrDict, StrPairs
+from yast.types import Scope
 
 
 class URL(object):
@@ -129,7 +129,7 @@ class URLPath(str):
             "websocket": {True: "wss", False: "ws"},
         }[self.protocol][base_url.is_secure]
 
-        netloc = base_url.netloc
+        # netloc = base_url.netloc
 
         return str(URL(scheme=scheme, netloc=base_url.netloc, path=str(self)))
 
