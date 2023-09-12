@@ -13,6 +13,7 @@ from yast.middlewares import SessionMiddleware, BaseHttpMiddleware
 
 app = Yast(
     debug=True,
+    template_directory='demo/templates'
 )
 
 app.add_middleware(SessionMiddleware, secret_key='test')
@@ -22,13 +23,12 @@ app.mount('/docs', StaticFiles(directory='demo/docs'))
 
 @app.route('/')
 def home(request: Request) -> Response:
-    html_content = (
-        '<h1>Hello</h1>'
-        '<input id="ws_host" value="localhost:5505/ws"/>'
-        '<button id="send">send</button>'
-        '<span id="receive_msg"></span>'
-        '<script src="/static/js/ws.js?_no=125"></script>'
-    )
+    template = app.get_template('home.html')
+    html_content = template.render(request, **{
+        'greeting': 'template',
+        'ws_host': 'localhost:5505/ws',
+        'js_version': '126'
+    })
     return Response(html_content, media_type='text/html')
 
 @app.route('/favicon.ico')

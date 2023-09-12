@@ -20,7 +20,6 @@ class StaticFiles(object):
         assert scope["type"] == "http"
         if scope["method"] not in ("GET", "HEAD"):
             return PlainTextResponse("Method Not Allowed", status_code=405)
-
         path = os.path.normpath(os.path.join(*scope["path"].split("/")))
         if path.startswith(".."):
             return PlainTextResponse("Not Found", status_code=404)
@@ -64,6 +63,8 @@ class _StaticFilesResponser(object):
             if not stat.S_ISREG(mode):
                 res = PlainTextResponse("Not Found", status_code=404)
             else:
-                res = FileResponse(self.path, stat_result=stat_result)
+                res = FileResponse(
+                    self.path, stat_result=stat_result, method=self.scope["method"]
+                )
 
         await res(receive, send)

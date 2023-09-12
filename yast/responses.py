@@ -204,11 +204,13 @@ class FileResponse(Response):
         background: BackgroundTask = None,
         filename: str = None,
         stat_result: os.stat_result = None,
+        method: str = None,
     ) -> None:
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
         self.status_code = 200
         self.filename = filename
+        self.send_header_only = method is not None and method.upper() == "HEAD"
         if media_type is None:
             media_type = guess_type(filename or path)[0] or "text/plain"
 
@@ -228,8 +230,8 @@ class FileResponse(Response):
         last_modified = formatdate(stat_result.st_mtime, usegmt=True)
         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
         etag = hashlib.md5(etag_base.encode()).hexdigest()
-
-        self.headers.setdefault("content-length", content_length)
+        if not self.send_header_only:
+            self.headers.setdefault("content-length", content_length)
         self.headers.setdefault("last-modified", last_modified)
         self.headers.setdefault("etag", etag)
 
@@ -252,19 +254,21 @@ class FileResponse(Response):
                 "headers": self.raw_headers,
             }
         )
-
-        async with aiofiles.open(self.path, mode="rb") as file:
-            more_body = True
-            while more_body:
-                chunk = await file.read(self.chunk_size)
-                more_body = len(chunk) == self.chunk_size
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": chunk,
-                        "more_body": more_body,
-                    }
-                )
+        if self.send_header_only:
+            await send({"type": "http.response.body"})
+        else:
+            async with aiofiles.open(self.path, mode="rb") as file:
+                more_body = True
+                while more_body:
+                    chunk = await file.read(self.chunk_size)
+                    more_body = len(chunk) == self.chunk_size
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": chunk,
+                            "more_body": more_body,
+                        }
+                    )
 
         if self.background is not None:
             await self.background()

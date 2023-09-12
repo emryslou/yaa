@@ -69,3 +69,15 @@ def test_check_dir(tmpdir):
     assert "does not exist" in str(exc)
 
     StaticFiles(directory=os.path.join(tmpdir, "not_found"), check_dir=False)
+
+
+def test_never_read_file_for_head_method(tmpdir):
+    path = os.path.join(tmpdir, "ex.txt")
+    with open(path, "w") as file:
+        file.write("<file content>")
+
+    app = StaticFiles(directory=tmpdir)
+    client = TestClient(app)
+    res = client.head("/ex.txt")
+    assert res.status_code == 200
+    assert res.content == b""

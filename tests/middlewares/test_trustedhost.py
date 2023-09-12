@@ -6,6 +6,7 @@ from yast.responses import PlainTextResponse
 from yast.testclient import TestClient
 
 
+@pytest.mark.timeout(1)
 def test_trustedhost():
     app = Yast()
 
@@ -42,7 +43,10 @@ def test_wildcard():
         TrustedHostMiddleware, allowed_hosts=["aa.com", "bb.com", "*.ff.com"]
     )
 
-    client = TestClient(app, base_url="http://aa.com")
+    client = TestClient(
+        app,
+        base_url="http://aa.com",
+    )
     res = client.get("/")
     assert res.status_code == 200
 

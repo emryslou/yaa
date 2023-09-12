@@ -30,6 +30,10 @@ class _MockOriginalResponse(object):
     def isclosed(self):
         return self.closed
 
+    def close(self):
+        # self.closed = True
+        pass
+
 
 class _Upgrade(Exception):
     def __init__(self, session):
