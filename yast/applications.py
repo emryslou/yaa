@@ -100,19 +100,23 @@ class Yast(object):
         )
 
     def route(
-        self, path: str, methods: list[str] = None, include_in_schema: bool = True
+        self,
+        path: str,
+        methods: list[str] = None,
+        name: str = None,
+        include_in_schema: bool = True,
     ) -> typing.Callable:
         def decorator(func):
             self.router.add_route(
-                path, func, methods, include_in_schema=include_in_schema
+                path, func, methods, name=name, include_in_schema=include_in_schema
             )
             return func
 
         return decorator
 
-    def ws_route(self, path: str) -> typing.Callable:
+    def ws_route(self, path: str, name: str = None) -> typing.Callable:
         def decorator(func):
-            self.router.add_route_ws(path, func)
+            self.router.add_route_ws(path, func, name=name)
             return func
 
         return decorator

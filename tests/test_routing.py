@@ -209,3 +209,37 @@ def test_reverse_mount_urls():
     assert (
         mounted.url_path_for("users", subpath="test", path="/tom") == "/test/users/tom"
     )
+
+
+def test_path_params_convert():
+    @app.route("/int/{param:int}", name="int_conv")
+    def int_conv(req):
+        num = req.path_params["param"]
+        return JSONResponse({"int": num})
+
+    @app.route("/float/{param:float}", name="float_conv")
+    def float_conv(req):
+        num = req.path_params["param"]
+        return JSONResponse({"float": num})
+
+    @app.route("/path/{param:path}", name="path_conv")
+    def path_conv(req):
+        num = req.path_params["param"]
+        return JSONResponse({"path": num})
+
+    res = client.get("/int/12")
+    assert res.status_code == 200
+    assert res.json() == {"int": 12}
+
+    res = client.get("/float/12.12")
+    assert res.status_code == 200
+    assert res.json() == {"float": 12.12}
+
+    res = client.get("/float/12.345")
+    assert res.status_code == 200
+    assert res.json() == {"float": 12.345}
+
+    res = client.get("/path/demo/abc")
+    assert res.status_code == 200
+    assert res.json() == {"path": "demo/abc"}
+    assert app.url_path_for("path_conv", param="demo/abc") == "/path/demo/abc"

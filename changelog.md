@@ -3,6 +3,8 @@
 2. staticfiles: method: head
 3. route: support name
 4. staticfiles: 304
+5. request path: support path_params convert
+6. makefile: python coverage
 
 # v0.2.3
 1. graphql: add graphiql

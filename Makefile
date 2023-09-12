@@ -27,7 +27,8 @@ help:
 
 tests:
 	@export PYTHONPATH=`pwd`
-	python -m pytest .
+	python -m coverage run -m pytest .
+	python -m coverage report -m
 
 test:
 	@export PYTHONPATH=`pwd`

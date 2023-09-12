@@ -6,6 +6,7 @@ import typing
 from asyncio import iscoroutinefunction
 
 from yast.concurrency import run_in_threadpool
+from yast.convertors import CONVERTOR_TYPES, Convertor
 from yast.datastructures import URL, URLPath
 from yast.exceptions import HttpException
 from yast.graphql import GraphQLApp
@@ -25,6 +26,9 @@ class Match(enum.Enum):
     FULL = 2
 
 
+PARAM_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
+
+
 class BaseRoute(object):
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         raise NotImplementedError()
@@ -34,6 +38,39 @@ class BaseRoute(object):
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         raise NotImplementedError()
+
+    def compile_path(
+        self, path: str
+    ) -> typing.Tuple[typing.Pattern, str, typing.Dict[str, Convertor]]:
+        path_regex = "^"
+        path_format = ""
+
+        idx = 0
+        param_converts = {}
+
+        for match in PARAM_REGEX.finditer(path):
+            param_name, convert_type = match.groups("str")
+            convert_type = convert_type.lstrip(":")
+            assert convert_type in CONVERTOR_TYPES, 'Unknown path convertor "%s"' % (
+                convert_type
+            )
+            convertor = CONVERTOR_TYPES[convert_type]
+
+            path_regex += path[idx : match.start()]
+            path_regex += "(?P<%s>%s)" % (param_name, convertor.regex)
+
+            path_format += path[idx : match.start()]
+            path_format += "{%s}" % param_name
+
+            param_converts[param_name] = convertor
+
+            idx = match.end()
+        # endfor
+
+        path_regex += path[idx:] + "$"
+        path_format += path[idx:]
+
+        return re.compile(path_regex), path_format, param_converts
 
     def __str__(self) -> str:
         return "%s(path=%s,endpoint=%s)" % (
@@ -65,17 +102,20 @@ class Route(BaseRoute):
         else:
             self.app = endpoint
         self.methods = methods
-        regex = "^" + path + "$"
-        regex = re.sub("{([a-zA-Z_][a-zA-Z0-9_]*)}", r"(?P<\1>[^/]+)", regex)
-        self.path_regex = re.compile(regex)
-        self.param_names = set(self.path_regex.groupindex.keys())
+        (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
+            path
+        )
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "http":
             match = self.path_regex.match(scope["path"])
+
             if match:
+                matched_params = match.groupdict()
+                for _k, _v in matched_params.items():
+                    matched_params[_k] = self.param_convertors[_k].convert(_v)
                 path_params = dict(scope.get("path_params", {}))
-                path_params.update(match.groupdict())
+                path_params.update(matched_params)
                 child_scope = {"endpoint": self.endpoint, "path_params": path_params}
                 if self.methods and scope["method"] not in self.methods:
                     return Match.PARTIAL, child_scope
@@ -83,10 +123,13 @@ class Route(BaseRoute):
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
-        if name != self.name or self.param_names != set(path_params.keys()):
+        seen_params = set(path_params.keys())
+        excepted_params = set(self.param_convertors.keys())
+        if name != self.name or seen_params != excepted_params:
             raise NoMatchFound()
-        path, remaining_params = replace_params(self.path, path_params)
-        assert not remaining_params
+        path, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
+        )
         return URLPath(protocol="http", path=path)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
@@ -122,23 +165,32 @@ class WebSocketRoute(BaseRoute):
 
         regex = "^" + path + "$"
         regex = re.sub("{([a-zA-Z_][a-zA-Z0-9_]*)}", r"(?P<\1>[^/]+)", regex)
-        self.path_regex = re.compile(regex)
-        self.param_names = set(self.path_regex.groupindex.keys())
+
+        (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
+            path
+        )
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "websocket":
             match = self.path_regex.match(scope["path"])
             if match:
+                matched_params = match.groupdict()
+                for _k, _v in matched_params.items():
+                    matched_params[_k] = self.param_convertors[_k].convert(_v)
                 path_params = dict(scope.get("path_params", {}))
-                path_params.update(match.groupdict())
+                path_params.update(matched_params)
                 child_scope = {"endpoint": self.endpoint, "path_params": path_params}
                 return Match.FULL, child_scope
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
-        if name != self.name or self.param_names != set(path_params.keys()):
+        seen_params = set(path_params.keys())
+        expected_params = set(self.param_convertors.keys())
+        if name != self.name or seen_params != expected_params:
             raise NoMatchFound()
-        path, remaining_params = replace_params(self.path, path_params)
+        path, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
+        )
         assert not remaining_params
         return URLPath(protocol="websocket", path=path)
 
@@ -159,10 +211,10 @@ class Mount(BaseRoute):
         self.path = path.rstrip("/")
         self.app = app
 
-        regex = "^" + self.path + "(?P<path>/.*)$"
-        regex = re.sub("{([a-zA-Z_][a-zA-Z0-9_]*)}", r"(?P<\1>[^/]+)", regex)
-        self.path_regex = re.compile(regex)
         self.name = name
+        (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
+            path + "/{path:path}"
+        )
 
     @property
     def routes(self):
@@ -174,7 +226,9 @@ class Mount(BaseRoute):
             match = self.path_regex.match(path)
             if match:
                 matched_params = match.groupdict()
-                remaining_path = matched_params.pop("path")
+                for _k, _v in matched_params.items():
+                    matched_params[_k] = self.param_convertors[_k].convert(_v)
+                remaining_path = "/" + matched_params.pop("path")
                 matched_path = path[: -len(remaining_path)]
                 path_params = dict(scope.get("path_params", {}))
                 path_params.update(matched_params)
@@ -190,7 +244,9 @@ class Mount(BaseRoute):
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
         if self.name is not None and name == self.name and "path" in path_params:
             path_params["path"] = path_params["path"].lstrip("/")
-            path, remaining_params = replace_params(self.path + "/{path}", path_params)
+            path, remaining_params = replace_params(
+                self.path_format, self.param_convertors, path_params
+            )
             if not remaining_params:
                 return URLPath(path, protocol="http")
 
@@ -200,11 +256,17 @@ class Mount(BaseRoute):
             else:
                 remaining_name = name[len(self.name) + 1 :]
 
-            path, remaining_params = replace_params(self.path, path_params)
+            path_params["path"] = ""
+
+            path, remaining_params = replace_params(
+                self.path_format, self.param_convertors, path_params
+            )
             for route in self.routes or []:
                 try:
                     url = route.url_path_for(remaining_name, **remaining_params)
-                    return URLPath(protocol=url.protocol, path=path + str(url))
+                    return URLPath(
+                        protocol=url.protocol, path=path.rstrip("/") + str(url)
+                    )
                 except NoMatchFound as exc:
                     pass
 
@@ -382,10 +444,14 @@ def get_name(endpoint: typing.Callable) -> str:
 
 
 def replace_params(
-    path: str, path_params: typing.Dict[str, str]
+    path: str,
+    param_converts: typing.Dict[str, Convertor],
+    path_params: typing.Dict[str, str],
 ) -> typing.Tuple[str, dict]:
     for _k, _v in list(path_params.items()):
         if "{" + _k + "}" in path:
-            path_params.pop(_k)
+            convert = param_converts[_k]
+            _v = convert.to_string(_v)
             path = path.replace("{" + _k + "}", _v)
+            path_params.pop(_k)
     return path, path_params
