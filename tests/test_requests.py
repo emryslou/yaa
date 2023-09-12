@@ -231,3 +231,23 @@ def test_request_cookies():
         "/",
     )
     assert res.text == "cooooooooooooookies"
+
+
+def test_chunked_encoding():
+    def app(scope):
+        async def asgi(receive, send):
+            request = Request(scope, receive)
+            body = await request.body()
+            response = JSONResponse({"body": body.decode()})
+            await response(receive, send)
+
+        return asgi
+
+    client = TestClient(app)
+
+    def post_body():
+        yield b"foo"
+        yield "bar"
+
+    response = client.post("/", data=post_body())
+    assert response.json() == {"body": "foobar"}
