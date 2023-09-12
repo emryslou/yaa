@@ -82,10 +82,11 @@ class Yast(object):
         path: str,
         route: typing.Union[typing.Callable, BaseRoute],
         methods: list[str] = None,
+        name: str = None,
         include_in_schema: bool = True,
     ) -> None:
         self.router.add_route(
-            path, route, methods=methods, include_in_schema=include_in_schema
+            path, route, methods=methods, name=name, include_in_schema=include_in_schema
         )
 
     def add_route_ws(

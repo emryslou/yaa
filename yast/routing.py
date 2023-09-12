@@ -240,19 +240,20 @@ class Router(object):
         self,
         path: str,
         methods: typing.Sequence[str] = None,
+        name: str = None,
         include_in_schema: bool = True,
     ) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route(
-                path, func, methods=methods, include_in_schema=include_in_schema
+                path, func, methods=methods, name=name, include_in_schema=include_in_schema
             )
             return func
 
         return decorator
 
-    def route_ws(self, path: str) -> typing.Callable:
+    def route_ws(self, path: str, name: str = None) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
-            self.add_route_ws(path, func)
+            self.add_route_ws(path, func, name=name)
             return func
 
         return decorator
@@ -262,18 +263,24 @@ class Router(object):
         path: str,
         endpoint: typing.Callable,
         methods: typing.Sequence[str] = None,
+        name: str = None,
         include_in_schema: bool = True,
     ) -> None:
         instance = Route(
             path,
             endpoint=endpoint,
             methods=methods,
+            name=name,
             include_in_schema=include_in_schema,
         )
         self.routes.append(instance)
 
-    def add_route_ws(self, path, route: typing.Callable) -> None:
-        instance = WebSocketRoute(path, endpoint=route)
+    def add_route_ws(
+            self, path: str, 
+            route: typing.Callable,
+            name: str = None
+        ) -> None:
+        instance = WebSocketRoute(path, name=name, endpoint=route)
         self.routes.append(instance)
 
     def not_found(self, scope: Scope) -> ASGIInstance:

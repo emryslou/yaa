@@ -1,5 +1,7 @@
 # v0.2.4
 1. support template: default jinja2
+2. staticfiles: method: head
+3. route: support name
 
 # v0.2.3
 1. graphql: add graphiql
