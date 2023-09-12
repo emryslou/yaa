@@ -16,7 +16,14 @@ class URL(object):
             query_string = scope["query_string"]
 
             server = scope.get("server", None)
-            if server is None:
+            host_header = None
+            for _k, _v in scope.get("headers", []):
+                if _k == b"host":
+                    host_header = _v.decode("latin-1")
+                    break
+            if host_header is not None:
+                url = "%s://%s%s" % (scheme, host_header, path)
+            elif server is None:
                 url = path
             else:
                 host, port = server

@@ -245,7 +245,11 @@ class Router(object):
     ) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route(
-                path, func, methods=methods, name=name, include_in_schema=include_in_schema
+                path,
+                func,
+                methods=methods,
+                name=name,
+                include_in_schema=include_in_schema,
             )
             return func
 
@@ -275,11 +279,7 @@ class Router(object):
         )
         self.routes.append(instance)
 
-    def add_route_ws(
-            self, path: str, 
-            route: typing.Callable,
-            name: str = None
-        ) -> None:
+    def add_route_ws(self, path: str, route: typing.Callable, name: str = None) -> None:
         instance = WebSocketRoute(path, name=name, endpoint=route)
         self.routes.append(instance)
 

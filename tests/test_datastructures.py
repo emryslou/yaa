@@ -84,5 +84,24 @@ def test_headers_mutablecopy():
 
 
 def test_url_from_scope():
-    u = URL(scope={"path": "/a/path/to/somewhere", "query_string": b"abc=123"})
+    u = URL(
+        scope={
+            "path": "/a/path/to/somewhere",
+            "query_string": b"abc=123",
+            "headers": [],
+        }
+    )
     assert u == "/a/path/to/somewhere?abc=123"
+
+    url = URL(
+        scope={
+            "scheme": "https",
+            "server": ("example.org", 443),
+            "path": "/path/to/a/path",
+            "query_string": b"abc=123",
+            "headers": [],
+        }
+    )
+
+    assert url == "https://example.org/path/to/a/path?abc=123"
+    assert repr(url) == "URL('https://example.org/path/to/a/path?abc=123')"

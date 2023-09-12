@@ -30,10 +30,6 @@ class _MockOriginalResponse(object):
     def isclosed(self):
         return self.closed
 
-    def close(self):
-        # self.closed = True
-        pass
-
 
 class _Upgrade(Exception):
     def __init__(self, session):
@@ -54,17 +50,20 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
     def send(self, request, *args, **kwargs):
         scheme, netloc, path, params, query, fragement = urlparse(request.url)
+
+        default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
+
         if ":" in netloc:
             host, port = netloc.split(":", 1)
             port = int(port)
         else:
             host = netloc
-            port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
+            port = default_port
 
         # Include the 'host' header.
         if "host" in request.headers:
             headers = []
-        elif port == 80:
+        elif port == default_port:
             headers = [[b"host", host.encode()]]
         else:
             headers = [[b"host", ("%s:%d" % (host, port)).encode()]]
