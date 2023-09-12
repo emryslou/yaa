@@ -269,3 +269,13 @@ def test_file_response_with_missing_file_raises_error(tmpdir):
     with pytest.raises(RuntimeError) as exc:
         client.get("/")
     assert "does not exist" in str(exc)
+
+
+def test_response_no_content():
+    def app(scope):
+        return Response()
+
+    client = TestClient(app)
+    res = client.get("/")
+    assert res.status_code == 200
+    assert res.text == ""
