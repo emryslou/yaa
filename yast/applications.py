@@ -1,26 +1,31 @@
 import typing
 
 from yast.datastructures import URLPath
-from yast.lifespan import EventType, LifeSpanHandler
+from yast.middlewares.lifespan import EventType
 from yast.middlewares import (
     BaseHttpMiddleware,
     ExceptionMiddleware,
     ServerErrorMiddleware,
+    LifespanMiddleware
 )
 from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
 
 class Yast(object):
-    def __init__(self, debug: bool = False, template_directory: str = None) -> None:
+    def __init__(
+            self, debug: bool = False, template_directory: str = None
+        ) -> None:
         self._debug = debug
         self.router = Router(routes=[])
-        self.lifespan_handler = LifeSpanHandler()
         self.app = self.router
         self.exception_middleware = ExceptionMiddleware(self.router, debug=debug)
         self.error_middleware = ServerErrorMiddleware(
             self.exception_middleware,
             debug=debug,
+        )
+        self.lifespan_middleware = LifespanMiddleware(
+            self.error_middleware
         )
         self.schema_generator = None
         self.template_env = self.load_template_env(template_directory)
@@ -39,10 +44,10 @@ class Yast(object):
         return self._debug
 
     def on_event(self, event_type: EventType) -> None:
-        return self.lifespan_handler.on_event(event_type)
+        return self.lifespan_middleware.on_event(event_type)
 
     def add_event_handler(self, event_type: EventType, func: typing.Callable) -> None:
-        self.lifespan_handler.add_event_handler(event_type, func)
+        self.lifespan_middleware.add_event_handler(event_type, func)
 
     @debug.setter
     def debug(self, val: bool) -> None:
@@ -152,7 +157,4 @@ class Yast(object):
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope["app"] = self
-        if scope["type"] == "lifespan":
-            return self.lifespan_handler(scope)
-
-        return self.error_middleware(scope)
+        return self.lifespan_middleware(scope)

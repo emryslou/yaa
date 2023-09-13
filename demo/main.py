@@ -33,7 +33,7 @@ def home(request: Request) -> Response:
 
 @app.route('/favicon.ico')
 def fav(_):
-    return RedirectResponse('/static/favicon.ico', 301)
+    return RedirectResponse('/static/favicon.ico', 302)
 
 class Demo(HttpEndPoint):
     def get(self, request: Request, **kwargs):

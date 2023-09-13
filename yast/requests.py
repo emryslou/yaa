@@ -11,8 +11,8 @@ from yast.types import Message, Receive, Scope
 
 try:
     from multipart.multipart import parse_options_header
-except ImportError:
-    parse_options_header = None
+except ImportError: # pragma: no cover
+    parse_options_header = None  # pragma: no cover
 
 
 async def empty_receive() -> Message:

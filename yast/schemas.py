@@ -3,52 +3,79 @@ import typing
 
 try:
     import yaml
-except ImportError:
-    yaml = None
+except ImportError: # pragma: no cover
+    yaml = None  # pragma: no cover
 
 from yast.responses import Response
 from yast.routing import BaseRoute, Route
 
 
+class EndPointInfo(typing.NamedTuple):
+    path: str
+    http_method: str
+    func: typing.Callable
+
+
 class BaseSchemaGenerator(object):
     def get_schema(self, routes: typing.List[BaseRoute]) -> dict:
-        raise NotImplementedError()
-
-
-class SchemaGenerator(BaseSchemaGenerator):
-    def __init__(self, base_schema: dict) -> None:
-        assert yaml is not None, "`pyyaml` must be installed to use SchemaGenerator"
-        self.base_schema = base_schema
-
-    def get_schema(self, routes: typing.List[BaseRoute]) -> dict:
-        paths = {}
+        raise NotImplementedError()  # pragma: no cover
+    
+    def get_endpoints(
+            self, routes: typing.List[BaseRoute]
+        ) -> typing.List[EndPointInfo]:
+        endpoints_info = []
 
         for route in routes:
             if not isinstance(route, Route) or not route.include_in_schema:
                 continue
 
-            if inspect.isfunction(route.endpoint) or inspect.ismethod(route.endpoint):
-                docstring = route.endpoint.__doc__
+            if (
+                    inspect.isfunction(route.endpoint) or 
+                    inspect.ismethod(route.endpoint)
+                ):
                 for method in route.methods or ["GET"]:
                     if method == "HEAD":
                         continue
-                    if route.path not in paths:
-                        paths[route.path] = {}
-
-                    data = yaml.safe_load(docstring) if docstring else {}
-                    paths[route.path][method.lower()] = data
+                    endpoints_info.append(
+                        EndPointInfo(
+                            route.path, method.lower(), route.endpoint
+                        )
+                    )
             else:
-                for method in ["get", "post", "put", "patch", "delete", "options"]:
+                methods = ["get", "post", "put", "patch", "delete", "options"]
+                for method in methods:
                     if not hasattr(route.endpoint, method):
                         continue
-                    docstring = getattr(route.endpoint, method).__doc__
-                    if route.path not in paths:
-                        paths[route.path] = {}
+                    func = getattr(route.endpoint, method)
+                    endpoints_info.append(
+                        EndPointInfo(
+                            route.path, method.lower(), func
+                        )
+                    )
+            #endif
+        #endfor
+        return endpoints_info
+    
+    def parse_docstring(self, func_or_method: typing.Callable) -> dict:
+        docstring = func_or_method.__doc__
+        return yaml.safe_load(docstring) if docstring else {}
 
-                    data = yaml.safe_load(docstring) if docstring else {}
-                    paths[route.path][method] = data
+
+class SchemaGenerator(BaseSchemaGenerator):
+    def __init__(self, base_schema: dict) -> None:
+        self.base_schema = base_schema
+    
+    def get_schema(self, routes: typing.List[BaseRoute]) -> dict:
         schema = dict(self.base_schema)
-        schema["paths"] = paths
+        schema.setdefault('paths', {})
+        endpoints_info = self.get_endpoints(routes)
+
+        for endpoint in endpoints_info:
+            if endpoint.path not in schema['paths']:
+                schema['paths'][endpoint.path] = {}
+            schema['paths'][endpoint.path][endpoint.http_method] = self.parse_docstring(endpoint.func)
+        #endfor
+
         return schema
 
 

@@ -7,11 +7,11 @@ try:
     import graphene
     from graphql.error import GraphQLError, format_error as format_graphql_error
     from graphql.execution.executors.asyncio import AsyncioExecutor
-except ImportError:
-    graphene = None
-    AsyncioExecutor = None
-    format_graphql_error = None
-    GraphQLError = None
+except ImportError:  # pragma: no cover
+    graphene = None # pragma: no cover
+    AsyncioExecutor = None  # pragma: no cover
+    format_graphql_error = None  # pragma: no cover
+    GraphQLError = None  # pragma: no cover
 
 import yast.status as web_status
 from yast.concurrency import run_in_threadpool

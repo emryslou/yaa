@@ -5,6 +5,7 @@
 4. staticfiles: 304
 5. request path: support path_params convert
 6. makefile: python coverage
+7. lifespan: as middleware
 
 # v0.2.3
 1. graphql: add graphiql

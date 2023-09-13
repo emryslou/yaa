@@ -2,7 +2,6 @@ import os
 
 from yast.applications import Yast
 from yast.datastructures import Headers
-from yast.lifespan import LifeSpanContext
 from yast.requests import Request
 from yast.responses import JSONResponse, PlainTextResponse
 from yast.routing import Router
@@ -151,7 +150,7 @@ def test_app_add_event_handler():
     app.add_event_handler("shutdown", run_cleanup)
     assert not startup_complete
     assert not cleanup_complete
-    with LifeSpanContext(app):
+    with TestClient(app):
         assert startup_complete
         assert not cleanup_complete
     assert startup_complete
