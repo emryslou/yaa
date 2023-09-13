@@ -6,6 +6,7 @@
 5. request path: support path_params convert
 6. makefile: python coverage
 7. lifespan: as middleware
+8. graphql: context
 
 # v0.2.3
 1. graphql: add graphiql
