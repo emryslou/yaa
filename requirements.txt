@@ -8,6 +8,13 @@ graphene
 itsdangerous
 pyyaml
 
+# Databases
+sqlalchemy >= 1.0, < 2.0.0
+## Database backends
+asyncpg
+##
+psycopg2-binary
+
 # Testing
 pytest
 pytest-cov

@@ -105,6 +105,13 @@ class Request(Mapping):
         )
         return self._scope["session"]
 
+    @property
+    def database(self):
+        assert "database" in self._scope, (
+            "`DatabaseMiddleware` must be " "installed to access request.database"
+        )
+        return self._scope["database"]
+
     def url_for(self, name: str, **path_params: typing.Any) -> URL:
         router = self._scope["router"]
 

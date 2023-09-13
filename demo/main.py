@@ -73,7 +73,7 @@ def run_startup():
     import mkdocs
 
 
-@app.on_event('cleanup')
+@app.on_event('shutdown')
 def run_cleanup():
     print('cleanup')
 

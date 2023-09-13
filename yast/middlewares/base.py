@@ -2,6 +2,7 @@ import asyncio
 import functools
 import typing
 
+from yast.middlewares.core import Middleware
 from yast.requests import Request
 from yast.responses import StreamingResponse
 from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
@@ -12,7 +13,7 @@ DispatchFunction = typing.Callable[
 ]
 
 
-class BaseHttpMiddleware(object):
+class BaseHttpMiddleware(Middleware):
     def __init__(self, app: ASGIApp, dispatch: DispatchFunction = None) -> None:
         self.app = app
         self.dispatch_func = dispatch if dispatch is not None else self.dispath

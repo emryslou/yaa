@@ -72,6 +72,12 @@ class LifespanHandler(object):
                 assert message["type"] == event_type.complete
                 await send({"type": message["type"]})
             # endfor
+        except BaseException as exc:
+            import sys
+            import traceback
+
+            print("exception -- 01", exc)
+            traceback.print_tb(exc.__traceback__, file=sys.stdout)
         finally:
             await inner_task
 
