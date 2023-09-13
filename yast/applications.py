@@ -1,21 +1,19 @@
 import typing
 
 from yast.datastructures import URLPath
-from yast.middlewares.lifespan import EventType
 from yast.middlewares import (
     BaseHttpMiddleware,
     ExceptionMiddleware,
+    LifespanMiddleware,
     ServerErrorMiddleware,
-    LifespanMiddleware
 )
+from yast.middlewares.lifespan import EventType
 from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
 
 class Yast(object):
-    def __init__(
-            self, debug: bool = False, template_directory: str = None
-        ) -> None:
+    def __init__(self, debug: bool = False, template_directory: str = None) -> None:
         self._debug = debug
         self.router = Router(routes=[])
         self.app = self.router
@@ -24,9 +22,7 @@ class Yast(object):
             self.exception_middleware,
             debug=debug,
         )
-        self.lifespan_middleware = LifespanMiddleware(
-            self.error_middleware
-        )
+        self.lifespan_middleware = LifespanMiddleware(self.error_middleware)
         self.schema_generator = None
         self.template_env = self.load_template_env(template_directory)
 

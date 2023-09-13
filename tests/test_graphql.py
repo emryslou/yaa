@@ -2,18 +2,41 @@ import graphene
 
 try:
     from graphql.execution.executors.asyncio import AsyncioExecutor
-except ImportError:
-    pass
+except ImportError:  # pragma: nocover
+    pass  # pragma: nocover
 
+from yast import TestClient, Yast
+from yast.datastructures import Headers
 from yast.graphql import GraphQLApp
-from yast.testclient import TestClient
+
+
+class FakeAuthMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, scope):
+        headers = Headers(scope=scope)
+        scope["user"] = (
+            "Zhangsan" if headers.get("Authorization") == "Bearer 123" else None
+        )
+
+        return self.app(scope)
 
 
 class Query(graphene.ObjectType):
     hello = graphene.String(name=graphene.String(default_value="stranger"))
 
+    whoami = graphene.String()
+
     def resolve_hello(self, info, name):
         return "Hello " + name
+
+    def resolve_whoami(self, info):
+        return (
+            "whaaaat"
+            if info.context["request"]["user"] is None
+            else info.context["request"]["user"]
+        )
 
 
 schema = graphene.Schema(query=Query)
@@ -33,15 +56,6 @@ def test_get():
 
 def test_post():
     res = client.post("/?query={hello}")
-    assert res.status_code == 200
-    assert res.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
-
-
-def test_json():
-    res = client.post(
-        "/",
-        json={"query": "{hello}"},
-    )
     assert res.status_code == 200
     assert res.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
 
@@ -119,3 +133,15 @@ def test_graphql_async():
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+
+
+def test_context():
+    app = Yast()
+    app.add_middleware(FakeAuthMiddleware)
+    app.add_route("/", GraphQLApp(schema=schema))
+    client = TestClient(app)
+    res = client.post(
+        "/", json={"query": "{whoami}"}, headers={"Authorization": "Bearer 123"}
+    )
+    assert res.status_code == 200
+    assert res.json() == {"data": {"whoami": "Zhangsan"}, "errors": None}

@@ -8,7 +8,7 @@ try:
     from graphql.error import GraphQLError, format_error as format_graphql_error
     from graphql.execution.executors.asyncio import AsyncioExecutor
 except ImportError:  # pragma: no cover
-    graphene = None # pragma: no cover
+    graphene = None  # pragma: no cover
     AsyncioExecutor = None  # pragma: no cover
     format_graphql_error = None  # pragma: no cover
     GraphQLError = None  # pragma: no cover
@@ -71,7 +71,7 @@ class GraphQLApp(object):
                 status_code=web_status.HTTP_400_BAD_REQUEST,
             )
 
-        result = await self.execute(query, variables)
+        result = await self.execute(req, query, variables)
         err_data = (
             [format_graphql_error(err) for err in result.errors]
             if result.errors
@@ -89,7 +89,8 @@ class GraphQLApp(object):
         text = GRAPHIQL.replace("{{REQUEST_PATH}}", json.dumps(req.url.path))
         return HTMLResponse(text)
 
-    async def execute(self, query, variable=None, operation_name=None):
+    async def execute(self, req: Request, query, variable=None, operation_name=None):
+        context = dict(request=req)
         if self.is_async:
             return await self.schema.execute(
                 query,
@@ -97,6 +98,7 @@ class GraphQLApp(object):
                 operation_name=operation_name,
                 executor=self.executor,
                 return_promise=True,
+                context_value=context,
             )
         else:
             return await run_in_threadpool(
@@ -104,6 +106,7 @@ class GraphQLApp(object):
                 query,
                 variable=variable,
                 operation_name=operation_name,
+                context_value=context,
             )
 
 

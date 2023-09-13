@@ -361,8 +361,8 @@ class Router(object):
         raise NoMatchFound()
 
     def __call__(self, scope: Scope) -> ASGIInstance:
-        assert scope["type"] in ("http", "websocket", 'lifespan')
-        if scope['type'] == 'lifespan':
+        assert scope["type"] in ("http", "websocket", "lifespan")
+        if scope["type"] == "lifespan":
             return LifespanHandler(scope)
 
         if "router" not in scope:
@@ -464,7 +464,8 @@ class LifespanHandler(object):
 
     async def __call__(self, receive: Receive, send: Send) -> None:
         from yast.middlewares.lifespan import EventType
+
         for event_type in list(EventType):
             message = await receive()
-            assert message['type'] == event_type.lifespan
-            await send({'type': event_type.complete})
+            assert message["type"] == event_type.lifespan
+            await send({"type": event_type.complete})

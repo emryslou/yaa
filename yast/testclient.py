@@ -283,8 +283,7 @@ class WebSocketTestSession(object):
 
 class _TestClient(requests.Session):
     def __init__(
-        self, app: typing.Callable, base_url: str, 
-        raise_server_exceptions=True
+        self, app: typing.Callable, base_url: str, raise_server_exceptions=True
     ) -> None:
         super().__init__()
         adapter = _ASGIAdapter(app, raise_server_exceptions)
@@ -300,9 +299,7 @@ class _TestClient(requests.Session):
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
-    def wsconnect(
-            self, url: str, subprotocols=None, **kwargs
-        ) -> WebSocketTestSession:
+    def wsconnect(self, url: str, subprotocols=None, **kwargs) -> WebSocketTestSession:
         url = urljoin("ws://testserver", url)
         headers = kwargs.get("headers", {})
         headers.setdefault("connection", "upgrade")
@@ -326,30 +323,31 @@ class _TestClient(requests.Session):
         self.receive_queue = asyncio.Queue()
 
         self.task = loop.create_task(self.lifespan())
-        loop.run_until_complete(self.wait_et('startup'))
-        return self 
+        loop.run_until_complete(self.wait_et("startup"))
+        return self
 
     def __exit__(self, *args: typing.Any) -> None:
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.wait_et('shutdown'))
+        loop.run_until_complete(self.wait_et("shutdown"))
 
     async def lifespan(self) -> None:
         try:
-            inner = self.app({'type': 'lifespan'})
+            inner = self.app({"type": "lifespan"})
             await inner(self.receive_queue.get, self.send_queue.put)
         finally:
             await self.send_queue.put(None)
 
     async def wait_et(self, event_type: str) -> None:
         event_type = LifespanET(event_type)
-        await self.receive_queue.put({'type': event_type.lifespan})
+        await self.receive_queue.put({"type": event_type.lifespan})
         message = await self.send_queue.get()
         if message is None:
             self.task.result()
-        assert message['type'] == event_type.complete
-        
+        assert message["type"] == event_type.complete
+
         if event_type == LifespanET.SHUTDOWN:
             await self.task
+
 
 def TestClient(
     app: typing.Callable,

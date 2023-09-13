@@ -11,7 +11,7 @@ from yast.types import Message, Receive, Scope
 
 try:
     from multipart.multipart import parse_options_header
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     parse_options_header = None  # pragma: no cover
 
 
