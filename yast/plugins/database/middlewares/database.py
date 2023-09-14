@@ -1,10 +1,10 @@
 import asyncio
 import typing
 
-from yast.database import DatabaseBackend
 from yast.datastructures import DatabaseURL
 from yast.middlewares.core import Middleware
 from yast.middlewares.lifespan import EventType
+from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 
@@ -27,7 +27,7 @@ class DatabaseMiddleware(Middleware):
         if isinstance(database_url, str):
             database_url = DatabaseURL(database_url)
 
-        from yast.database import get_database_backend
+        from yast.plugins.database import get_database_backend
 
         return get_database_backend(database_url)
 

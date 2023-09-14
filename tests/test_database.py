@@ -83,7 +83,7 @@ async def note_field(req: Request):
     note_id = req.path_params["note_id"]
     query = sqlalchemy.select([notes.c.text]).where(notes.c.id == note_id)
     db = req.database
-    from yast.database.core import DatabaseSession
+    from yast.plugins.database.drivers.base import DatabaseSession
 
     assert isinstance(db, DatabaseSession)
     reuslt = await db.fetchfield(query)

@@ -5,9 +5,9 @@ from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
-from yast.database.core import DatabaseBackend
 from yast.datastructures import URL, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
+from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.types import Message, Receive, Scope
 
 try:
