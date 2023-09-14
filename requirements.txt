@@ -19,7 +19,7 @@ psycopg2-binary
 pytest
 pytest-cov
 pytest-timeout
-pyflakes
+flake8
 
 
 # Documentation

@@ -11,6 +11,8 @@ from yast.datastructures import URL
 
 
 class PostgresBackend(DatabaseBackend):
+    name = "postgresql"
+
     def __init__(self, database_url: typing.Union[str, URL]) -> None:
         self.database_url = str(database_url)
         self.dialect = self.get_dialect()

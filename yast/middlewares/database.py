@@ -24,10 +24,10 @@ class DatabaseMiddleware(Middleware):
     def get_backend(self, database_url: typing.Union[str, URL]) -> DatabaseBackend:
         if isinstance(database_url, str):
             database_url = URL(database_url)
-        assert database_url.scheme.startswith("postgresql")
-        from yast.database.postgres import PostgresBackend
 
-        return PostgresBackend(database_url)
+        from yast.database import get_database_backend
+
+        return get_database_backend(database_url)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         if scope["type"] == "lifespan":

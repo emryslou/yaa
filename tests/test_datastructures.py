@@ -23,7 +23,7 @@ def test_url():
 
     # username:passwd discard ????
     _new = url.replace(port=None)
-    assert _new == "http://www.baidu.com/abcd/test.php?aaa=ccc#fff"
+    assert _new == "http://user:passwd@www.baidu.com/abcd/test.php?aaa=ccc#fff"
 
 
 def test_query_params():
@@ -105,3 +105,12 @@ def test_url_from_scope():
 
     assert url == "https://example.org/path/to/a/path?abc=123"
     assert repr(url) == "URL('https://example.org/path/to/a/path?abc=123')"
+
+
+def test_hidden_passwd():
+    u = URL("https://example.org/path/to/somewhere")
+    assert repr(u) == "URL('https://example.org/path/to/somewhere')"
+    u = URL("https://username@example.org/path/to/somewhere")
+    assert repr(u) == "URL('https://username@example.org/path/to/somewhere')"
+    u = URL("https://username:password@example.org/path/to/somewhere")
+    assert repr(u) == "URL('https://username:********@example.org/path/to/somewhere')"

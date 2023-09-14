@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
+from yast.database.core import DatabaseBackend
 from yast.datastructures import URL, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
 from yast.types import Message, Receive, Scope
@@ -106,7 +107,7 @@ class Request(Mapping):
         return self._scope["session"]
 
     @property
-    def database(self):
+    def database(self) -> DatabaseBackend:
         assert "database" in self._scope, (
             "`DatabaseMiddleware` must be " "installed to access request.database"
         )

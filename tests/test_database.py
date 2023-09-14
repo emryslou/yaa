@@ -3,7 +3,6 @@ import os
 import pytest
 
 from yast import TestClient, Yast
-from yast.database import transaction
 from yast.middlewares import DatabaseMiddleware
 from yast.requests import Request
 from yast.responses import JSONResponse
@@ -62,7 +61,7 @@ async def list_notes(req: Request):
 
 
 @app.route("/notes", methods=["POST"])
-@transaction
+@app.transaction
 async def add_note(req: Request):
     data = await req.json()
     query = notes.insert().values(text=data["text"], complete=data["complete"])

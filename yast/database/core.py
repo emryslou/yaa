@@ -1,12 +1,8 @@
-import functools
 import typing
 from types import TracebackType
 
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql import ClauseElement
-
-from yast.requests import Request
-from yast.responses import Response
 
 
 def compile(query: ClauseElement, dialect: Dialect) -> typing.Tuple[str, list]:
@@ -25,16 +21,14 @@ def compile(query: ClauseElement, dialect: Dialect) -> typing.Tuple[str, list]:
     return compiled_query, args
 
 
-def transaction(func: typing.Callable) -> typing.Callable:
-    @functools.wraps(func)
-    async def wrapper(req: Request) -> Response:
-        async with req.database.transaction():
-            return await func(req)
-
-    return wrapper
-
-
 class DatabaseBackend(object):
+    name = None
+    drivers: typing.Dict[str, type["DatabaseBackend"]] = {}
+
+    def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init_subclass__(*args, **kwargs)
+        cls.drivers[cls.name] = cls
+
     async def startup(self) -> None:
         raise NotImplementedError()  # pragma: nocover
 

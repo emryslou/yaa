@@ -27,7 +27,8 @@ help:
 
 tests:
 	@export PYTHONPATH=`pwd`
-	python -m pyflakes yast/
+	./scripts/lint
+	python -m flake8 --ignore=E501,E203,W503,W504 yast/
 	python -m coverage run -m pytest .
 	python -m coverage html -d demo/code_coverage
 	python -m coverage report -m

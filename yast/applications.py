@@ -1,13 +1,11 @@
+import functools
 import typing
 
 from yast.datastructures import URLPath
-from yast.middlewares import (
-    BaseHttpMiddleware,
-    ExceptionMiddleware,
-    LifespanMiddleware,
-    ServerErrorMiddleware,
-)
+from yast.middlewares import BaseHttpMiddleware, ExceptionMiddleware, LifespanMiddleware, ServerErrorMiddleware
 from yast.middlewares.lifespan import EventType
+from yast.requests import Request
+from yast.responses import Response
 from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
@@ -118,6 +116,14 @@ class Yast(object):
             return func
 
         return decorator
+
+    def transaction(self, func: typing.Callable) -> typing.Callable:
+        @functools.wraps(func)
+        async def wrapper(req: Request) -> Response:
+            async with req.database.transaction():
+                return await func(req)
+
+        return wrapper
 
     def middleware(self, middleware_type: str) -> typing.Callable:
         assert middleware_type == "http", 'Current only middleware("http") is supported'

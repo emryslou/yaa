@@ -8,6 +8,7 @@
 7. lifespan: as middleware
 8. graphql: context
 9. add DatabaseMiddleware: default postgresql
+10. url: repr: hidden password; database backend constructor reconstruct
 
 # v0.2.3
 1. graphql: add graphiql

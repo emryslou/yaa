@@ -57,6 +57,7 @@ setup(
             'isort',
             'mkdocs',
             'mkdocs-material',
+            'flake8',
         ],
     },
     classifiers=[
