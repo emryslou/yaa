@@ -14,6 +14,7 @@ def test_config(tmpdir):
         file.write("BB = 12\n")
         file.write("CC = true\n")
         file.write("DD = false\n")
+        file.write("PASSWD = abcd123")
 
     config = Config(path, environ={"DEBUG": "true"})
 
@@ -46,6 +47,15 @@ def test_config(tmpdir):
 
     ff = config.get("FF", default="FF")
     assert ff == "FF"
+
+    secrect = config.get("PASSWD")
+    assert secrect == "abcd123"
+
+    from yast.datastructures import Secret
+
+    secrect = config.get("PASSWD", cast=Secret)
+    assert repr(secrect) == "Secret('********')"
+    assert str(secrect) == "abcd123"
 
 
 def test_no_env_file(tmpdir):

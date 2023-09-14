@@ -162,6 +162,17 @@ class URLPath(str):
         return str(URL(scheme=scheme, netloc=base_url.netloc, path=str(self)))
 
 
+class Secret(object):
+    def __init__(self, value: str) -> None:
+        self._value = value
+
+    def __repr__(self) -> str:
+        return "%s(%s)" % (self.__class__.__name__, repr("********"))
+
+    def __str__(self) -> str:
+        return self._value
+
+
 class QueryParams(typing.Mapping[str, str]):
     def __init__(
         self,

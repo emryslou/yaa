@@ -11,9 +11,44 @@ class EnvironError(Exception):
     pass
 
 
+class Environ(MutableMapping):
+    def __init__(self, environ: typing.MutableMapping = os.environ) -> None:
+        self._environ = environ
+        self._has_been_read = set()
+
+    def __getitem__(self, key: typing.Any) -> typing.Any:
+        self._has_been_read.add(key)
+        return self._environ.__getitem__(key)
+
+    def __setitem__(self, key: typing.Any, value: typing.Any) -> None:
+        if key in self._has_been_read:
+            raise EnvironError(
+                f"Attempting to set environ [`{key}`]"
+                ", but the value has already be read"
+            )
+        self._environ.__setitem__(key, value)
+
+    def __delitem__(self, key: typing.Any) -> None:
+        if key in self._has_been_read:
+            raise EnvironError(
+                f"Attempting to del environ [`{key}`]"
+                ", but the value has already be read"
+            )
+        self._environ.__delitem__(key)
+
+    def __iter__(self) -> typing.Iterator:
+        return iter(self._environ)
+
+    def __len__(self) -> int:
+        return len(self._environ)
+
+
+environ = Environ()
+
+
 class Config(object):
     def __init__(
-        self, env_file: str = None, environ: typing.Mapping[str, str] = os.environ
+        self, env_file: str = None, environ: typing.Mapping[str, str] = environ
     ) -> None:
         self.environ = environ
         self.file_values = {}
@@ -88,38 +123,3 @@ class Config(object):
                 'Config "%s" has value "%s". But not a valid %s'
                 % (key, value, cast.__name__)
             )
-
-
-class Environ(MutableMapping):
-    def __init__(self, environ: typing.MutableMapping = os.environ) -> None:
-        self._environ = environ
-        self._has_been_read = set()
-
-    def __getitem__(self, key: typing.Any) -> typing.Any:
-        self._has_been_read.add(key)
-        return self._environ.__getitem__(key)
-
-    def __setitem__(self, key: typing.Any, value: typing.Any) -> None:
-        if key in self._has_been_read:
-            raise EnvironError(
-                f"Attempting to set environ [`{key}`]"
-                ", but the value has already be read"
-            )
-        self._environ.__setitem__(key, value)
-
-    def __delitem__(self, key: typing.Any) -> None:
-        if key in self._has_been_read:
-            raise EnvironError(
-                f"Attempting to del environ [`{key}`]"
-                ", but the value has already be read"
-            )
-        self._environ.__delitem__(key)
-
-    def __iter__(self) -> typing.Iterator:
-        return iter(self._environ)
-
-    def __len__(self) -> int:
-        return len(self._environ)
-
-
-environ = Environ()
