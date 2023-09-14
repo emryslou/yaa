@@ -227,3 +227,7 @@ def test_exception_handler():
     res = client.post("/405")
     assert res.status_code == 405
     assert res.text == "Err 405"
+
+
+def test_mount_plugin():
+    app.mount_plugins()

@@ -7,7 +7,7 @@ except ImportError:  # pragma: nocover
 
 from yast import TestClient, Yast
 from yast.datastructures import Headers
-from yast.graphql import GraphQLApp
+from yast.plugins.graphql import GraphQLApp
 
 
 class FakeAuthMiddleware:

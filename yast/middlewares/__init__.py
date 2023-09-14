@@ -10,13 +10,13 @@ __all__ = [
     "BaseHttpMiddleware",
     "ServerErrorMiddleware",
     "SessionMiddleware",
-    "DatabaseMiddleware",
+    # "DatabaseMiddleware",
 ]
 
 from .base import BaseHttpMiddleware
 from .core import Middleware
 from .cors import CORSMiddleware
-from .database import DatabaseMiddleware
+# from .database import DatabaseMiddleware
 from .errors import ServerErrorMiddleware
 from .exception import ExceptionMiddleware
 from .gzip import GZipMiddleware

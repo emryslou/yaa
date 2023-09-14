@@ -1,7 +1,7 @@
 from yast import TestClient
 from yast.applications import Yast
 from yast.endpoints import HttpEndPoint
-from yast.schemas import OpenAPIResponse, SchemaGenerator
+from yast.plugins.schema.schemas import OpenAPIResponse, SchemaGenerator
 
 app = Yast()
 app.schema_generator = SchemaGenerator(

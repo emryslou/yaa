@@ -3,7 +3,8 @@ import os
 import pytest
 
 from yast import TestClient, Yast
-from yast.middlewares import DatabaseMiddleware
+from yast.plugins.database.decorators import transaction
+from yast.plugins.database.middlewares import DatabaseMiddleware
 from yast.requests import Request
 from yast.responses import JSONResponse
 
@@ -45,10 +46,6 @@ def create_test_base():
     metadata.create_all(engine)
     yield
     engine.execute("drop table notes")
-    # with engine.connect() as conn:
-    #     from sqlalchemy import text
-    #     conn.execute(text(''))
-    #     conn.commit()
 
 
 @app.route("/notes", methods=["GET"])
@@ -61,7 +58,7 @@ async def list_notes(req: Request):
 
 
 @app.route("/notes", methods=["POST"])
-@app.transaction
+@transaction
 async def add_note(req: Request):
     data = await req.json()
     query = notes.insert().values(text=data["text"], complete=data["complete"])

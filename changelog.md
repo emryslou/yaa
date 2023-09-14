@@ -9,6 +9,7 @@
 8. graphql: context
 9. add DatabaseMiddleware: default postgresql
 10. url: repr: hidden password; database backend constructor reconstruct
+11. add authentication
 
 # v0.2.3
 1. graphql: add graphiql

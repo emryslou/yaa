@@ -113,6 +113,20 @@ class Request(Mapping):
         )
         return self._scope["database"]
 
+    @property
+    def auth(self) -> typing.Any:
+        assert (
+            "auth" in self._scope
+        ), "`AuthenticationMiddleware` must be installed to access request.auth"
+        return self._scope["auth"]
+
+    @property
+    def user(self) -> typing.Any:
+        assert (
+            "user" in self._scope
+        ), "`AuthenticationMiddleware` must be installed to access request.user"
+        return self._scope["user"]
+
     def url_for(self, name: str, **path_params: typing.Any) -> URL:
         router = self._scope["router"]
 
