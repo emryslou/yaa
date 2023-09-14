@@ -2,7 +2,7 @@ import asyncio
 import typing
 
 from yast.database import DatabaseBackend
-from yast.datastructures import URL
+from yast.datastructures import DatabaseURL
 from yast.middlewares.core import Middleware
 from yast.middlewares.lifespan import EventType
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
@@ -12,7 +12,7 @@ class DatabaseMiddleware(Middleware):
     def __init__(
         self,
         app: ASGIApp,
-        database_url: typing.Union[str, URL],
+        database_url: typing.Union[str, DatabaseURL],
         rollback_on_shutdown: bool,
     ) -> None:
         super().__init__(app)
@@ -21,9 +21,11 @@ class DatabaseMiddleware(Middleware):
         self.session = None
         self.transaction = None
 
-    def get_backend(self, database_url: typing.Union[str, URL]) -> DatabaseBackend:
+    def get_backend(
+        self, database_url: typing.Union[str, DatabaseURL]
+    ) -> DatabaseBackend:
         if isinstance(database_url, str):
-            database_url = URL(database_url)
+            database_url = DatabaseURL(database_url)
 
         from yast.database import get_database_backend
 

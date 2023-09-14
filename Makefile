@@ -25,7 +25,7 @@ help:
 	@echo "| test name=xxx    - test tests/test_xxx.py    |"
 	@echo "================================================"
 
-tests:
+precommit:
 	@export PYTHONPATH=`pwd`
 	./scripts/lint
 	python -m flake8 --ignore=E501,E203,W503,W504 yast/

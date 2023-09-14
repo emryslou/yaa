@@ -115,7 +115,7 @@ class URL(object):
 
             kwargs["netloc"] = netloc
         components = self.components._replace(**kwargs)
-        return URL(components.geturl())
+        return self.__class__(components.geturl())
 
     def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
         return str(self) == str(other)
@@ -128,6 +128,17 @@ class URL(object):
         if self.password:
             url = str(self.replace(password="********"))
         return "%s(%s)" % (self.__class__.__name__, repr(url))
+
+
+class DatabaseURL(URL):
+    @property
+    def name(self) -> str:
+        return self.path.lstrip("/")
+
+    def replace(self, **kwargs: typing.Any) -> "URL":
+        if "name" in kwargs:
+            kwargs["path"] = "/" + kwargs.pop("name")
+        return super().replace(**kwargs)
 
 
 class URLPath(str):

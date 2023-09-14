@@ -114,3 +114,12 @@ def test_hidden_passwd():
     assert repr(u) == "URL('https://username@example.org/path/to/somewhere')"
     u = URL("https://username:password@example.org/path/to/somewhere")
     assert repr(u) == "URL('https://username:********@example.org/path/to/somewhere')"
+
+
+def test_database_url():
+    from yast.datastructures import DatabaseURL
+
+    u = DatabaseURL("postgresql://u:p@localhost:5432/mydb")
+    u = u.replace(name="test")
+    assert u.name == "test"
+    assert str(u) == "postgresql://u:p@localhost:5432/test"

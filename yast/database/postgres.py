@@ -7,13 +7,13 @@ from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql import ClauseElement
 
 from yast.database import DatabaseBackend, DatabaseSession, DatabaseTransaction, compile
-from yast.datastructures import URL
+from yast.datastructures import DatabaseURL
 
 
 class PostgresBackend(DatabaseBackend):
     name = "postgresql"
 
-    def __init__(self, database_url: typing.Union[str, URL]) -> None:
+    def __init__(self, database_url: typing.Union[str, DatabaseURL]) -> None:
         self.database_url = str(database_url)
         self.dialect = self.get_dialect()
         self.pool = None
