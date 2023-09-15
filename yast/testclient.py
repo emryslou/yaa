@@ -5,7 +5,6 @@ import json
 import queue
 import threading
 import types
-# from types import TracebackType
 import typing
 from urllib.parse import unquote, urljoin, urlparse
 
@@ -110,6 +109,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             "headers": headers,
             "client": ["testclient", 50000],
             "server": [host, port],
+            "extensions": {"http.response.template": {}},
         }
 
         async def receive():
@@ -135,6 +135,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
         async def send(message):
             nonlocal raw_kwargs, response_started, response_complete
+            nonlocal template, context
             if message["type"] == "http.response.start":
                 assert (
                     not response_started
@@ -163,10 +164,15 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 if not more_body:
                     raw_kwargs["body"].seek(0)
                     response_complete = True
+            elif message["type"] == "http.response.template":
+                template = message["template"]
+                context = message["context"]
 
         response_started = False
         response_complete = False
         raw_kwargs = {"body": io.BytesIO()}
+        template = None
+        context = None
 
         loop = asyncio.get_event_loop()
         try:
@@ -190,7 +196,11 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             }
 
         raw = requests.packages.urllib3.HTTPResponse(**raw_kwargs)
-        return self.build_response(request, raw)
+        res = self.build_response(request, raw)
+        if template is not None:
+            res.template = template
+            res.context = context
+        return res
 
 
 class WebSocketTestSession(object):
@@ -281,9 +291,14 @@ class WebSocketTestSession(object):
         self._send_queue.put(message)
 
 
-class _TestClient(requests.Session):
+class TestClient(requests.Session):
+    __test__ = False
+
     def __init__(
-        self, app: typing.Callable, base_url: str, raise_server_exceptions=True
+        self,
+        app: typing.Callable,
+        base_url: str = "http://testserver",
+        raise_server_exceptions=True,
     ) -> None:
         super().__init__()
         adapter = _ASGIAdapter(app, raise_server_exceptions)
@@ -347,15 +362,3 @@ class _TestClient(requests.Session):
 
         if event_type == LifespanET.SHUTDOWN:
             await self.task
-
-
-def TestClient(
-    app: typing.Callable,
-    base_url: str = "http://testserver",
-    raise_server_exceptions=True,
-) -> _TestClient:
-    """
-    We have to work around py.test discovery attempting to pick up
-    the `TestClient` class, by declaring this as a function.
-    """
-    return _TestClient(app, base_url, raise_server_exceptions)

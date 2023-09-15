@@ -37,6 +37,13 @@ setup(
             'python-multipart',
             'itsdangerous',
         ],
+        'db': [
+            'sqlalchemy >= 1.0, < 2.0.0',
+            'asyncpg',
+        ],
+        'postgresql': [
+            'psycopg2-binary',
+        ],
         'template': [
             'jinja2',
         ],

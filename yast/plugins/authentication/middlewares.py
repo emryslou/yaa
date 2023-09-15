@@ -14,7 +14,9 @@ class AuthenticationMiddleware(Middleware):
         self.backend = backend
 
     def __call__(self, scope: Scope) -> ASGIInstance:
-        return functools.partial(self.asgi, scope=scope)
+        if scope["type"] in ("http", "websockets"):
+            return functools.partial(self.asgi, scope=scope)
+        return self.app(scope)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         req = Request(scope=scope, receive=receive)

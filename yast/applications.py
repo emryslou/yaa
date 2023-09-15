@@ -22,11 +22,7 @@ class Yast(object):
         self.template_env = self.load_template_env(template_directory)
 
     def mount_plugins(self):
-        import yast.plugins.authentication as authentication
-        import yast.plugins.schema as schema
-
-        schema.plugin_init(self, {})
-        authentication.plugin_init(self, {})
+        pass
 
     @property
     def routes(self) -> typing.List[BaseRoute]:

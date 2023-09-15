@@ -9,9 +9,7 @@ from yast.responses import RedirectResponse, Response
 
 def has_required_scope(req: Request, scopes: typing.Sequence[str]) -> bool:
     try:
-        print("debug -- 01", scopes, req.auth)
         for scope in scopes:
-            print("debug -- 01 -- 01", scope, req.auth.scopes)
             if scope not in req.auth.scopes:
                 return False
     except BaseException as exc:
@@ -37,12 +35,6 @@ def requires(
 
             @functools.wraps(func)
             async def wrapper(req: Request) -> Response:
-                print(
-                    "debug -- 05",
-                    req.auth,
-                    scope_list,
-                    has_required_scope(req, scope_list),
-                )
                 if not has_required_scope(req, scope_list):
                     if redirect is not None:
                         return RedirectResponse(url=req.url_for(redirect))

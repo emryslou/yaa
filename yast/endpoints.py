@@ -96,11 +96,16 @@ class WebSocketEndpoint(object):
         return message["bytes"]
 
     async def _decode_json(self, message: Message):
-        if "bytes" not in message:
-            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError("Expected json websocket messages, but got others")
-
-        return json.loads(message["bytes"].decode("utf-8"))
+        try:
+            if "text" in message:
+                msg_json = json.loads(message["text"])
+            elif "bytes" in message:
+                msg_json = json.loads(message["bytes"].decode("utf-8"))
+        except json.decoder.JSONDecodeError:
+            await self.ws.close(code=status.WS_1003_UNSUPPORTED_DATA)
+            raise RuntimeError("Malformed JSON data received.")
+        else:
+            return msg_json
 
     async def _decode_unknown(self, message: Message):
         return await self._decode_text(message)

@@ -10,6 +10,9 @@
 9. add DatabaseMiddleware: default postgresql
 10. url: repr: hidden password; database backend constructor reconstruct
 11. add authentication
+12. plugins && add: executemany
+13. plugins: add TemplatesResponse
+
 
 # v0.2.3
 1. graphql: add graphiql

@@ -73,6 +73,16 @@ class PostgresSession(DatabaseSession):
         finally:
             await self.release_connection()
 
+    async def executemany(self, query: ClauseElement, values: list) -> typing.Any:
+        conn = await self.acquire_connection()
+        try:
+            for item in values:
+                squery = query.values(item)  # todo: method may not avaible
+                squery, args = compile(squery, dialect=self.dialect)
+                await conn.execute(squery, *args)
+        finally:
+            await self.release_connection()
+
     def transaction(self) -> DatabaseTransaction:
         return PostgresTransaction(self)
 
