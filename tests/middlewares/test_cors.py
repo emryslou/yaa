@@ -93,7 +93,7 @@ def test_cors_disallowed_preflight():
 
     @app.route("/")
     async def home(_):
-        return PlainTextResponse("HOME")
+        return PlainTextResponse("HOME")  # pragma: nocover
 
     app.add_middleware(
         CORSMiddleware,

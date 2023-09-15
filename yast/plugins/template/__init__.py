@@ -7,7 +7,7 @@ from yast.applications import Yast
 def plugin_init(app: Yast, config: dict = {}) -> None:
     def load_template_env(template_directory: str = None) -> typing.Any:
         if template_directory is None:
-            return None
+            return None  # pragma: nocover
 
         import jinja2
 

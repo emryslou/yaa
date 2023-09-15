@@ -332,7 +332,7 @@ class TestClient(requests.Session):
         except _Upgrade as exc:
             return exc.session
         else:
-            raise RuntimeError("Expected WebSocket upgrade")  # progma: no cover
+            raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
     def __enter__(self) -> requests.Session:
         loop = asyncio.get_event_loop()

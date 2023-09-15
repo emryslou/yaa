@@ -152,7 +152,7 @@ def test_request_body_then_stream():
     assert res.json() == {"body": "1234", "stream": "1234"}
 
 
-def test_request_body_then_stream():
+def test_request_body_then_stream_err():
     """ """
 
     def app(scope):

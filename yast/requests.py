@@ -17,7 +17,7 @@ except ImportError:  # pragma: no cover
 
 
 async def empty_receive() -> Message:
-    raise RuntimeError("Receive channel has not been made avaible")
+    raise RuntimeError("Receive channel has not been made avaible")  # pragma: nocover
 
 
 class HttpConnection(Mapping):

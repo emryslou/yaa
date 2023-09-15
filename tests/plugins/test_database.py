@@ -170,3 +170,13 @@ def test_database_executemany():
             {"text": "buy the milk", "complete": True},
             {"text": "walk the dog", "complete": False},
         ]
+
+
+def test_get_database_backend_rterr():
+    import pytest
+
+    from yast.datastructures import DatabaseURL
+    from yast.plugins.database import get_database_backend
+
+    with pytest.raises(RuntimeError):
+        get_database_backend(DatabaseURL("unknown://testserver"))

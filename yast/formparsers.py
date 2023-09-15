@@ -7,9 +7,9 @@ from urllib.parse import unquote_plus
 try:
     import multipart
     from multipart.multipart import parse_options_header
-except ImportError:
-    parse_options_header = None
-    multipart = None
+except ImportError:  # pragma:nocover
+    parse_options_header = None  # pragma:nocover
+    multipart = None  # pragma:nocover
 
 from yast.concurrency import run_in_threadpool
 from yast.datastructures import Headers
