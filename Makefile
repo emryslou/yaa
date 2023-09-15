@@ -19,10 +19,16 @@ endif
 help:
 	@echo "================================================" 
 	@echo "|help info:                                    |"
-	@echo "| tests            - test all cases            |"
+	@echo "| precommit    - test all cases                |"
 	@echo "|    hint: if make test is for up to date,     |"
 	@echo "|          use <make tests -B>                 |"
-	@echo "| test name=xxx    - test tests/test_xxx.py    |"
+	@echo "| test         - test tests/test_xxx.py        |"
+	@echo "|    name=xxx                                  |"
+	@echo "| demo         - run demo server               |"
+	@echo "| dist         - make dist package             |"
+	@echo "| doc          - make docs                     |"
+	@echo "| docsvr       - run docs server               |"
+	@echo "| gadd         - code lint && test && git add  |"
 	@echo "================================================"
 
 precommit:
@@ -45,10 +51,9 @@ dist:
 
 doc:
 	python -m mkdocs build -f mkdocs.yml -d demo/docs
+
 docsvr:
 	python -m mkdocs serve
 
-gadd:
-	./scripts/lint
-	make tests -B
+gadd: precommit
 	git add `pwd`/
