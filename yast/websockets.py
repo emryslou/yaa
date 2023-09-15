@@ -1,9 +1,8 @@
 import enum
 import json
 import typing
-from typing import Mapping
 
-from yast.datastructures import URL, Headers, QueryParams
+from yast.requests import HttpConnection
 from yast.types import Message, Receive, Scope, Send
 
 
@@ -18,7 +17,7 @@ class WebSocketDisconnect(Exception):
         self.code = code
 
 
-class WebSocket(Mapping):
+class WebSocket(HttpConnection):
     def __init__(
         self, scope: Scope, receive: Receive = None, send: Send = None
     ) -> None:
@@ -28,47 +27,6 @@ class WebSocket(Mapping):
         self._send = send
         self.client_state = WebSocketState.CONNECTING
         self.application_state = WebSocketState.CONNECTING
-
-    def __getitem__(self, key: str) -> typing.Any:
-        return self._scope[key]
-
-    def __iter__(self) -> iter:
-        return iter(self._scope)
-
-    def __len__(self) -> int:
-        return len(self._scope)
-
-    @property
-    def url(self) -> URL:
-        if not hasattr(self, "_url"):
-            self._url = URL(scope=self._scope)
-
-        return self._url
-
-    @property
-    def headers(self) -> Headers:
-        if not hasattr(self, "_headers"):
-            self._headers = Headers(scope=self._scope)
-
-        return self._headers
-
-    @property
-    def query_params(self) -> QueryParams:
-        if not hasattr(self, "_query_parmas"):
-            self._query_params = QueryParams(scope=self._scope)
-
-        return self._query_params
-
-    @property
-    def path_params(self) -> dict:
-        return self._scope.get("path_params", {})
-
-    def url_for(self, name: str, **path_params: typing.Any) -> str:
-        router = self._scope["router"]
-        url_path = router.url_path_for(name, **path_params)
-        return url_path.make_absolute_url(
-            secure=self.url.is_secure, netloc=self.url.netloc
-        )
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:

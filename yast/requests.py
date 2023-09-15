@@ -20,16 +20,10 @@ async def empty_receive() -> Message:
     raise RuntimeError("Receive channel has not been made avaible")
 
 
-class ClientDisconnect(Exception):
-    pass
-
-
-class Request(Mapping):
-    def __init__(self, scope: Scope, receive: Receive = None):
-        self._scope = scope
-        self._receive = empty_receive if receive is None else receive
-        self._stream_consumed = False
-        self._cookies = None
+class HttpConnection(Mapping):
+    def __init__(self, scope: Scope, *args, **kwargs) -> None:
+        assert scope["type"] in ("http", "websocket")
+        self.scope = scope
 
     def __getitem__(self, __key: typing.Any) -> typing.Any:
         return self._scope[__key]
@@ -40,31 +34,11 @@ class Request(Mapping):
     def __len__(self) -> int:
         return len(self._scope)
 
-    def set_receive_channel(self, receive: Receive) -> None:
-        self._receive = receive
-
-    @property
-    def method(self) -> str:
-        return self._scope["method"]
-
     @property
     def url(self) -> URL:
         if not hasattr(self, "_url"):
             self._url = URL(scope=self._scope)
         return self._url
-
-    @property
-    def relative_url(self) -> URL:
-        if not hasattr(self, "_relative_url"):
-            url = self._scope["path"]
-            query_str = self._scope["query_string"]
-
-            if query_str:
-                url += "?" + unquote(query_str.decode())
-
-            self._relative_url = url
-
-        return self._relative_url
 
     @property
     def headers(self) -> Headers:
@@ -94,10 +68,6 @@ class Request(Mapping):
                     cookies[k] = morse.value
             self._cookies = cookies
         return self._cookies
-
-    @property
-    def receive(self):
-        return self._receive
 
     @property
     def session(self):
@@ -132,6 +102,42 @@ class Request(Mapping):
 
         url = router.url_path_for(name, **path_params)
         return url.make_absolute_url(base_url=self.url)
+
+
+class ClientDisconnect(Exception):
+    pass
+
+
+class Request(HttpConnection):
+    def __init__(self, scope: Scope, receive: Receive = None):
+        self._scope = scope
+        self._receive = empty_receive if receive is None else receive
+        self._stream_consumed = False
+        self._cookies = None
+
+    def set_receive_channel(self, receive: Receive) -> None:
+        self._receive = receive
+
+    @property
+    def method(self) -> str:
+        return self._scope["method"]
+
+    @property
+    def relative_url(self) -> URL:
+        if not hasattr(self, "_relative_url"):
+            url = self._scope["path"]
+            query_str = self._scope["query_string"]
+
+            if query_str:
+                url += "?" + unquote(query_str.decode())
+
+            self._relative_url = url
+
+        return self._relative_url
+
+    @property
+    def receive(self):
+        return self._receive
 
     async def stream(self):
         if hasattr(self, "_body"):
