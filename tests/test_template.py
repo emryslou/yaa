@@ -9,7 +9,7 @@ def test_templates(tmpdir):
     with open(path, "w") as f:
         f.write("<h1>Hello</h1>" "<a href=\"{{url_for('homepage')}}\">Template</a>")
 
-    app = Yast(template_directory=tmpdir)
+    app = Yast(plugins={"template": {"template_directory": tmpdir}})
 
     @app.route("/")
     async def homepage(req):

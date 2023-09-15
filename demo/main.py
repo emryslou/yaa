@@ -8,15 +8,21 @@ from yast.staticfiles import StaticFiles
 from yast.endpoints import HttpEndPoint, WebSocketEndpoint
 from yast.routing import Route
 from yast.websockets import WebSocket, WebSocketDisconnect
-from yast.middlewares import SessionMiddleware, BaseHttpMiddleware
+from yast.middlewares import BaseHttpMiddleware
 
 
 app = Yast(
     debug=True,
-    template_directory='demo/templates'
+    plugins = {
+        'session': {
+            "secret_key": 'test'
+        },
+        'template': {
+            'template_directory': 'demo/templates'
+        }
+    }
 )
 
-app.add_middleware(SessionMiddleware, secret_key='test')
 
 app.mount('/static', StaticFiles(directory='demo/static'))
 app.mount('/docs', StaticFiles(directory='demo/docs'))
@@ -29,11 +35,12 @@ def home(request: Request) -> Response:
         'ws_host': 'localhost:5505/ws',
         'js_version': '126'
     })
-    return Response(html_content, media_type='text/html')
+    res = Response(html_content, media_type='text/html')
+    return res 
 
 @app.route('/favicon.ico')
 def fav(_):
-    return RedirectResponse('/static/favicon.ico', 302)
+    return FileResponse('/static/favicon.ico', 302)
 
 class Demo(HttpEndPoint):
     def get(self, request: Request, **kwargs):

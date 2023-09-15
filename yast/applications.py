@@ -7,24 +7,51 @@ from yast.types import ASGIApp, ASGIInstance, Scope
 
 
 class Yast(object):
-    def __init__(self, debug: bool = False, template_directory: str = None) -> None:
+    def __init__(
+        self,
+        debug: bool = False,
+        template_directory: str = None,
+        config: dict = None,
+        **kwargs,
+    ) -> None:
         self._debug = debug
         self.router = Router(routes=[])
         self.app = self.router
         self.middleware_app = self.app
         self.config = {
             "template_directory": template_directory,
+            "plugins": {
+                "exceptions": {},
+                "lifespan": {},
+            },
         }
-        self.__init_plugins__()
+        for _k, _cfg in kwargs.pop("plugins", {}).items():
+            if _k in self.config["plugins"]:
+                self.config["plugins"][_k].update(_cfg)
+            else:
+                self.config["plugins"][_k] = _cfg
 
-    def __init_plugins__(self):
-        from yast.plugins import exceptions as plugin_exceptions, lifespan as plugin_lifespan
+        self.__init_plugins__(self.config.get("plugins", {}))
 
-        plugin_exceptions.plugin_init(self)
-        plugin_lifespan.plugin_init(self)
+    def __init_plugins__(self, plugins_config: dict = {}):
+        from yast.plugins import (
+            exceptions as plugin_exceptions,
+            lifespan as plugin_lifespan,
+            session as plugin_session,
+            template as plugin_template,
+        )
+
+        for plugin_name, plugin_cfg in plugins_config.items():
+            if plugin_name == "exceptions":
+                plugin_exceptions.plugin_init(self, plugin_cfg)
+            elif plugin_name == "lifespan":
+                plugin_lifespan.plugin_init(self, plugin_cfg)
+            elif plugin_name == "session":
+                plugin_session.plugin_init(self, plugin_cfg)
+            elif plugin_name == "template":
+                plugin_template.plugin_init(self, plugin_cfg)
 
         self.schema_generator = None
-        self.template_env = self.load_template_env(self.config["template_directory"])
 
     @property
     def routes(self) -> typing.List[BaseRoute]:
@@ -68,7 +95,7 @@ class Yast(object):
     def add_middleware(
         self,
         middleware_class_or_func: typing.Union[type, typing.Callable],
-        **kwargs: typing.Any
+        **kwargs: typing.Any,
     ) -> None:
         self.middleware_app = middleware_class_or_func(self.middleware_app, **kwargs)
 
@@ -106,25 +133,6 @@ class Yast(object):
 
     def url_path_for(self, name, **path_params: str) -> URLPath:
         return self.router.url_path_for(name=name, **path_params)
-
-    def load_template_env(self, template_directory: str = None) -> typing.Any:
-        if template_directory is None:
-            return None
-
-        import jinja2
-
-        @jinja2.pass_context
-        def url_for(context: dict, name: str, **path_params: typing.Any) -> str:
-            req = context["request"]
-            return req.url_for(name, **path_params)
-
-        loader = jinja2.FileSystemLoader(str(template_directory))
-        env = jinja2.Environment(loader=loader, autoescape=True)
-        env.globals["url_for"] = url_for
-        return env
-
-    def get_template(self, name: str) -> typing.Any:
-        return self.template_env.get_template(name)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope["app"] = self

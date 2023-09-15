@@ -9,7 +9,7 @@ __all__ = [
     "WSGIMiddleware",
     "BaseHttpMiddleware",
     "ServerErrorMiddleware",
-    "SessionMiddleware",
+    # "SessionMiddleware",
     # "DatabaseMiddleware",
 ]
 
@@ -21,6 +21,6 @@ from .errors import ServerErrorMiddleware
 # from .exception import ExceptionMiddleware
 from .gzip import GZipMiddleware
 from .httpsredirect import HttpsRedirectMiddleware
-from .sessions import SessionMiddleware
+# from .sessions import SessionMiddleware
 from .trustedhost import TrustedHostMiddleware
 from .wsgi import WSGIMiddleware

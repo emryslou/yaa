@@ -1,4 +1,4 @@
-from yast.datastructures import URL, Headers, QueryParams
+from yast.datastructures import URL, CommaSeparatedStrings, Headers, QueryParams
 
 
 def test_url():
@@ -123,3 +123,24 @@ def test_database_url():
     u = u.replace(name="test")
     assert u.name == "test"
     assert str(u) == "postgresql://u:p@localhost:5432/test"
+
+
+def test_csv():
+    csv = CommaSeparatedStrings('"localhost", "127.0.0.1", 0.0.0.0')
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStrings(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+    assert csv[0] == "localhost"
+    assert len(csv) == 3
+    csv = CommaSeparatedStrings("'localhost', '127.0.0.1', 0.0.0.0")
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStrings(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+    csv = CommaSeparatedStrings("localhost, 127.0.0.1, 0.0.0.0")
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStrings(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+    csv = CommaSeparatedStrings(["localhost", "127.0.0.1", "0.0.0.0"])
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStrings(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
