@@ -463,9 +463,11 @@ class LifespanHandler(object):
         pass
 
     async def __call__(self, receive: Receive, send: Send) -> None:
-        from yast.middlewares.lifespan import EventType
+        from yast.plugins.lifespan.middlewares import EventType
 
         for event_type in list(EventType):
             message = await receive()
+            assert message is not None
+            assert "type" in message
             assert message["type"] == event_type.lifespan
             await send({"type": event_type.complete})

@@ -2,7 +2,7 @@ import asyncio
 import enum
 import typing
 
-from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
+from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 STATE_TRANSITION_ERROR = "Got invalid state transition on lifespan protocal"
 
@@ -53,33 +53,18 @@ class LifespanHandler(object):
     ) -> None:
         self.inner = app(scope)
         self.handlers = handlers
-        self.send_buffer = asyncio.Queue()
-        self.receive_buffer = asyncio.Queue()
 
     async def __call__(self, receive: Receive, send: Send) -> None:
-        loop = asyncio.get_event_loop()
-        inner_task = loop.create_task(self.run_inner())
-        try:
-            for event_type in self.handlers.keys():
-                message = await receive()
-                assert message["type"] == event_type.lifespan
-                await self.handler(event_type)
+        lifespan = {et.lifespan: et for et in list(EventType)}
 
-                await self.receive_buffer.put(message)
-                message = await self.send_buffer.get()
-                if message is None:
-                    inner_task.result()
-                assert message["type"] == event_type.complete
-                await send({"type": message["type"]})
-            # endfor
-        except BaseException as exc:
-            import sys
-            import traceback
+        async def receiver() -> Message:
+            message = await receive()
+            if message["type"] in lifespan:
+                await self.handler(lifespan[message["type"]])
 
-            print("exception -- 01", exc)
-            traceback.print_tb(exc.__traceback__, file=sys.stdout)
-        finally:
-            await inner_task
+            return message
+
+        await self.inner(receiver, send)
 
     async def run_inner(self) -> None:
         try:

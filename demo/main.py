@@ -1,7 +1,7 @@
 import graphene
 
 from yast import Yast
-from yast.graphql import GraphQLApp
+from yast.plugins.graphql import GraphQLApp
 from yast.responses import Response, FileResponse, RedirectResponse, HTMLResponse
 from yast.requests import Request
 from yast.staticfiles import StaticFiles
@@ -70,7 +70,7 @@ app.add_route('/demo', route=Route('/', endpoint=Demo))
 
 @app.on_event('startup')
 def run_startup():
-    import mkdocs
+    print('startup')
 
 
 @app.on_event('shutdown')

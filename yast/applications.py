@@ -1,8 +1,7 @@
 import typing
 
 from yast.datastructures import URLPath
-from yast.middlewares import BaseHttpMiddleware, ExceptionMiddleware, LifespanMiddleware, ServerErrorMiddleware
-from yast.middlewares.lifespan import EventType
+from yast.middlewares import BaseHttpMiddleware
 from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, ASGIInstance, Scope
 
@@ -12,17 +11,20 @@ class Yast(object):
         self._debug = debug
         self.router = Router(routes=[])
         self.app = self.router
-        self.exception_middleware = ExceptionMiddleware(self.router, debug=debug)
-        self.error_middleware = ServerErrorMiddleware(
-            self.exception_middleware,
-            debug=debug,
-        )
-        self.lifespan_middleware = LifespanMiddleware(self.error_middleware)
-        self.schema_generator = None
-        self.template_env = self.load_template_env(template_directory)
+        self.middleware_app = self.app
+        self.config = {
+            "template_directory": template_directory,
+        }
+        self.__init_plugins__()
 
-    def mount_plugins(self):
-        pass
+    def __init_plugins__(self):
+        from yast.plugins import exceptions as plugin_exceptions, lifespan as plugin_lifespan
+
+        plugin_exceptions.plugin_init(self)
+        plugin_lifespan.plugin_init(self)
+
+        self.schema_generator = None
+        self.template_env = self.load_template_env(self.config["template_directory"])
 
     @property
     def routes(self) -> typing.List[BaseRoute]:
@@ -37,12 +39,6 @@ class Yast(object):
     def debug(self) -> bool:
         return self._debug
 
-    def on_event(self, event_type: EventType) -> None:
-        return self.lifespan_middleware.on_event(event_type)
-
-    def add_event_handler(self, event_type: EventType, func: typing.Callable) -> None:
-        self.lifespan_middleware.add_event_handler(event_type, func)
-
     @debug.setter
     def debug(self, val: bool) -> None:
         self._debug = val
@@ -51,27 +47,6 @@ class Yast(object):
 
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
         self.router.mount(path, app=app, name=name)
-
-    def add_exception_handler(
-        self,
-        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
-        handler: typing.Callable,
-    ) -> None:
-        if exc_class_or_status_code in (500, Exception):
-            self.error_middleware.handler = handler
-        else:
-            self.exception_middleware.add_exception_handler(
-                exc_class_or_status_code, handler
-            )
-
-    def exception_handler(
-        self, exc_class_or_status_code: typing.Union[int, typing.Type[Exception]]
-    ) -> typing.Callable:
-        def decorator(func):
-            self.add_exception_handler(exc_class_or_status_code, func)
-            return func
-
-        return decorator
 
     def add_route(
         self,
@@ -90,10 +65,12 @@ class Yast(object):
     ) -> None:
         self.router.add_route_ws(path, route)
 
-    def add_middleware(self, middleware_class: type, **kwargs: typing.Any) -> None:
-        self.error_middleware.app = middleware_class(
-            self.error_middleware.app, **kwargs
-        )
+    def add_middleware(
+        self,
+        middleware_class_or_func: typing.Union[type, typing.Callable],
+        **kwargs: typing.Any
+    ) -> None:
+        self.middleware_app = middleware_class_or_func(self.middleware_app, **kwargs)
 
     def route(
         self,
@@ -151,4 +128,4 @@ class Yast(object):
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         scope["app"] = self
-        return self.lifespan_middleware(scope)
+        return self.middleware_app(scope)

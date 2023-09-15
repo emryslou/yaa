@@ -3,8 +3,8 @@ import typing
 
 from yast.datastructures import DatabaseURL
 from yast.middlewares.core import Middleware
-from yast.middlewares.lifespan import EventType
 from yast.plugins.database.drivers.base import DatabaseBackend
+from yast.plugins.lifespan.middlewares import EventType
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 

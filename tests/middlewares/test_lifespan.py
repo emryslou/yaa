@@ -1,7 +1,7 @@
 import pytest
 
 from yast import TestClient
-from yast.middlewares.lifespan import EventType, LifespanMiddleware
+from yast.plugins.lifespan.middlewares import EventType, LifespanMiddleware
 
 
 class App:
