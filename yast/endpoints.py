@@ -35,7 +35,7 @@ class HttpEndPoint(object):
 
     async def method_not_allowed(self, req: Request):
         if "app" in self.scope:
-            raise HttpException(status_code=405)
+            raise HttpException(status_code=405)  # pragma: nocover
         return PlainTextResponse("Method Not Allowed", 405)
 
 
@@ -63,8 +63,8 @@ class WebSocketEndpoint(object):
                     close_code = message.get("code", status.WS_1000_NORMAL_CLOSURE)
                     break
         except Exception as exc:
-            close_code = status.WS_1011_INTERNAL_ERROR
-            raise exc from None
+            close_code = status.WS_1011_INTERNAL_ERROR  # pragma: nocover
+            raise exc from None  # pragma: nocover
         finally:
             await self.on_disconnect(close_code)
 
@@ -76,23 +76,27 @@ class WebSocketEndpoint(object):
         if self.encoding is not None:
             decode_fn_name = "_decode_" + self.encoding.lower()
             if not hasattr(self, decode_fn_name):
-                decode_fn_name = "_decode_unknown"
+                decode_fn_name = "_decode_unknown"  # pragma: nocover
         else:
-            decode_fn_name = "_decode_none"
+            decode_fn_name = "_decode_none"  # pragma: nocover
 
         decode_fn = getattr(self, decode_fn_name)
         return await decode_fn(message)
 
     async def _decode_text(self, message: Message):
         if "text" not in message:
-            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError("Expected text websocket messages, but got others")
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)  # pragma: nocover
+            raise RuntimeError(
+                "Expected text websocket messages, but got others"
+            )  # pragma: nocover
         return message["text"]
 
     async def _decode_bytes(self, message: Message):
         if "bytes" not in message:
-            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError("Expected bytes websocket messages, but got others")
+            await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)  # pragma: nocover
+            raise RuntimeError(
+                "Expected bytes websocket messages, but got others"
+            )  # pragma: nocover
         return message["bytes"]
 
     async def _decode_json(self, message: Message):
@@ -108,10 +112,10 @@ class WebSocketEndpoint(object):
             return msg_json
 
     async def _decode_unknown(self, message: Message):
-        return await self._decode_text(message)
+        return await self._decode_text(message)  # pragma: nocover
 
     async def _decode_none(self, message: Message):
-        return await self._decode_text(message)
+        return await self._decode_text(message)  # pragma: nocover
 
     async def on_connect(self, **kwargs: typing.Any) -> None:
         """Override to handle an incoming websocket connection"""

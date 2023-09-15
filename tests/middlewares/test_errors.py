@@ -1,7 +1,7 @@
 import pytest
 
 from yast import TestClient
-from yast.plugins.exceptions.middlewares.server import ServerErrorMiddleware
+from yast.plugins.exceptions.middlewares.server import ServerErrorMiddleware, req_method_content_length_eq_0
 from yast.responses import JSONResponse
 
 
@@ -76,3 +76,62 @@ def test_debug_not_http():
     app = ServerErrorMiddleware(app)
     with pytest.raises(RuntimeError):
         app({"type": "websocket"})
+
+
+def test_req_method_head_content_length_eq_0():
+    cases_headers = [
+        [
+            (b"content-length", b"8"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+        ],
+        [
+            (b"aaaaa", b"cccccc"),
+            (b"content-length", b"8"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+        ],
+        [
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"content-length", b"8"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+        ],
+        [
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"content-length", b"8"),
+            (b"aaaaa", b"cccccc"),
+        ],
+        [
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"content-length", b"8"),
+        ],
+        [
+            (b"content-length", b"8"),
+        ],
+        [
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+            (b"aaaaa", b"cccccc"),
+        ],
+    ]
+
+    for idx, headers in enumerate(cases_headers):
+        newheader = req_method_content_length_eq_0(headers)
+        assert len(headers) == len(newheader), "%d failure" % (idx + 1)

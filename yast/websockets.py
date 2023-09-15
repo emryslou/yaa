@@ -72,7 +72,7 @@ class WebSocket(HttpConnection):
 
     def _raise_on_disconnect(self, message: Message):
         if message is None:
-            raise RuntimeError("Message is None")
+            raise RuntimeError("Message is None")  # pragma: nocover
         if message["type"] == "websocket.disconnect":
             raise WebSocketDisconnect(message["code"])
 

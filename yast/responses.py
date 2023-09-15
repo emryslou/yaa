@@ -25,7 +25,7 @@ except ImportError:  # pragma: nocover
     ujson = None  # type: ignore
 
 
-class Response:
+class Response(object):
     media_type = None
     charset = "utf-8"
 

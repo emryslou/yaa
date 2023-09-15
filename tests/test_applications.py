@@ -173,6 +173,10 @@ def test_add_route():
     assert res.status_code == 200
     assert res.text == "homepage"
 
+    res = client.head("/homepage")
+    assert res.status_code == 200
+    assert res.text == ""
+
 
 def test_add_ws():
     from yast import TestClient

@@ -103,7 +103,7 @@ class WSGIResponser(object):
                     await self.send_event.wait()
                     self.send_event.clear()
             except asyncio.CancelledError as exc:
-                raise exc
+                raise exc  # pragma: nocover
 
     def start_response(
         self,

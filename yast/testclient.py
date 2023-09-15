@@ -160,7 +160,9 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 ), 'Received "http.response.body" after response completed'
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
-                raw_kwargs["body"].write(body)
+                if request.method != "HEAD":
+                    raw_kwargs["body"].write(body)
+
                 if not more_body:
                     raw_kwargs["body"].seek(0)
                     response_complete = True
@@ -330,7 +332,7 @@ class TestClient(requests.Session):
         except _Upgrade as exc:
             return exc.session
         else:
-            raise RuntimeError("Expected WebSocket upgrade")  # progma: on cover
+            raise RuntimeError("Expected WebSocket upgrade")  # progma: no cover
 
     def __enter__(self) -> requests.Session:
         loop = asyncio.get_event_loop()

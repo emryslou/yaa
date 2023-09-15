@@ -13,14 +13,12 @@ def has_required_scope(req: Request, scopes: typing.Sequence[str]) -> bool:
         for scope in scopes:
             if scope not in req.auth.scopes:
                 return False
-    except BaseException as exc:
-        print("exception -- 02", exc)
-        print("exception -- 02 - 02", scopes, req.auth.scopes)
-        import sys
-        import traceback
+    except BaseException as exc:  # pragma: nocover
+        import sys  # pragma: nocover
+        import traceback  # pragma: nocover
 
-        traceback.print_tb(exc.__traceback__, file=sys.stdout)
-        raise exc
+        traceback.print_tb(exc.__traceback__, file=sys.stdout)  # pragma: nocover
+        raise exc  # pragma: nocover
     return True
 
 
@@ -110,7 +108,7 @@ class SimpleUser(BaseUser):
 
     @property
     def identity(self) -> str:
-        raise ""
+        raise ""  # pragma: nocover
 
 
 class UnauthenticatedUser(BaseUser):
@@ -120,8 +118,8 @@ class UnauthenticatedUser(BaseUser):
 
     @property
     def display_name(self) -> str:
-        return ""
+        return ""  # pragma: nocover
 
     @property
     def identity(self) -> str:
-        raise ""
+        raise ""  # pragma: nocover

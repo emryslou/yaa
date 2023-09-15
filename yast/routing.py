@@ -99,7 +99,14 @@ class Route(BaseRoute):
                 methods = ["GET"]
         else:
             self.app = endpoint
-        self.methods = methods
+
+        if methods is None:
+            self.methods = None
+        else:
+            self.methods = set([method.upper() for method in methods])
+            if "GET" in self.methods:
+                self.methods |= set(["HEAD"])
+
         (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
             path
         )
