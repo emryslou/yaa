@@ -31,8 +31,7 @@ from yast import TestClient, Yast
 from yast.plugins.authentication.middlewares import AuthenticationMiddleware
 from yast.responses import JSONResponse
 
-app = Yast()
-app.add_middleware(AuthenticationMiddleware, backend=BaseAuth())
+app = Yast(plugins={"authentication": {"backend": BaseAuth()}})
 
 
 @app.route("/")
@@ -130,3 +129,35 @@ def test_authentication_redirect():
         response = client.get("/admin/sync", auth=("tomchristie", "example"))
         assert response.status_code == 200
         assert response.json() == {"authenticated": True, "user": "tomchristie"}
+
+
+def on_auth_error(request: Request, exc: Exception):
+    return JSONResponse({"error": str(exc)}, status_code=401)
+
+
+other_app = Yast(
+    plugins={"authentication": {"backend": BaseAuth(), "on_error": on_auth_error}}
+)
+
+
+@other_app.route("/control-panel")
+@requires("authenticated")
+def control_panel(request):
+    return JSONResponse(
+        {
+            "authenticated": request.user.is_authenticated,
+            "user": request.user.display_name,
+        }
+    )
+
+
+def test_custom_on_error():
+    with TestClient(other_app) as client:
+        response = client.get("/control-panel", auth=("eml", "example"))
+        assert response.status_code == 200
+        assert response.json() == {"authenticated": True, "user": "eml"}
+        response = client.get(
+            "/control-panel", headers={"Authorization": "basic foobar"}
+        )
+        assert response.status_code == 401
+        assert response.json() == {"error": "Invalid basic auth credentials"}

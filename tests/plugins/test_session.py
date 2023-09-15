@@ -1,5 +1,4 @@
 from yast import TestClient, Yast
-from yast.plugins.session.middlewares import SessionMiddleware
 from yast.responses import JSONResponse
 
 
@@ -18,8 +17,8 @@ async def clear_session(request):
     return JSONResponse({"session": request.session})
 
 
-def create_app():
-    app = Yast()
+def create_app(sess_config: dict = {}):
+    app = Yast(plugins={"session": sess_config})
     app.add_route("/view_session", view_session)
     app.add_route("/update_session", update_session, methods=["POST"])
     app.add_route("/clear_session", clear_session, methods=["POST"])
@@ -27,8 +26,7 @@ def create_app():
 
 
 def test_session():
-    app = create_app()
-    app.add_middleware(SessionMiddleware, secret_key="example")
+    app = create_app({"secret_key": "example"})
     client = TestClient(app)
 
     response = client.get("/view_session")
@@ -38,8 +36,7 @@ def test_session():
 
 
 def test_session_expires():
-    app = create_app()
-    app.add_middleware(SessionMiddleware, secret_key="example", max_age=-1)
+    app = create_app({"secret_key": "example", "max_age": -1})
     client = TestClient(app)
 
     response = client.post("/update_session", json={"some": "data"})
@@ -50,8 +47,7 @@ def test_session_expires():
 
 
 def test_secure_session():
-    app = create_app()
-    app.add_middleware(SessionMiddleware, secret_key="example", https_only=True)
+    app = create_app({"secret_key": "example", "https_only": True})
     secure_client = TestClient(app, base_url="https://testserver")
     unsecure_client = TestClient(app, base_url="http://testserver")
     response = unsecure_client.get("/view_session")

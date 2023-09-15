@@ -35,6 +35,7 @@ class Yast(object):
 
     def __init_plugins__(self, plugins_config: dict = {}):
         from yast.plugins import (
+            authentication as plugin_auth,
             exceptions as plugin_exceptions,
             lifespan as plugin_lifespan,
             session as plugin_session,
@@ -50,6 +51,8 @@ class Yast(object):
                 plugin_session.plugin_init(self, plugin_cfg)
             elif plugin_name == "template":
                 plugin_template.plugin_init(self, plugin_cfg)
+            elif plugin_name == "authentication":
+                plugin_auth.plugin_init(self, plugin_cfg)
 
         self.schema_generator = None
 

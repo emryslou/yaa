@@ -1,5 +1,7 @@
 from yast.applications import Yast
 
+from .middlewares import AuthenticationMiddleware
+
 
 def plugin_init(app: Yast, config: dict = {}):
-    print("authentication init")
+    app.add_middleware(AuthenticationMiddleware, **config)
