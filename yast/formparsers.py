@@ -38,7 +38,6 @@ class UploadFile(object):
     def __init__(self, filename: str) -> None:
         self.filename = filename
         self._file = io.BytesIO()  # type: typing.IO[typing.Any]
-        # self._loop = asyncio.get_event_loop()
 
     def create_tempfile(self) -> None:
         self._file = tempfile.SpooledTemporaryFile()
@@ -195,8 +194,10 @@ class MultiPartParser(object):
                     if b"filename" in options:
                         filename = options[b"filename"].decode("latin-1")
                         _file = UploadFile(filename=filename)
-
                         await _file.setup()
+                    else:
+                        _file = None
+
                 elif msg_type == MultiPartMessage.PART_DATA:
                     if _file is None:
                         data += msg_bytes
