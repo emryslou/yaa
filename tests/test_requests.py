@@ -251,3 +251,19 @@ def test_chunked_encoding():
 
     response = client.post("/", data=post_body())
     assert response.json() == {"body": "foobar"}
+
+
+def test_request_client():
+    def app(scope):
+        async def asgi(receive, send):
+            request = Request(scope, receive)
+            response = JSONResponse(
+                {"host": request.client.host, "port": request.client.port}
+            )
+            await response(receive, send)
+
+        return asgi
+
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.json() == {"host": "testclient", "port": 50000}

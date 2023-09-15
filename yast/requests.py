@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
-from yast.datastructures import URL, Headers, QueryParams
+from yast.datastructures import URL, Address, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
 from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.types import Message, Receive, Scope
@@ -22,8 +22,7 @@ async def empty_receive() -> Message:
 
 class HttpConnection(Mapping):
     def __init__(self, scope: Scope, *args, **kwargs) -> None:
-        assert scope["type"] in ("http", "websocket")
-        self.scope = scope
+        self._scope = scope
 
     def __getitem__(self, __key: typing.Any) -> typing.Any:
         return self._scope[__key]
@@ -70,6 +69,11 @@ class HttpConnection(Mapping):
         return self._cookies
 
     @property
+    def client(self) -> Address:
+        host, port = self._scope.get("client") or (None, None)
+        return Address(host=host, port=port)
+
+    @property
     def session(self):
         assert "session" in self._scope, (
             "`SessionMiddleware` must be " "installed to access request.session"
@@ -110,7 +114,7 @@ class ClientDisconnect(Exception):
 
 class Request(HttpConnection):
     def __init__(self, scope: Scope, receive: Receive = None):
-        self._scope = scope
+        super().__init__(scope=scope)
         self._receive = empty_receive if receive is None else receive
         self._stream_consumed = False
         self._cookies = None

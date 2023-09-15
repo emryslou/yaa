@@ -1,7 +1,10 @@
 import typing
+from collections import namedtuple
 from urllib.parse import ParseResult, parse_qsl, unquote, urlencode, urlparse
 
 from yast.types import Scope
+
+Address = namedtuple("Address", ["host", "port"])
 
 
 class URL(object):
