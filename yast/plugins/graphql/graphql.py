@@ -14,6 +14,7 @@ except ImportError:  # pragma: no cover
     GraphQLError = None  # pragma: no cover
 
 import yast.status as web_status
+from yast.background import BackgroundTasks
 from yast.concurrency import run_in_threadpool
 from yast.requests import Request
 from yast.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
@@ -70,8 +71,9 @@ class GraphQLApp(object):
                 "No Graphql query found in the request",
                 status_code=web_status.HTTP_400_BAD_REQUEST,
             )
-
-        result = await self.execute(req, query, variables)
+        background = BackgroundTasks()
+        context = {"request": req, "background": background}
+        result = await self.execute(req, query, variables, context=context)
         err_data = (
             [format_graphql_error(err) for err in result.errors]
             if result.errors
@@ -89,8 +91,14 @@ class GraphQLApp(object):
         text = GRAPHIQL.replace("{{REQUEST_PATH}}", json.dumps(req.url.path))
         return HTMLResponse(text)
 
-    async def execute(self, req: Request, query, variable=None, operation_name=None):
-        context = dict(request=req)
+    async def execute(
+        self,
+        req: Request,
+        query,
+        variable=None,
+        context: dict = None,
+        operation_name=None,
+    ):
         if self.is_async:
             return await self.schema.execute(
                 query,

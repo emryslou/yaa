@@ -18,3 +18,18 @@ class BackgroundTask(object):
             fn = functools.partial(self.func, *self.args, **self.kwargs)
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, fn)
+
+
+class BackgroundTasks(BackgroundTask):
+    def __init__(self, tasks: typing.Sequence[BackgroundTask] = []) -> None:
+        self.tasks = list(tasks)
+
+    def add_task(
+        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
+    ) -> None:
+        task = BackgroundTask(func, *args, **kwargs)
+        self.tasks.append(task)
+
+    async def __call__(self) -> None:
+        for task in self.tasks:
+            await task()
