@@ -8,7 +8,7 @@ __all__ = [
     "TrustedHostMiddleware",
     "WSGIMiddleware",
     "BaseHttpMiddleware",
-    "ServerErrorMiddleware",
+    # "ServerErrorMiddleware",
     # "SessionMiddleware",
     # "DatabaseMiddleware",
 ]
@@ -17,7 +17,7 @@ from .base import BaseHttpMiddleware
 from .core import Middleware
 from .cors import CORSMiddleware
 # from .database import DatabaseMiddleware
-from .errors import ServerErrorMiddleware
+# from .errors import ServerErrorMiddleware
 # from .exception import ExceptionMiddleware
 from .gzip import GZipMiddleware
 from .httpsredirect import HttpsRedirectMiddleware

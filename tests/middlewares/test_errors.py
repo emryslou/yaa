@@ -1,7 +1,7 @@
 import pytest
 
 from yast import TestClient
-from yast.middlewares import ServerErrorMiddleware
+from yast.plugins.exceptions.middlewares.server import ServerErrorMiddleware
 from yast.responses import JSONResponse
 
 
