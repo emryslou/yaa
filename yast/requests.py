@@ -146,6 +146,7 @@ class Request(HttpConnection):
     async def stream(self):
         if hasattr(self, "_body"):
             yield self._body
+            yield b""
             return
 
         if self._stream_consumed:

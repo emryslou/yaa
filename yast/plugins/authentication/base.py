@@ -31,33 +31,29 @@ def requires(
     scope_list = [scopes] if isinstance(scopes, str) else scopes
 
     def decorator(func: typing.Callable) -> typing.Callable:
-        if asyncio.iscoroutinefunction(func):
+        is_async_func = asyncio.iscoroutinefunction(func)
 
-            @functools.wraps(func)
-            async def wrapper(req: Request) -> Response:
-                if not has_required_scope(req, scope_list):
-                    if redirect is not None:
-                        return RedirectResponse(url=req.url_for(redirect))
-                    # endif
-                    raise HttpException(status_code=status_code)
+        @functools.wraps(func)
+        async def wrapper(*args) -> Response:
+            assert len(args) in (1, 2)
+            req = args[-1]
+            assert isinstance(req, Request)
+
+            if not has_required_scope(req, scope_list):
+                if redirect is not None:
+                    return RedirectResponse(url=req.url_for(redirect))
                 # endif
-                return await func(req)
+                raise HttpException(status_code=status_code)
+            # endif
+            if is_async_func:
+                return await func(*args)
+            else:
+                return func(*args)
 
-            # end def func
-            return wrapper
-        else:
+        # end def wrapper
+        return wrapper
 
-            @functools.wraps(func)
-            def sync_wrapper(req: Request) -> Response:
-                if not has_required_scope(req, scope_list):
-                    if redirect is not None:
-                        return RedirectResponse(url=req.url_for(redirect))
-                    # endif
-                    raise HttpException(status_code=status_code)
-                return func(req)
-
-            return sync_wrapper
-
+    # end def decorator
     return decorator
 
 
