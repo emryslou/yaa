@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import inspect
 import typing
 
 from yast.exceptions import HttpException
@@ -32,12 +33,16 @@ def requires(
 
     def decorator(func: typing.Callable) -> typing.Callable:
         is_async_func = asyncio.iscoroutinefunction(func)
+        signature = inspect.signature(func)
+        for idx, paramter in enumerate(signature.parameters.values()):
+            if paramter.name == "request":
+                break
+        else:
+            raise Exception("No `request` argument on function `%s`" % func)
 
         @functools.wraps(func)
-        async def wrapper(*args) -> Response:
-            assert len(args) in (1, 2)
-            req = args[-1]
-            assert isinstance(req, Request)
+        async def wrapper(*args, **kwargs) -> Response:
+            req = kwargs.get("request", args[idx])
 
             if not has_required_scope(req, scope_list):
                 if redirect is not None:
@@ -46,9 +51,9 @@ def requires(
                 raise HttpException(status_code=status_code)
             # endif
             if is_async_func:
-                return await func(*args)
+                return await func(*args, **kwargs)
             else:
-                return func(*args)
+                return func(*args, **kwargs)
 
         # end def wrapper
         return wrapper

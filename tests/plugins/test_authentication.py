@@ -161,3 +161,13 @@ def test_custom_on_error():
         )
         assert response.status_code == 401
         assert response.json() == {"error": "Invalid basic auth credentials"}
+
+
+def test_invalid_decorator_usage():
+    import pytest
+
+    with pytest.raises(Exception):
+
+        @requires("authenticated")
+        def foo():
+            pass  # pragma: nocover
