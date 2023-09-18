@@ -19,6 +19,7 @@ psycopg2-binary
 pytest
 pytest-cov
 pytest-timeout
+pytest-benchmark
 flake8
 
 

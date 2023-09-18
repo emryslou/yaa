@@ -49,9 +49,9 @@ class BaseRoute(object):
         for match in PARAM_REGEX.finditer(path):
             param_name, convert_type = match.groups("str")
             convert_type = convert_type.lstrip(":")
-            assert convert_type in CONVERTOR_TYPES, 'Unknown path convertor "%s"' % (
-                convert_type
-            )
+            assert (
+                convert_type in CONVERTOR_TYPES
+            ), f'Unknown path convertor "{convert_type}"'
             convertor = CONVERTOR_TYPES[convert_type]
 
             path_regex += path[idx : match.start()]
@@ -86,7 +86,7 @@ class Route(BaseRoute):
         *,
         methods: typing.Sequence[str] = None,
         name: str = None,
-        include_in_schema: bool = True
+        include_in_schema: bool = True,
     ) -> None:
         assert path.startswith("/"), 'Routed paths must always start "/"'
         self.path = path

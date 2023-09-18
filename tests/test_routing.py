@@ -19,7 +19,7 @@ def users(req):
     if content is None:
         content = "All Users"
     else:
-        content = "User %s" % content
+        content = f"User {content}"
     return Response(content, media_type="text/plain")
 
 

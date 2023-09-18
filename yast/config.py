@@ -59,7 +59,7 @@ class Config(object):
         if not os.path.exists(load_file):
             return {}
 
-        load_fn = "_load_from_%s" % file_type
+        load_fn = f"_load_from_{file_type}"
         if not hasattr(self, load_fn):
             return {}  # pragma: nocover
 
@@ -94,7 +94,7 @@ class Config(object):
         if default is not Undefined:
             return default
 
-        raise KeyError("'Config '%s' is missing, and has no default'" % key)
+        raise KeyError(f"'Config '{key}' is missing, and has no default'")
 
     def _cast(
         self,
@@ -112,7 +112,7 @@ class Config(object):
             }
             if value not in _bool_map:
                 raise ValueError(
-                    'Config "%s" has value "%s". But not a valid bool' % (key, value)
+                    f'Config "{key}" has value "{value}". ' "But not a valid bool"
                 )
             return _bool_map[value]
 
@@ -120,6 +120,6 @@ class Config(object):
             return cast(value)
         except (TypeError, ValueError):
             raise ValueError(
-                'Config "%s" has value "%s". But not a valid %s'
-                % (key, value, cast.__name__)
+                f'Config "{key}" has value "{value}". '
+                f"But not a valid {cast.__name__}"
             )

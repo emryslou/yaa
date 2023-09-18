@@ -22,9 +22,7 @@ NOT_MODIFIED_HEADERS = (
 class StaticFiles(object):
     def __init__(self, *, directory, check_dir: bool = True) -> None:
         if check_dir:
-            assert os.path.isdir(directory), 'Directory "%s" does not exists' % (
-                directory
-            )
+            assert os.path.isdir(directory), f'Directory "{directory}" does not exists'
         self.directory = directory
         self.config_checked = False
 
@@ -57,10 +55,10 @@ class _StaticFilesResponser(object):
         try:
             stat_result = await aio_stat(dir)
         except FileNotFoundError:
-            raise RuntimeError("Staticfiles directory %s does not found" % dir)
+            raise RuntimeError(f"Staticfiles directory {dir} does not found")
 
         if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
-            raise RuntimeError("Staticfiles directory %s is not a directory" % dir)
+            raise RuntimeError(f"Staticfiles directory {dir} is not a directory")
 
     def is_not_modified(self, stat_headers: typing.Dict[str, str]) -> bool:
         etag = stat_headers["etag"]

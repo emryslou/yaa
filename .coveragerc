@@ -1,0 +1,8 @@
+[report]
+exclude_also =
+    def __repr__
+
+[run]
+# https://coverage.readthedocs.io/en/latest/source.html#
+omit = 
+    tests/test_debug.py

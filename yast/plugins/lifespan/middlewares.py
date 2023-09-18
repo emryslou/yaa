@@ -16,11 +16,11 @@ class EventType(enum.Enum):
 
     @property
     def lifespan(self) -> str:
-        return "lifespan.%s" % self.value
+        return f"lifespan.{self.value}"
 
     @property
     def complete(self) -> str:
-        return "%s.complete" % self.lifespan
+        return f"{self.lifespan}.complete"
 
 
 class LifespanMiddleware(object):

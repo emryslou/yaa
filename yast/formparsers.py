@@ -88,7 +88,7 @@ class FormParser(object):
         callbacks = {
             attr: getattr(self, attr)
             for attr in self.__dir__()
-            if attr in ["on_%s" % fm.name.lower() for fm in list(FormMessage)]
+            if attr in [f"on_{fm.name.lower()}" for fm in list(FormMessage)]
         }
 
         parser = multipart.QuerystringParser(callbacks)
@@ -155,7 +155,7 @@ class MultiPartParser(object):
     async def parse(self) -> typing.Dict[str, typing.Union[str, UploadFile]]:
         content_type, params = parse_options_header(self.headers["Content-Type"])
         boundary = params.get(b"boundary")
-        _mpm_attrs = ["on_%s" % fm.name.lower() for fm in list(MultiPartMessage)]
+        _mpm_attrs = [f"on_{fm.name.lower()}" for fm in list(MultiPartMessage)]
         callbacks = {
             attr: getattr(self, attr) for attr in self.__dir__() if attr in _mpm_attrs
         }

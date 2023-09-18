@@ -36,7 +36,7 @@ def requires(
             if paramter.name == "request":
                 break
         else:
-            raise Exception("No `request` argument on function `%s`" % func)
+            raise Exception(f"No `request` argument on function `{func}`")
 
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Response:
