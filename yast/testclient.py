@@ -252,7 +252,7 @@ class WebSocketTestSession(object):
 
     def send(self, value):
         if value is None:
-            raise RuntimeError("value is None")
+            raise RuntimeError("value is None")  # pragma: nocover
         self._receive_queue.put(value)
 
     def send_text(self, data: str):

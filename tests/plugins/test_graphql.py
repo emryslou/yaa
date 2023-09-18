@@ -145,3 +145,23 @@ def test_context():
     )
     assert res.status_code == 200
     assert res.json() == {"data": {"whoami": "Zhangsan"}, "errors": None}
+
+
+def test_app_plugin():
+    app = Yast(
+        plugins={
+            "graphql": {
+                "routes": [
+                    {
+                        "path": "/",
+                        "schema": schema,
+                        "methods": ["GET", "POST"],
+                    }
+                ]
+            }
+        }
+    )
+    client = TestClient(app)
+    response = client.get("/?query={ hello }")
+    assert response.status_code == 200
+    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}

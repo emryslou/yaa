@@ -37,22 +37,24 @@ class Yast(object):
         from yast.plugins import (
             authentication as plugin_auth,
             exceptions as plugin_exceptions,
+            graphql as plugin_graphql,
             lifespan as plugin_lifespan,
             session as plugin_session,
             template as plugin_template,
         )
 
+        _all_plugins = {
+            "exceptions": plugin_exceptions.plugin_init,
+            "lifespan": plugin_lifespan.plugin_init,
+            "session": plugin_session.plugin_init,
+            "template": plugin_template.plugin_init,
+            "authentication": plugin_auth.plugin_init,
+            "graphql": plugin_graphql.plugin_init,
+        }
         for plugin_name, plugin_cfg in plugins_config.items():
-            if plugin_name == "exceptions":
-                plugin_exceptions.plugin_init(self, plugin_cfg)
-            elif plugin_name == "lifespan":
-                plugin_lifespan.plugin_init(self, plugin_cfg)
-            elif plugin_name == "session":
-                plugin_session.plugin_init(self, plugin_cfg)
-            elif plugin_name == "template":
-                plugin_template.plugin_init(self, plugin_cfg)
-            elif plugin_name == "authentication":
-                plugin_auth.plugin_init(self, plugin_cfg)
+            if plugin_name in _all_plugins:
+                init_fn = _all_plugins[plugin_name]
+                init_fn(self, plugin_cfg)
 
         self.schema_generator = None
 
@@ -72,8 +74,6 @@ class Yast(object):
     @debug.setter
     def debug(self, val: bool) -> None:
         self._debug = val
-        self.exception_middleware.debug = val
-        self.error_middleware.debug = val
 
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
         self.router.mount(path, app=app, name=name)

@@ -31,7 +31,7 @@ from yast import TestClient, Yast
 from yast.plugins.authentication.middlewares import AuthenticationMiddleware
 from yast.responses import JSONResponse
 
-app = Yast(plugins={"authentication": {"backend": BaseAuth()}})
+app = Yast(plugins={"authentication": {"middleware": {"backend": BaseAuth()}}})
 
 
 @app.route("/")
@@ -136,7 +136,11 @@ def on_auth_error(request: Request, exc: Exception):
 
 
 other_app = Yast(
-    plugins={"authentication": {"backend": BaseAuth(), "on_error": on_auth_error}}
+    plugins={
+        "authentication": {
+            "middleware": {"backend": BaseAuth(), "on_error": on_auth_error}
+        }
+    }
 )
 
 

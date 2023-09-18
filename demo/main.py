@@ -1,7 +1,6 @@
 import graphene
 
 from yast import Yast
-from yast.plugins.graphql import GraphQLApp
 from yast.responses import Response, FileResponse, RedirectResponse, HTMLResponse
 from yast.requests import Request
 from yast.staticfiles import StaticFiles
@@ -11,6 +10,12 @@ from yast.websockets import WebSocket, WebSocketDisconnect
 from yast.middlewares import BaseHttpMiddleware
 
 
+class Query(graphene.ObjectType):
+    hello = graphene.String(name=graphene.String(default_value='stranger'))
+
+    def resolve_hello(self, info, name):
+        return 'Hello ' + name
+
 app = Yast(
     debug=True,
     plugins = {
@@ -19,6 +24,13 @@ app = Yast(
         },
         'template': {
             'template_directory': 'demo/templates'
+        },
+        'graphql': {
+            'routes': [{
+                'path': '/graphql/query',
+                'schema': graphene.Schema(query=Query),
+                'methods': ['GET', 'POST'],
+            }]
         }
     }
 )
@@ -85,15 +97,6 @@ def run_cleanup():
     print('cleanup')
 
 
-class Query(graphene.ObjectType):
-    hello = graphene.String(name=graphene.String(default_value='stranger'))
-
-    def resolve_hello(self, info, name):
-        return 'Hello ' + name
-
-schema = graphene.Schema(query=Query)
-
-app.add_route('/graphql/query', GraphQLApp(schema=schema), methods=['GET', 'POST'])
 """
 ReadMe:
 python3 -m pip install 'uvicorn[standard]'

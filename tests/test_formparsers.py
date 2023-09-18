@@ -113,3 +113,15 @@ def test_multipart_request_mixed_files_and_data(tmpdir):
         "field0": "value0",
         "field1": "value1",
     }
+
+
+def test_urlencoded_percent_encoding(tmpdir):
+    client = TestClient(app)
+    response = client.post("/", data={"some": "zhang san li Si"})
+    assert response.json() == {"some": "zhang san li Si"}
+
+
+def test_urlencoded_percent_encoding_keys(tmpdir):
+    client = TestClient(app)
+    response = client.post("/", data={"why y": "data"})
+    assert response.json() == {"why y": "data"}

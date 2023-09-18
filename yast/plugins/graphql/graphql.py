@@ -37,7 +37,7 @@ class GraphQLApp(object):
         await res(receive, send)
 
     async def handler(self, req: Request) -> Response:
-        if req.method == "GET":
+        if req.method in ("GET", "HEAD"):
             if "text/html" in req.headers.get("Accept", ""):
                 return await self.handle_graphiql(req)
 
