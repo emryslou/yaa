@@ -1,4 +1,11 @@
-from yast.datastructures import URL, CommaSeparatedStrings, Headers, QueryParams
+from yast.datastructures.urls import *
+
+
+def test_address():
+    a = Address("localhost", 8088)
+    assert str(a) == "Address(host='localhost', port=8088)"
+    assert a.host == "localhost"
+    assert a.port == 8088
 
 
 def test_url():
@@ -20,66 +27,8 @@ def test_url():
     assert str(_new).__contains__("/replace/a/path")
     assert not str(_new).__contains__("/abcd/test.php")
 
-    # username:passwd discard ????
     _new = url.replace(port=None)
     assert _new == "http://user:passwd@www.baidu.com/abcd/test.php?aaa=ccc#fff"
-
-
-def test_query_params():
-    q = QueryParams(query_string="a=123&a=456&b=789")
-    assert "a" in q
-    assert "A" not in q
-    assert "c" not in q
-    assert q["a"] == "456"
-    assert q.get("a") == "456"
-    assert q.get("nope", default=None) is None
-    assert q.getlist("a") == ["123", "456"]
-    assert q.keys() == ["a", "b"]
-    assert q.values() == ["456", "789"]
-    assert q.items() == [("a", "456"), ("b", "789")]
-    assert list(q) == ["a", "b"]
-    assert dict(q) == {"a": "456", "b": "789"}
-    assert str(q) == "a=123&a=456&b=789"
-    assert repr(q) == "QueryParams(query_string='a=123&a=456&b=789')"
-    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
-        query_string="a=123&b=456"
-    )
-    assert QueryParams({"a": "123", "b": "456"}) != {"b": "456", "a": "123"}
-    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
-        {"b": "456", "a": "123"}
-    )
-    assert QueryParams() == QueryParams({})
-
-
-def test_headers():
-    h = Headers(raw=[(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
-    assert "a" in h
-    assert "A" in h
-    assert "b" in h
-    assert "B" in h
-    assert "c" not in h
-    assert h["a"] == "123"
-    assert h.get("a") == "123"
-    assert h.get("nope", default=None) is None
-    assert h.getlist("a") == ["123", "456"]
-    assert h.keys() == ["a", "a", "b"]
-    assert h.values() == ["123", "456", "789"]
-    assert h.items() == [("a", "123"), ("a", "456"), ("b", "789")]
-    assert list(h) == ["a", "a", "b"]
-    assert dict(h) == {"a": "123", "b": "789"}
-    assert repr(h) == "Headers(raw=[(b'a', b'123'), (b'a', b'456'), (b'b', b'789')])"
-    assert h == Headers(raw=[(b"a", b"123"), (b"b", b"789"), (b"a", b"456")])
-    assert h != [(b"a", b"123"), (b"A", b"456"), (b"b", b"789")]
-    h = Headers()
-    assert not h.items()
-
-
-def test_headers_mutablecopy():
-    h = Headers(raw=[(b"a", b"123"), (b"a", b"456"), (b"b", b"789")])
-    c = h.mutablecopy()
-    assert c.items() == [("a", "123"), ("a", "456"), ("b", "789")]
-    c["a"] = "abc"
-    assert c.items() == [("a", "abc"), ("b", "789")]
 
 
 def test_url_from_scope():
@@ -115,9 +64,33 @@ def test_hidden_passwd():
     assert repr(u) == "URL('https://username:********@example.org/path/to/somewhere')"
 
 
-def test_database_url():
-    from yast.datastructures import DatabaseURL
+def test_query_params():
+    q = QueryParams(query_string="a=123&a=456&b=789")
+    assert "a" in q
+    assert "A" not in q
+    assert "c" not in q
+    assert q["a"] == "456"
+    assert q.get("a") == "456"
+    assert q.get("nope", default=None) is None
+    assert q.getlist("a") == ["123", "456"]
+    assert q.keys() == ["a", "b"]
+    assert q.values() == ["456", "789"]
+    assert q.items() == [("a", "456"), ("b", "789")]
+    assert list(q) == ["a", "b"]
+    assert dict(q) == {"a": "456", "b": "789"}
+    assert str(q) == "a=123&a=456&b=789"
+    assert repr(q) == "QueryParams(query_string='a=123&a=456&b=789')"
+    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
+        query_string="a=123&b=456"
+    )
+    assert QueryParams({"a": "123", "b": "456"}) != {"b": "456", "a": "123"}
+    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
+        {"b": "456", "a": "123"}
+    )
+    assert QueryParams() == QueryParams({})
 
+
+def test_database_url():
     u = DatabaseURL("postgresql://u:p@localhost:5432/mydb")
     u = u.replace(name="test")
     assert u.name == "test"
@@ -143,34 +116,3 @@ def test_csv():
     assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
     assert repr(csv) == "CommaSeparatedStrings(['localhost', '127.0.0.1', '0.0.0.0'])"
     assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
-
-
-def test_formdata():
-    import io
-
-    from yast.datastructures import FormData, UploadFile
-
-    upload = io.BytesIO(b"test")
-    form = FormData(items=[("a", "123"), ("a", "456"), ("b", upload)])
-    assert "a" in form
-    assert "A" not in form
-    assert "c" not in form
-    assert form["a"] == "456"
-    assert form.get("a") == "456"
-    assert form.get("nope", None) == None
-    assert form.getlist("a") == ["123", "456"]
-    assert form.keys() == ["a", "b"]
-    assert form.values() == ["456", upload]
-    assert len(form) == 2
-    assert list(form) == ["a", "b"]
-    assert dict(form) == {"a": "456", "b": upload}
-
-    assert (
-        repr(form)
-        == "FormData(items=[('a', '123'), ('a', '456'), ('b', " + repr(upload) + ")])"
-    )
-    assert FormData(form) == form
-    assert FormData({"a": "123", "b": "789"}) == FormData(
-        items=[("a", "123"), ("b", "789")]
-    )
-    assert FormData({"a": "123", "b": "789"}) != {"a": "123", "b": "789"}

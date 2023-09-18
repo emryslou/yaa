@@ -7,3 +7,4 @@ exclude_also =
 omit = 
     tests/test_debug.py
     tools/*.py
+    conftest.py

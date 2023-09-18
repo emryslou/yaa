@@ -1,0 +1,270 @@
+import typing
+from collections import namedtuple
+from collections.abc import Sequence
+from shlex import shlex
+from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
+
+from yast.types import Scope
+
+Address = namedtuple("Address", ["host", "port"])
+
+
+class CommaSeparatedStrings(Sequence):
+    def __init__(self, value: typing.Union[str, typing.Sequence[str]]):
+        if isinstance(value, str):
+            splitter = shlex(value, posix=True)
+            splitter.whitespace = ","
+            splitter.whitespace_split = True
+            self._items = [item.strip() for item in splitter]
+        else:
+            self._items = list(value)
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __getitem__(self, index: typing.Union[int, slice]) -> typing.Any:
+        return self._items[index]
+
+    def __iter__(self) -> typing.Iterator[str]:
+        return iter(self._items)
+
+    def __repr__(self) -> str:
+        list_repr = repr([item for item in self])
+        return f"{self.__class__.__name__}({list_repr})"
+
+    def __str__(self) -> str:
+        return ", ".join([repr(item) for item in self])
+
+
+class QueryParams(typing.Mapping[str, str]):
+    def __init__(
+        self,
+        params: typing.Union["QueryParams", typing.Mapping[str, str]] = None,
+        query_string: str = None,
+        scope: Scope = None,
+    ) -> None:
+        items = []  # type: typing.List[typing.Tuple[str, str]]
+        if params is not None:
+            assert query_string is None, "Cannot set both `params` and `query_string`"
+            assert scope is None, "Cannot set both `params` and `scope`"
+            if isinstance(params, QueryParams):
+                items = list(params.multi_items())
+            else:
+                items = list(params.items())
+        elif query_string is not None:
+            assert scope is None, "Cannot set both `query_string` and `scope`"
+            items = parse_qsl(query_string)
+        elif scope is not None:
+            items = parse_qsl(scope["query_string"].decode("latin-1"))
+
+        self._dict = {k: v for k, v in items}
+        self._list = items
+
+    def getlist(self, key: str) -> typing.List[str]:
+        return [item_value for item_key, item_value in self._list if item_key == key]
+
+    def keys(self) -> typing.List[str]:
+        return list(self._dict.keys())
+
+    def values(self) -> typing.List[typing.Any]:
+        return list(self._dict.values())
+
+    def items(self) -> typing.List:
+        return list(self._dict.items())
+
+    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+        return list(self._list)
+
+    def get(self, key, default=None) -> typing.Any:
+        if key in self._dict:
+            return self._dict[key]
+        else:
+            return default
+
+    def __getitem__(self, key) -> typing.Any:
+        return self._dict[key]
+
+    def __contains__(self, key) -> bool:
+        return key in self._dict
+
+    def __iter__(self) -> iter:
+        return iter(self.keys())
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __eq__(self, other):
+        if not isinstance(other, QueryParams):
+            return False
+        return sorted(self._list) == sorted(other._list)
+
+    def __str__(self) -> str:
+        return urlencode(self._list)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(query_string={repr(str(self))})"
+
+
+class Secret(object):
+    def __init__(self, value: str) -> None:
+        self._value = value
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr('********')})"
+
+    def __str__(self) -> str:
+        return self._value
+
+
+class URL(object):
+    def __init__(
+        self, url: str = "", scope: Scope = None, **components: typing.Any
+    ) -> None:
+        if scope is not None:
+            assert not url, "Cannot set both `url` and `scope`"
+            assert not components, "Cannot set both `**components` and `scope`"
+            scheme = scope.get("scheme", "http")
+            path = scope.get("root_path", "") + scope["path"]
+            query_string = scope["query_string"]
+
+            server = scope.get("server", None)
+            host_header = None
+            for _k, _v in scope.get("headers", []):
+                if _k == b"host":
+                    host_header = _v.decode("latin-1")
+                    break
+            if host_header is not None:
+                url = f"{scheme}://{host_header}{path}"
+            elif server is None:
+                url = path
+            else:
+                host, port = server
+                default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
+                if port == default_port:
+                    url = f"{scheme}://{host}{path}"
+                else:
+                    url = f"{scheme}://{host}:{port}{path}"
+
+            if query_string:
+                url += "?" + query_string.decode()
+        elif components:
+            assert not url, "Cannot set both `components` and `scope`"
+            url = URL("").replace(**components).components.geturl()
+        self._url = url
+
+    @property
+    def components(self) -> SplitResult:
+        if not hasattr(self, "_components"):
+            self._components = urlsplit(self._url)
+
+        return self._components
+
+    @property
+    def scheme(self) -> str:
+        return self.components.scheme
+
+    @property
+    def netloc(self) -> str:
+        return self.components.netloc
+
+    @property
+    def path(self) -> str:
+        return self.components.path
+
+    @property
+    def query(self) -> str:
+        return self.components.query
+
+    @property
+    def fragment(self) -> str:
+        return self.components.fragment
+
+    @property
+    def username(self) -> typing.Union[str, None]:
+        return self.components.username
+
+    @property
+    def password(self) -> typing.Union[str, None]:
+        return self.components.password
+
+    @property
+    def hostname(self) -> typing.Union[str, None]:
+        return self.components.hostname
+
+    @property
+    def port(self) -> typing.Optional[int]:
+        return self.components.port
+
+    @property
+    def is_secure(self) -> bool:
+        return self.scheme in ("https", "wss")
+
+    def replace(self, **kwargs: typing.Any) -> "URL":  # type: ignore
+        if (
+            "hostname" in kwargs
+            or "port" in kwargs
+            or "username" in kwargs
+            or "password" in kwargs
+        ):
+            hostname = kwargs.pop("hostname", self.hostname)
+            port = kwargs.pop("port", self.port)
+            username = kwargs.pop("username", self.username)
+            password = kwargs.pop("password", self.password)
+
+            netloc = hostname
+
+            if port is not None:
+                netloc += f":{port}"
+            if username is not None:
+                userpass = username
+                if password is not None:
+                    userpass += f":{password}"
+                netloc = f"{userpass}@{netloc}"
+
+            kwargs["netloc"] = netloc
+        components = self.components._replace(**kwargs)
+        return self.__class__(components.geturl())
+
+    def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
+        return str(self) == str(other)
+
+    def __str__(self):
+        return self._url
+
+    def __repr__(self):
+        url = str(self)
+        if self.password:
+            url = str(self.replace(password="********"))
+        return f"{self.__class__.__name__}({repr(url)})"
+
+
+class DatabaseURL(URL):
+    @property
+    def name(self) -> str:
+        return self.path.lstrip("/")
+
+    def replace(self, **kwargs: typing.Any) -> "URL":
+        if "name" in kwargs:
+            kwargs["path"] = "/" + kwargs.pop("name")
+        return super().replace(**kwargs)
+
+
+class URLPath(str):
+    def __new__(cls, path: str, protocol: str) -> str:
+        assert protocol in ("http", "websocket")
+        return str.__new__(cls, path)
+
+    def __init__(self, path: str, protocol: str) -> None:
+        self.protocol = protocol
+
+    def make_absolute_url(self, base_url: typing.Union[str, URL]) -> str:
+        if isinstance(base_url, str):
+            base_url = URL(base_url)
+        scheme = {
+            "http": {True: "https", False: "http"},
+            "websocket": {True: "wss", False: "ws"},
+        }[self.protocol][base_url.is_secure]
+
+        # netloc = base_url.netloc
+
+        return str(URL(scheme=scheme, netloc=base_url.netloc, path=str(self)))

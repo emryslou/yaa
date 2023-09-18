@@ -239,7 +239,7 @@ class WebSocketTestSession(object):
         while not self._send_queue.empty():
             message = self.receive()
             if isinstance(message, BaseException):
-                raise message
+                raise message  # pragma: nocover
 
     def _run(self):
         try:
@@ -299,7 +299,7 @@ class WebSocketTestSession(object):
 
     def __sput(self, message):
         if message is None:
-            raise RuntimeError("value is None")
+            raise RuntimeError("value is None")  # pragma: nocover
         self._send_queue.put(message)
 
 
