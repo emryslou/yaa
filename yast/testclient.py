@@ -6,7 +6,7 @@ import queue
 import threading
 import types
 import typing
-from urllib.parse import unquote, urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
 
@@ -51,7 +51,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         self.raise_server_exceptions = raise_server_exceptions
 
     def send(self, request, *args, **kwargs):
-        scheme, netloc, path, params, query, fragement = urlparse(request.url)
+        scheme, netloc, path, query, fragement = urlsplit(request.url)
 
         default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
 

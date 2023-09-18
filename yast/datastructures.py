@@ -3,7 +3,7 @@ import typing
 from collections import namedtuple
 from collections.abc import Sequence
 from shlex import shlex
-from urllib.parse import ParseResult, parse_qsl, unquote, urlencode, urlparse
+from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
 from yast.concurrency import run_in_threadpool
 from yast.types import Scope
@@ -68,16 +68,16 @@ class URL(object):
                     url = f"{scheme}://{host}:{port}{path}"
 
             if query_string:
-                url += "?" + unquote(query_string.decode())
+                url += "?" + query_string.decode()
         elif components:
             assert not url, "Cannot set both `components` and `scope`"
             url = URL("").replace(**components).components.geturl()
         self._url = url
 
     @property
-    def components(self) -> ParseResult:
+    def components(self) -> SplitResult:
         if not hasattr(self, "_components"):
-            self._components = urlparse(self._url)
+            self._components = urlsplit(self._url)
 
         return self._components
 
@@ -92,10 +92,6 @@ class URL(object):
     @property
     def path(self) -> str:
         return self.components.path
-
-    @property
-    def params(self) -> str:
-        return self.components.params
 
     @property
     def query(self) -> str:

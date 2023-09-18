@@ -7,7 +7,6 @@ def test_url():
     assert url.scheme == "http"
     assert url.netloc == "user:passwd@www.baidu.com:443"
     assert url.path == "/abcd/test.php"
-    assert url.params == ""
     assert url.fragment == "fff"
     assert url.query == "aaa=ccc"
     assert url.port == 443
