@@ -1,3 +1,4 @@
+import asyncio
 import http.cookies
 import json
 import typing
@@ -57,7 +58,7 @@ class HttpConnection(Mapping):
 
     @property
     def cookie(self) -> typing.Dict[str, str]:
-        if hasattr(self, "_cookies"):
+        if not hasattr(self, "_cookies"):
             cookies = {}
             cookie_headers = self.headers.get("cookie")
             if cookie_headers:
@@ -117,7 +118,7 @@ class Request(HttpConnection):
         super().__init__(scope=scope)
         self._receive = empty_receive if receive is None else receive
         self._stream_consumed = False
-        self._cookies = None
+        self._is_disconnected = False
 
     def set_receive_channel(self, receive: Receive) -> None:
         self._receive = receive
@@ -162,7 +163,9 @@ class Request(HttpConnection):
                 if not message.get("more_body", False):
                     break
             elif message["type"] == "http.disconnect":
+                self._is_disconnected = True
                 raise ClientDisconnect()
+
         yield b""
 
     async def body(self) -> bytes:
@@ -202,3 +205,16 @@ class Request(HttpConnection):
             for it in self._form.values():
                 if hasattr(it, "close"):
                     await it.close()
+
+    async def is_disconnected(self) -> bool:
+        if not self._is_disconnected:
+            try:
+                message = await asyncio.wait_for(self._receive(), timeout=0.00000001)
+            except asyncio.TimeoutError:
+                message = {}
+
+            # todo: may raise KeyError
+            if message.get("type") == "http.disconnect":
+                self._is_disconnected = True
+
+        return self._is_disconnected
