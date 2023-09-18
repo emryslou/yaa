@@ -1,3 +1,5 @@
+import pytest
+
 from yast import TestClient
 from yast.formparsers import FormParser, UploadFile
 from yast.requests import Request
@@ -125,3 +127,57 @@ def test_urlencoded_percent_encoding_keys(tmpdir):
     client = TestClient(app)
     response = client.post("/", data={"why y": "data"})
     assert response.json() == {"why y": "data"}
+
+
+def multi_items_app(scope):
+    async def asgi(receive, send):
+        req = Request(scope, receive)
+        data = await req.form()
+        output = {}
+        for k, v in data.multi_items():
+            if k not in output:
+                output[k] = []
+            if isinstance(v, UploadFile):
+                content = await v.read()
+                output[k].append({"filename": v.filename, "content": content.decode()})
+            else:
+                output[k].append(v)
+        await req.close()
+        res = JSONResponse(output)
+        await res(receive, send)
+
+    return asgi
+
+
+def test_multi_items(tmpdir):
+    import os
+
+    path1 = os.path.join(tmpdir, "test1.txt")
+
+    with open(path1, "wb") as f1:
+        f1.write(b"<file1 content>")
+
+    path2 = os.path.join(tmpdir, "test2.txt")
+    with open(path2, "wb") as f2:
+        f2.write(b"<file2 content>")
+
+    client = TestClient(multi_items_app)
+    res = client.post(
+        "/",
+        data=[("test1", "abc")],
+        files=[("test1", open(path1, "rb")), ("test2", open(path2, "rb"))],
+    )
+    assert res.json() == {
+        "test1": [
+            "abc",
+            {"filename": "test1.txt", "content": "<file1 content>"},
+        ],
+        "test2": [
+            {"filename": "test2.txt", "content": "<file2 content>"},
+        ],
+    }
+
+
+@pytest.mark.skip("with_open(file) as f1 skip")
+def test_multi_items_with_open_file(tmpdir):
+    pass

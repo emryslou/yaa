@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
-from yast.datastructures import URL, Address, Headers, QueryParams
+from yast.datastructures import URL, Address, FormData, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
 from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.types import Message, Receive, Scope
@@ -182,7 +182,7 @@ class Request(HttpConnection):
             self._json = json.loads(body)
         return self._json
 
-    async def form(self):
+    async def form(self) -> FormData:
         if not hasattr(self, "_form"):
             assert (
                 parse_options_header is not None
@@ -197,14 +197,14 @@ class Request(HttpConnection):
                 parser = FormParser(self.headers, self.stream)
                 self._form = await parser.parse()
             else:
-                self._form = {}
+                self._form = FormData()
         return self._form
 
     async def close(self):
         if hasattr(self, "_form"):
-            for it in self._form.values():
-                if hasattr(it, "close"):
-                    await it.close()
+            for _, item in self._form.multi_items():
+                if hasattr(item, "close"):
+                    await item.close()
 
     async def is_disconnected(self) -> bool:
         if not self._is_disconnected:

@@ -290,7 +290,7 @@ def test_form_urlencode():
             req = Request(scope=scope, receive=rec)
             body = b""
             form = await req.form()
-            res = JSONResponse({"form": form})
+            res = JSONResponse({"form": dict(form)})
             await res(receive=rec, send=send)
 
         return asgi
