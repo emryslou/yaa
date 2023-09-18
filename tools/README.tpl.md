@@ -1,8 +1,8 @@
 # 介绍
 yet another startlette
 
-# 当前版本 0.2.5
-1. TODO
+# 当前版本 {{__version__}}
+{{__changelog__}}
 
 # 功能说明
 1. 内置测试客户端 `TestClient`
