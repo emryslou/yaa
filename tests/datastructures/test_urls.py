@@ -65,7 +65,7 @@ def test_hidden_passwd():
 
 
 def test_query_params():
-    q = QueryParams(query_string="a=123&a=456&b=789")
+    q = QueryParams("a=123&a=456&b=789")
     assert "a" in q
     assert "A" not in q
     assert "c" not in q
@@ -73,9 +73,9 @@ def test_query_params():
     assert q.get("a") == "456"
     assert q.get("nope", default=None) is None
     assert q.getlist("a") == ["123", "456"]
-    assert q.keys() == ["a", "b"]
-    assert q.values() == ["456", "789"]
-    assert q.items() == [("a", "456"), ("b", "789")]
+    assert list(q.keys()) == ["a", "b"]
+    assert list(q.values()) == ["456", "789"]
+    assert list(q.items()) == [("a", "456"), ("b", "789")]
     assert list(q) == ["a", "b"]
     assert dict(q) == {"a": "456", "b": "789"}
     assert str(q) == "a=123&a=456&b=789"

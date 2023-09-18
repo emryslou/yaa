@@ -6,6 +6,8 @@ from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
 from yast.types import Scope
 
+from .types import ImmutableMultiDict
+
 Address = namedtuple("Address", ["host", "port"])
 
 
@@ -36,67 +38,31 @@ class CommaSeparatedStrings(Sequence):
         return ", ".join([repr(item) for item in self])
 
 
-class QueryParams(typing.Mapping[str, str]):
+class QueryParams(ImmutableMultiDict):
     def __init__(
         self,
-        params: typing.Union["QueryParams", typing.Mapping[str, str]] = None,
-        query_string: str = None,
+        value: typing.Union[
+            "ImmutableMultiDict",
+            typing.Mapping,
+            typing.List[typing.Tuple[typing.Any, typing.Any]],
+        ] = None,
         scope: Scope = None,
+        **kwargs: typing.Any,
     ) -> None:
-        items = []  # type: typing.List[typing.Tuple[str, str]]
-        if params is not None:
-            assert query_string is None, "Cannot set both `params` and `query_string`"
-            assert scope is None, "Cannot set both `params` and `scope`"
-            if isinstance(params, QueryParams):
-                items = list(params.multi_items())
-            else:
-                items = list(params.items())
-        elif query_string is not None:
-            assert scope is None, "Cannot set both `query_string` and `scope`"
-            items = parse_qsl(query_string)
-        elif scope is not None:
-            items = parse_qsl(scope["query_string"].decode("latin-1"))
+        if kwargs:
+            value = kwargs.pop("params", value)
+            value = kwargs.pop("items", value)
+            value = kwargs.pop("query_string", value)
+            assert not kwargs, "Unknown parameter"
 
-        self._dict = {k: v for k, v in items}
-        self._list = items
+        if scope is not None:
+            assert value is None, "Cannot set both `value` and `scope`"
+            value = scope["query_string"].decode("latin-1")
 
-    def getlist(self, key: str) -> typing.List[str]:
-        return [item_value for item_key, item_value in self._list if item_key == key]
-
-    def keys(self) -> typing.List[str]:
-        return list(self._dict.keys())
-
-    def values(self) -> typing.List[typing.Any]:
-        return list(self._dict.values())
-
-    def items(self) -> typing.List:
-        return list(self._dict.items())
-
-    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
-        return list(self._list)
-
-    def get(self, key, default=None) -> typing.Any:
-        if key in self._dict:
-            return self._dict[key]
+        if isinstance(value, str):
+            super().__init__(parse_qsl(value))
         else:
-            return default
-
-    def __getitem__(self, key) -> typing.Any:
-        return self._dict[key]
-
-    def __contains__(self, key) -> bool:
-        return key in self._dict
-
-    def __iter__(self) -> iter:
-        return iter(self.keys())
-
-    def __len__(self):
-        return len(self._dict)
-
-    def __eq__(self, other):
-        if not isinstance(other, QueryParams):
-            return False
-        return sorted(self._list) == sorted(other._list)
+            super().__init__(value)
 
     def __str__(self) -> str:
         return urlencode(self._list)
