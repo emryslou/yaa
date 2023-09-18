@@ -6,3 +6,4 @@ exclude_also =
 # https://coverage.readthedocs.io/en/latest/source.html#
 omit = 
     tests/test_debug.py
+    tools/*.py
