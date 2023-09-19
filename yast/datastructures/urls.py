@@ -59,7 +59,9 @@ class QueryParams(ImmutableMultiDict):
             assert value is None, "Cannot set both `value` and `scope`"
             value = scope["query_string"].decode("latin-1")
 
-        if isinstance(value, str):
+        if isinstance(value, str) or isinstance(value, bytes):
+            if isinstance(value, bytes):
+                value = value.decode('latin-1')
             super().__init__(parse_qsl(value))
         else:
             super().__init__(value)
@@ -68,7 +70,8 @@ class QueryParams(ImmutableMultiDict):
         return urlencode(self._list)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(query_string={repr(str(self))})"
+        klass_name = self.__class__.__name__
+        return f"{klass_name}(query_string={repr(str(self))})"
 
 
 class Secret(object):
@@ -76,7 +79,8 @@ class Secret(object):
         self._value = value
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({repr('********')})"
+        klass_name = self.__class__.__name__
+        return f"{klass_name}('********')"
 
     def __str__(self) -> str:
         return self._value
@@ -232,5 +236,4 @@ class URLPath(str):
         }[self.protocol][base_url.is_secure]
 
         # netloc = base_url.netloc
-
         return str(URL(scheme=scheme, netloc=base_url.netloc, path=str(self)))
