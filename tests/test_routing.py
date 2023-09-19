@@ -170,10 +170,10 @@ def test_url_for():
     )
 
     assert (
-        app.url_path_for("users", username="tomchristie").make_absolute_url(
+        app.url_path_for("users", username="eml").make_absolute_url(
             base_url="https://example.org"
         )
-        == "https://example.org/users/tomchristie"
+        == "https://example.org/users/eml"
     )
     assert (
         app.url_path_for("ws_endpoint").make_absolute_url(

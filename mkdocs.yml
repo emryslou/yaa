@@ -10,9 +10,23 @@ edit_url: ''
 
 nav:
   - 介绍: 'index.md'
-  - TestClient: 'testclient.md'
-  - Schemas: 'schemas.md'
-  - WebSocket: 'websockets.md'
+  - MessageHandler: 'message_handler.md'
+  - Responses: 'responses.md'
+  - Config: 'config.md'
+  - Websockets: 'websockets.md'
+  - Applications: 'applications.md'
+  - Concurrency: 'concurrency.md'
+  - Background: 'background.md'
+  - Types: 'types.md'
+  - Convertors: 'convertors.md'
+  - Staticfiles: 'staticfiles.md'
+  - Routing: 'routing.md'
+  - Testclient: 'testclient.md'
+  - Exceptions: 'exceptions.md'
+  - Requests: 'requests.md'
+  - Endpoints: 'endpoints.md'
+  - Formparsers: 'formparsers.md'
+  - Status: 'status.md'
 
 markdown_extensions:
   - markdown.extensions.codehilite:

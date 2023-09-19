@@ -1,5 +1,5 @@
 # v0.2.5
-1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection
+1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
 
 # v0.2.4
 1. support template: default jinja2

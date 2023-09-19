@@ -93,23 +93,23 @@ def test_user_interface():
         response = client.get("/")
         assert response.status_code == 200
         assert response.json() == {"authenticated": False, "user": ""}
-        response = client.get("/", auth=("tomchristie", "example"))
+        response = client.get("/", auth=("eml", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "tomchristie"}
+        assert response.json() == {"authenticated": True, "user": "eml"}
 
 
 def test_authentication_required():
     with TestClient(app) as client:
         response = client.get("/dashboard")
         assert response.status_code == 403
-        response = client.get("/dashboard", auth=("tomchristie", "example"))
+        response = client.get("/dashboard", auth=("eml", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "tomchristie"}
+        assert response.json() == {"authenticated": True, "user": "eml"}
         response = client.get("/dashboard/sync")
         assert response.status_code == 403
-        response = client.get("/dashboard/sync", auth=("tomchristie", "example"))
+        response = client.get("/dashboard/sync", auth=("eml", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "tomchristie"}
+        assert response.json() == {"authenticated": True, "user": "eml"}
         response = client.get("/dashboard", headers={"Authorization": "basic foobar"})
         assert response.status_code == 400
         assert response.text == "Invalid basic auth credentials"
@@ -120,15 +120,15 @@ def test_authentication_redirect():
         response = client.get("/admin")
         assert response.status_code == 200
         assert response.url == "http://testserver/"
-        response = client.get("/admin", auth=("tomchristie", "example"))
+        response = client.get("/admin", auth=("eml", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "tomchristie"}
+        assert response.json() == {"authenticated": True, "user": "eml"}
         response = client.get("/admin/sync")
         assert response.status_code == 200
         assert response.url == "http://testserver/"
-        response = client.get("/admin/sync", auth=("tomchristie", "example"))
+        response = client.get("/admin/sync", auth=("eml", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "tomchristie"}
+        assert response.json() == {"authenticated": True, "user": "eml"}
 
 
 def on_auth_error(request: Request, exc: Exception):
@@ -175,3 +175,29 @@ def test_invalid_decorator_usage():
         @requires("authenticated")
         def foo():
             pass  # pragma: nocover
+
+
+@app.ws_route("/ws")
+@requires("authenticated")
+async def websocket_endpoint(websocket):
+    await websocket.accept()
+    await websocket.send_json(
+        {
+            "authenticated": websocket.user.is_authenticated,
+            "user": websocket.user.display_name,
+        }
+    )
+
+
+def test_websocket_authentication_required():
+    import pytest
+    from yast.websockets import WebSocketDisconnect
+
+    with TestClient(app) as client:
+        with pytest.raises(WebSocketDisconnect):
+            client.wsconnect("/ws")
+        with pytest.raises(WebSocketDisconnect):
+            client.wsconnect("/ws", headers={"Authorization": "basic foobar"})
+        with client.wsconnect("/ws", auth=("eml", "example")) as websocket:
+            data = websocket.receive_json()
+            assert data == {"authenticated": True, "user": "eml"}

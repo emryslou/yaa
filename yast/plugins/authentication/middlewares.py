@@ -28,12 +28,19 @@ class AuthenticationMiddleware(Middleware):
         return self.app(scope)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
-        conn = HttpConnection(scope=scope, receive=receive)
+        conn = HttpConnection(scope=scope)
         try:
             auth_result = await self.backend.authenticate(conn)
         except AuthenticationError as exc:
-            res = self.on_error(conn, exc)
-            await res(receive, send)
+            if scope["type"] == "websocket":
+                from yast.websockets import WebSocketClose
+
+                ws_close = WebSocketClose()
+                await ws_close(receive, send)
+            else:
+                res = self.on_error(conn, exc)
+                await res(receive, send)
+
             return
         if auth_result is None:
             auth_result = AuthCredentials(), UnauthenticatedUser()

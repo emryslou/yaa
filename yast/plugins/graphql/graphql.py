@@ -22,16 +22,31 @@ from yast.types import ASGIInstance, Receive, Scope, Send
 
 
 class GraphQLApp(object):
-    def __init__(self, schema: "graphene.Schema", executor: typing.Any = None) -> None:
+    def __init__(
+        self,
+        schema: "graphene.Schema",
+        executor: typing.Any = None,
+        executor_class: type = None,
+    ) -> None:
         assert graphene is not None, "python `graphene` package must be installed"
+
         self.schema = schema
         self.executor = executor
-        self.is_async = isinstance(executor, AsyncioExecutor)
+        if executor is None:
+            self.executor_class = executor_class
+            self.is_async = executor_class is not None and issubclass(
+                executor_class, AsyncioExecutor
+            )
+        else:
+            self.executor_class = None
+            self.is_async = isinstance(executor, AsyncioExecutor)
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         return functools.partial(self.asgi, scope=scope)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
+        if self.executor is None and self.executor_class is not None:
+            self.executor = self.executor_class()
         req = Request(scope=scope, receive=receive)
         res = await self.handler(req)
         await res(receive, send)

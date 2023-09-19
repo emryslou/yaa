@@ -4,14 +4,14 @@ import inspect
 import typing
 
 from yast.exceptions import HttpException
-from yast.requests import HttpConnection, Request
+from yast.requests import HttpConnection
 from yast.responses import RedirectResponse, Response
 
 
-def has_required_scope(req: Request, scopes: typing.Sequence[str]) -> bool:
+def has_required_scope(conn: HttpConnection, scopes: typing.Sequence[str]) -> bool:
     try:
         for scope in scopes:
-            if scope not in req.auth.scopes:
+            if scope not in conn.auth.scopes:
                 return False
     except BaseException as exc:  # pragma: nocover
         import sys  # pragma: nocover
@@ -30,31 +30,55 @@ def requires(
     scope_list = [scopes] if isinstance(scopes, str) else scopes
 
     def decorator(func: typing.Callable) -> typing.Callable:
+        _type = None
         is_async_func = asyncio.iscoroutinefunction(func)
         signature = inspect.signature(func)
         for idx, paramter in enumerate(signature.parameters.values()):
-            if paramter.name == "request":
+            if paramter.name in ("request", "websocket"):
+                _type = paramter.name
                 break
         else:
-            raise Exception(f"No `request` argument on function `{func}`")
+            raise Exception(
+                f"No `request` or `websocket` argument on function `{func}`"
+            )
 
-        @functools.wraps(func)
-        async def wrapper(*args, **kwargs) -> Response:
-            req = kwargs.get("request", args[idx])
+        if _type == "request":
 
-            if not has_required_scope(req, scope_list):
-                if redirect is not None:
-                    return RedirectResponse(url=req.url_for(redirect))
+            @functools.wraps(func)
+            async def wrapper(*args, **kwargs) -> Response:
+                req = kwargs.get("request", args[idx])
+
+                if not has_required_scope(req, scope_list):
+                    if redirect is not None:
+                        return RedirectResponse(url=req.url_for(redirect))
+                    # endif
+                    raise HttpException(status_code=status_code)
                 # endif
-                raise HttpException(status_code=status_code)
-            # endif
-            if is_async_func:
-                return await func(*args, **kwargs)
-            else:
-                return func(*args, **kwargs)
+                if is_async_func:
+                    return await func(*args, **kwargs)
+                else:
+                    return func(*args, **kwargs)
 
-        # end def wrapper
-        return wrapper
+            # end def wrapper
+
+            return wrapper
+        elif _type == "websocket":
+            from yast.websockets import WebSocket
+
+            @functools.wraps(func)
+            async def ws_wrapper(*args, **kwargs) -> Response:
+                ws_req = kwargs.get(_type, args[idx])
+
+                assert isinstance(ws_req, WebSocket)
+
+                if not has_required_scope(ws_req, scope_list):
+                    await ws_req.close()
+                else:
+                    await func(*args, **kwargs)
+
+            # end def ws_wrapper
+
+            return ws_wrapper
 
     # end def decorator
     return decorator

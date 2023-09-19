@@ -1,3 +1,12 @@
+"""
+module: StaticFiles
+title: StaticFiles
+description:
+    静态文件处理模块，例如: js, html, css, 图片等
+    test assddf
+author: emryslou@gmail.com
+"""
+
 import os
 import stat
 import typing

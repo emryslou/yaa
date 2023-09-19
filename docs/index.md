@@ -5,7 +5,8 @@ Python 3.10+
 
 # 安装
 ```shell
-# todo next ...
+python3 -m pip install 'uvicorn[standard]'
+python3 -m uvicorn demo.main:app --port 5505
 ```
 
 # 示例

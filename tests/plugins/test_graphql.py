@@ -126,10 +126,18 @@ class AsyncQuery(graphene.ObjectType):
 
 async_schema = graphene.Schema(query=AsyncQuery)
 async_app = GraphQLApp(schema=async_schema, executor=AsyncioExecutor())
+async_cls_app = GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor)
 
 
 def test_graphql_async():
     client = TestClient(async_app)
+    response = client.get("/?query={ hello }")
+    assert response.status_code == 200
+    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+
+
+def test_graphql_async_cls():
+    client = TestClient(async_cls_app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
