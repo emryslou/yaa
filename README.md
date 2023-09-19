@@ -12,11 +12,23 @@ yet another startlette
 5. 支持文档生成
 
 # 依赖包
-1. requests
-2. aiofiles
-3. ujson
-4. python-multipart
-5. graphql-core < 3
-6. graphene
-7. isort
-8. itsdangerous
+requests
+aiofiles
+ujson
+python-multipart
+itsdangerous
+graphql-core < 3
+graphene
+pyyaml
+sqlalchemy >= 1.0, < 2.0.0
+asyncpg
+psycopg2-binary
+pytest
+pytest-cov
+pytest-timeout
+pytest-benchmark
+flake8
+mkdocs
+mkdocs-material
+isort
+black

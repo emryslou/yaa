@@ -4,7 +4,7 @@ import inspect
 import typing
 
 from yast.exceptions import HttpException
-from yast.requests import Request
+from yast.requests import HttpConnection, Request
 from yast.responses import RedirectResponse, Response
 
 
@@ -65,7 +65,7 @@ class AuthenticationError(Exception):
 
 
 class AuthenticationBackend(object):
-    async def authenticate(self, req: Request):
+    async def authenticate(self, conn: HttpConnection):
         raise NotImplementedError()  # pragma: nocover
 
 

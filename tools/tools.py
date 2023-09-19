@@ -4,24 +4,12 @@ class Tools(object):
     def __init__(self) -> None:
         self.proj_dir = os.path.dirname(os.path.dirname(__file__))
 
-    def cmd_release_note(self):
-        project_dir = self.proj_dir
-        version_changelog = {
-            'version': 'latest',
-            'changelog': ''
-        }
-        with open(f'{project_dir}/changelog.md') as changelog:
-            while True:
-                line = changelog.readline().strip()
-                if line.startswith('# v'):
-                    version_changelog['version'] = line.replace('# v', '')
-                elif line == '':
-                    break
-                else:
-                    version_changelog['changelog'] += line
+    def _get_version():
+        return 'lastest'
 
-        readmetpl = os.path.join(project_dir, 'tools', 'README.tpl.md')
-        readme = os.path.join(project_dir, 'README.md')
+    def _gen_readme(self, version_changelog):
+        readmetpl = os.path.join(self.proj_dir, 'tools', 'README.tpl.md')
+        readme = os.path.join(self.proj_dir, 'README.md')
 
         with open(readmetpl, 'r') as rmtpl, open(readme, 'w') as rm:
             import re
@@ -39,15 +27,33 @@ class Tools(object):
                 rm.write(line)
                 if not line:
                     break
-    #end def release_note
 
-    def cmd_doc(self) -> None:
-        return
+    def cmd_readme(self):
+        project_dir = self.proj_dir
+        version_changelog = {
+            'version': 'latest',
+            'changelog': '',
+            'requirement': '',
+        }
+        with open(f'{project_dir}/changelog.md') as changelog:
+            while True:
+                line = changelog.readline().strip()
+                if line.startswith('# v'):
+                    version_changelog['version'] = line.replace('# v', '')
+                elif line == '':
+                    break
+                else:
+                    version_changelog['changelog'] += line
+        
+        with open(f'{project_dir}/requirement.txt') as requiremt:
+            for line in requiremt:
+                line = line.strip()
+                if line == '' or line.startswith('#'):
+                    continue
+                version_changelog['requirement'] += line + '\n'
 
-
-    def cmd_help(self):
-        pass
-    
+        self._gen_readme(version_changelog)
+        
     def cmds(cls):
         return [
                 fn.replace('cmd_', '') 
@@ -55,7 +61,7 @@ class Tools(object):
                 if str(fn).startswith('cmd_')
             ]
 
-if __name__ == '__main__':
+def tools_main():
     tools = Tools()
 
     @click.command()
@@ -65,3 +71,6 @@ if __name__ == '__main__':
         getattr(tools, method)(**kwargs)
     
     _init()
+
+if __name__ == '__main__':
+    tools_main()

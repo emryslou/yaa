@@ -29,13 +29,13 @@ PARAM_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
 
 class BaseRoute(object):
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def __call__(self, scope: Scope) -> ASGIInstance:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def compile_path(
         self, path: str

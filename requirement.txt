@@ -1,18 +1,24 @@
-# Optionals
+# cores
 requests
 aiofiles
 ujson
 python-multipart
+
+# session 
+itsdangerous
+
+# graphql
 graphql-core < 3
 graphene
-itsdangerous
+
+# schema
 pyyaml
 
 # Databases
 sqlalchemy >= 1.0, < 2.0.0
-## Database backends
 asyncpg
-##
+
+## postgresql 
 psycopg2-binary
 
 # Testing
@@ -22,11 +28,10 @@ pytest-timeout
 pytest-benchmark
 flake8
 
-
 # Documentation
 mkdocs
 mkdocs-material
 
-#Developing
+# Developing
 isort
 black

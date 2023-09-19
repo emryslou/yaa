@@ -12,11 +12,4 @@ yet another startlette
 5. 支持文档生成
 
 # 依赖包
-1. requests
-2. aiofiles
-3. ujson
-4. python-multipart
-5. graphql-core < 3
-6. graphene
-7. isort
-8. itsdangerous
+{{__requirement__}}
