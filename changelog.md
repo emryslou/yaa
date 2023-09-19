@@ -1,5 +1,5 @@
 # v0.2.5
-1. Opt: Add ImmutableMultiDict
+1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection
 
 # v0.2.4
 1. support template: default jinja2
