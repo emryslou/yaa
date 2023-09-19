@@ -2,6 +2,8 @@ from yast.applications import Yast
 
 from .graphql import GraphQLApp
 
+__name__ = "graphql"
+
 
 def plugin_init(app: Yast, config: dict = {}) -> None:
     if "routes" in config:

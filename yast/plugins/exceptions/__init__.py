@@ -6,6 +6,8 @@ from yast.applications import Yast
 from .middlewares.error import ExceptionMiddleware
 from .middlewares.server import ServerErrorMiddleware
 
+__name__ = "exceptions"
+
 
 def plugin_init(app: Yast, config: dict = {}) -> None:
     excmv = ExceptionMiddleware(app=app.middleware_app, debug=app.debug)

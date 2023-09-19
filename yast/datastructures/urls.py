@@ -61,7 +61,7 @@ class QueryParams(ImmutableMultiDict):
 
         if isinstance(value, str) or isinstance(value, bytes):
             if isinstance(value, bytes):
-                value = value.decode('latin-1')
+                value = value.decode("latin-1")
             super().__init__(parse_qsl(value))
         else:
             super().__init__(value)
@@ -125,7 +125,7 @@ class URL(object):
     @property
     def components(self) -> SplitResult:
         if not hasattr(self, "_components"):
-            self._components = urlsplit(self._url)
+            self._components = urlsplit(str(self._url))
 
         return self._components
 
@@ -198,8 +198,8 @@ class URL(object):
     def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
         return str(self) == str(other)
 
-    def __str__(self):
-        return self._url
+    def __str__(self) -> str:
+        return str(self._url)
 
     def __repr__(self):
         url = str(self)
@@ -209,8 +209,15 @@ class URL(object):
 
 
 class DatabaseURL(URL):
+    def __init__(self, url: typing.Union[str, URL]) -> None:
+        return super().__init__(str(url))
+
     @property
     def name(self) -> str:
+        return self.path.lstrip("/")
+
+    @property
+    def database(self) -> str:
         return self.path.lstrip("/")
 
     def replace(self, **kwargs: typing.Any) -> "URL":

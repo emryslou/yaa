@@ -36,6 +36,7 @@ class Yast(object):
     def __init_plugins__(self, plugins_config: dict = {}):
         from yast.plugins import (
             authentication as plugin_auth,
+            database as plugin_database,
             exceptions as plugin_exceptions,
             graphql as plugin_graphql,
             lifespan as plugin_lifespan,
@@ -50,6 +51,7 @@ class Yast(object):
             "template": plugin_template.plugin_init,
             "authentication": plugin_auth.plugin_init,
             "graphql": plugin_graphql.plugin_init,
+            "database": plugin_database.plugin_init,
         }
         for plugin_name, plugin_cfg in plugins_config.items():
             if plugin_name in _all_plugins:

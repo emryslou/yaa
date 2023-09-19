@@ -5,6 +5,8 @@ from yast.applications import Yast
 
 from .middlewares import EventType, LifespanMiddleware
 
+__name__ = "lifespan"
+
 
 def plugin_init(app: Yast, config: dict = {}) -> None:
     lifespan_middleware = LifespanMiddleware(app=app.middleware_app)

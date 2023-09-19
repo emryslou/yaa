@@ -27,7 +27,15 @@ class DatabaseBackend(object):
 
     def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init_subclass__(*args, **kwargs)
-        cls.drivers[cls.name] = cls
+        names_ = []
+        if hasattr(cls, "name"):
+            names_.append(cls.name)
+
+        if hasattr(cls, "alias_names"):
+            names_.extend(cls.alias_names)
+
+        for name in names_:
+            cls.drivers[name] = cls
 
     async def startup(self) -> None:
         raise NotImplementedError()  # pragma: nocover
@@ -57,6 +65,12 @@ class DatabaseSession(object):
         raise NotImplementedError()  # pragma: nocover
 
     def transaction(self) -> "DatabaseTransaction":
+        raise NotImplementedError()  # pragma: nocover
+
+    async def acquire_connection(self):
+        raise NotImplementedError()  # pragma: nocover
+
+    async def release_connection(self) -> None:
         raise NotImplementedError()  # pragma: nocover
 
 

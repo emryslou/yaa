@@ -8,7 +8,7 @@ from urllib.parse import unquote
 
 from yast.datastructures import URL, Address, FormData, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
-from yast.plugins.database.drivers.base import DatabaseBackend
+# from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.types import Message, Receive, Scope
 
 try:
@@ -82,7 +82,7 @@ class HttpConnection(Mapping):
         return self._scope["session"]
 
     @property
-    def database(self) -> DatabaseBackend:
+    def database(self):
         assert "database" in self._scope, (
             "`DatabaseMiddleware` must be " "installed to access request.database"
         )

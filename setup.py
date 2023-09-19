@@ -39,10 +39,14 @@ setup(
         ],
         'db': [
             'sqlalchemy >= 1.0, < 2.0.0',
-            'asyncpg',
         ],
         'postgresql': [
+            'asyncpg',
             'psycopg2-binary',
+        ],
+        'mysql': [
+            'aiomysql',
+            'pymysql',
         ],
         'template': [
             'jinja2',
