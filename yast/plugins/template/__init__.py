@@ -3,7 +3,7 @@ import typing
 
 from yast.applications import Yast
 
-__name__ = "template"
+# __name__ = "template"
 
 
 def plugin_init(app: Yast, config: dict = {}) -> None:

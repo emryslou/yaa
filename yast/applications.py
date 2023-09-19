@@ -34,25 +34,22 @@ class Yast(object):
         self.__init_plugins__(self.config.get("plugins", {}))
 
     def __init_plugins__(self, plugins_config: dict = {}):
-        from yast.plugins import (
-            authentication as plugin_auth,
-            database as plugin_database,
-            exceptions as plugin_exceptions,
-            graphql as plugin_graphql,
-            lifespan as plugin_lifespan,
-            session as plugin_session,
-            template as plugin_template,
-        )
+        _all_plugins = {}
+        import importlib
+        import os
 
-        _all_plugins = {
-            "exceptions": plugin_exceptions.plugin_init,
-            "lifespan": plugin_lifespan.plugin_init,
-            "session": plugin_session.plugin_init,
-            "template": plugin_template.plugin_init,
-            "authentication": plugin_auth.plugin_init,
-            "graphql": plugin_graphql.plugin_init,
-            "database": plugin_database.plugin_init,
-        }
+        module_name = "yast.plugins"
+        module = importlib.import_module(module_name)
+        scan_path = os.path.dirname(module.__file__)
+        for file in os.listdir(scan_path):
+            package_path = os.path.join(scan_path, file)
+            if not os.path.isdir(package_path) or package_path.endswith("__"):
+                continue
+            sub_module = importlib.import_module(f"{module_name}.{file}")
+            if hasattr(sub_module, "plugin_init"):
+                plugin_name = sub_module.__name__.replace(module_name, "").lstrip(".")
+                _all_plugins[plugin_name] = sub_module.plugin_init
+
         for plugin_name, plugin_cfg in plugins_config.items():
             if plugin_name in _all_plugins:
                 init_fn = _all_plugins[plugin_name]
