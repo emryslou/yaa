@@ -45,3 +45,8 @@ class FormData(ImmutableMultiDict):
             assert not kwargs, "Unknown parameter"
 
         super().__init__(value)
+
+    async def close(self) -> None:
+        for _, value in self.multi_items():
+            if isinstance(value, UploadFile):
+                await value.close()
