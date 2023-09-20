@@ -3,9 +3,14 @@ from yast.applications import Yast
 from yast.endpoints import HttpEndPoint
 from yast.plugins.schema.schemas import OpenAPIResponse, SchemaGenerator
 
-app = Yast()
-app.schema_generator = SchemaGenerator(
-    {"openapi": "3.0.0", "info": {"title": "Example API", "version": "1.0"}}
+app = Yast(
+    plugins={
+        "schema": {
+            "schema_generator": SchemaGenerator(
+                {"openapi": "3.0.0", "info": {"title": "Example API", "version": "1.0"}}
+            )
+        }
+    }
 )
 
 
@@ -64,11 +69,11 @@ class OrganisationsEndpoint(HttpEndPoint):
 
 @app.route("/schema", methods=["GET"], include_in_schema=False)
 def schema(request):
-    return OpenAPIResponse(app.schema)
+    return OpenAPIResponse(app.schema())
 
 
 def test_schema_generation():
-    assert app.schema == {
+    assert app.schema() == {
         "openapi": "3.0.0",
         "info": {"title": "Example API", "version": "1.0"},
         "paths": {

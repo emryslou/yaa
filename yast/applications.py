@@ -18,6 +18,7 @@ class Yast(object):
         self.router = Router(routes=[])
         self.app = self.router
         self.middleware_app = self.app
+        self._register_fun_attr = {}
         self.config = {
             "template_directory": template_directory,
             "plugins": {
@@ -27,7 +28,11 @@ class Yast(object):
                         "servererror": dict(debug=self.debug),
                     }
                 },
-                "lifespan": {},
+                "lifespan": {
+                    "middlewares": {
+                        "lifespan": {},
+                    }
+                },
             },
         }
         for _k, _cfg in kwargs.pop("plugins", {}).items():
@@ -35,7 +40,6 @@ class Yast(object):
                 self.config["plugins"][_k].update(_cfg)
             else:
                 self.config["plugins"][_k] = _cfg
-
         self.__init_plugins__(self.config.get("plugins", {}))
 
     def __init_plugins__(self, plugins_config: dict = {}):
@@ -60,16 +64,9 @@ class Yast(object):
                 init_fn = _all_plugins[plugin_name]
                 init_fn(self, plugin_cfg)
 
-        self.schema_generator = None
-
     @property
     def routes(self) -> typing.List[BaseRoute]:
         return self.router.routes
-
-    @property
-    def schema(self) -> dict:
-        assert self.schema_generator is not None
-        return self.schema_generator.get_schema(self.routes)
 
     @property
     def debug(self) -> bool:
@@ -106,8 +103,9 @@ class Yast(object):
         self,
         middleware_class_or_func: typing.Union[type, typing.Callable],
         **kwargs: typing.Any,
-    ) -> None:
+    ):
         self.middleware_app = middleware_class_or_func(self.middleware_app, **kwargs)
+        return self.middleware_app
 
     def route(
         self,

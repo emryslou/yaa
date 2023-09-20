@@ -1,9 +1,15 @@
+import os
 import typing
 
 from yast.background import BackgroundTask
 from yast.requests import Request
 from yast.responses import Response
 from yast.types import Receive, Send
+
+try:
+    import jinja2
+except ImportError:
+    jinja2 = None
 
 
 class TemplateResponse(Response):
@@ -45,3 +51,55 @@ class TemplateResponse(Response):
                 }
             )
         await super().__call__(receive, send)
+
+
+class Jinja2Template(object):
+    def __init__(self, directory: str = None) -> None:
+        assert (
+            jinja2 is not None
+        ), "package `jinja2` must be installed if use jinja2 template"
+
+        self.env = None
+        if directory is not None:
+            self.load_env(directory)
+
+    def load_env(self, directory: str):
+        assert os.path.isdir(
+            directory
+        ), f"template directory `{directory}` is not a directory"
+
+        @jinja2.pass_context
+        def url_for(context: dict, name: str, **path_params: typing.Any) -> str:
+            req = context["request"]
+            return req.url_for(name, **path_params)
+
+        loader = jinja2.FileSystemLoader(str(directory))
+        env = jinja2.Environment(loader=loader, autoescape=True)
+        env.globals["url_for"] = url_for
+        self.env = env
+
+    def get_template(self, name: str) -> jinja2.Template:
+        assert self.env is not None
+        return self.env.get_template(name)
+
+    def response(
+        self,
+        name: str,
+        request: Request,
+        context: dict = {},
+        status_code: int = 200,
+        headers: dict = None,
+        media_type: str = None,
+        background: BackgroundTask = None,
+    ) -> TemplateResponse:
+        if "request" not in context:
+            context["request"] = request
+        template = self.get_template(name)
+        return TemplateResponse(
+            template=template,
+            context=context,
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background,
+        )

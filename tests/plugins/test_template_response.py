@@ -36,3 +36,29 @@ def test_template_response():
 def test_template_require_request():
     with pytest.raises(ValueError):
         TemplateResponse(None, {})
+
+
+def test_template_jinja2_response(tmpdir):
+    import os
+    from yast.applications import Yast
+
+    path = os.path.join(tmpdir, "tpl.example.1.html")
+    with open(path, "w") as tpl:
+        tpl.write('<html>{{hello}}{{url_for("home")}}</html>')
+
+    app = Yast(plugins={"template": {"template_directory": tmpdir}})
+    from yast.plugins.template import templates
+
+    @app.route("/")
+    def home(req: Request):
+        return templates.response(
+            "tpl.example.1.html",
+            request=req,
+            context={"hello": req.query_params["hello"]},
+        )
+
+    client = TestClient(app)
+    res = client.get("/?hello=abcd1234")
+    assert res.template.name == "tpl.example.1.html"
+    assert res.status_code == 200
+    assert res.text == "<html>abcd1234http://testserver/</html>"

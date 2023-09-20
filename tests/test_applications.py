@@ -8,6 +8,7 @@ from yast.routing import Router
 from yast.staticfiles import StaticFiles
 from yast.testclient import TestClient
 
+
 app = Yast()
 client = TestClient(app)
 

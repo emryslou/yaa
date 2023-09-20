@@ -2,6 +2,7 @@ import os
 
 from yast import TestClient, Yast
 from yast.responses import HTMLResponse
+from yast.plugins.template import templates
 
 
 def test_templates(tmpdir):
@@ -13,9 +14,7 @@ def test_templates(tmpdir):
 
     @app.route("/")
     async def homepage(req):
-        template = app.get_template("index.html")
-        content = template.render(request=req)
-        return HTMLResponse(content)
+        return templates.response("index.html", request=req)
 
     client = TestClient(app)
     res = client.get("/")
