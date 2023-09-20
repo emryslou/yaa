@@ -163,10 +163,11 @@ class MultiPartParser(object):
                     content_disposition = headers.get("Content-Disposition")
                     disposition, options = parse_options_header(content_disposition)
                     field_name = options[b"name"].decode("latin-1")
+                    content_type = headers.get("Content-Type", "")
 
                     if b"filename" in options:
                         filename = options[b"filename"].decode("latin-1")
-                        _file = UploadFile(filename=filename)
+                        _file = UploadFile(filename=filename, content_type=content_type)
                     else:
                         _file = None
 

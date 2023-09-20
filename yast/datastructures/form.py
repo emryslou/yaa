@@ -7,8 +7,14 @@ from .types import ImmutableMultiDict
 
 
 class UploadFile(object):
-    def __init__(self, filename: str, file: typing.IO = None) -> None:
+    def __init__(
+        self,
+        filename: str,
+        file: typing.IO = None,
+        content_type: str = "",
+    ) -> None:
         self.filename = filename
+        self.content_type = content_type
         if file is None:
             file = tempfile.SpooledTemporaryFile()
         self.file = file

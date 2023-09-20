@@ -3,6 +3,7 @@
 2. database support: mysql
 3. applications: auto scan plugins
 4. applications: support subdomain router
+5. formparser: upload file: content-type
 
 # v0.2.4
 1. support template: default jinja2
