@@ -227,20 +227,29 @@ class DatabaseURL(URL):
 
 
 class URLPath(str):
-    def __new__(cls, path: str, protocol: str) -> str:
-        assert protocol in ("http", "websocket")
+    def __new__(cls, path: str, protocol: str = "", host: str = "") -> str:
+        assert protocol in ("http", "websocket", "")
         return str.__new__(cls, path)
 
-    def __init__(self, path: str, protocol: str) -> None:
+    def __init__(self, path: str, protocol: str = "", host: str = "") -> None:
         self.protocol = protocol
+        self.host = host
 
     def make_absolute_url(self, base_url: typing.Union[str, URL]) -> str:
         if isinstance(base_url, str):
             base_url = URL(base_url)
-        scheme = {
-            "http": {True: "https", False: "http"},
-            "websocket": {True: "wss", False: "ws"},
-        }[self.protocol][base_url.is_secure]
 
-        # netloc = base_url.netloc
-        return str(URL(scheme=scheme, netloc=base_url.netloc, path=str(self)))
+        if self.protocol:
+            scheme = {
+                "http": {True: "https", False: "http"},
+                "websocket": {True: "wss", False: "ws"},
+            }[self.protocol][base_url.is_secure]
+        else:
+            scheme = base_url.scheme
+
+        if self.host:
+            netloc = self.host
+        else:
+            netloc = base_url.netloc
+
+        return str(URL(scheme=scheme, netloc=netloc, path=str(self)))

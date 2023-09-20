@@ -17,7 +17,7 @@ async def error_500(req: Request, exc):
     return JSONResponse({"detail": "oo....ooo"}, status_code=500)
 
 
-def _add_router():
+def _add_router(app):
     @app.route("/")
     def func_homepage(request):
         return PlainTextResponse("Hello, func_homepage")
@@ -38,7 +38,7 @@ def _add_router():
 
 
 def test_func_route():
-    _add_router()
+    _add_router(app)
 
     res = client.get("/")
     assert res.status_code == 200
@@ -70,7 +70,7 @@ def test_ws_route():
 
 
 def test_400():
-    _add_router()
+    _add_router(app)
     res = client.get("/404")
     assert res.status_code == 404
 
@@ -108,20 +108,11 @@ def test_app_error():
 
 
 def test_app_add_middleware():
-    class TrustedHostMiddleware(object):
-        def __init__(self, app, host) -> None:
-            self.app = app
-            self.host = host
+    from yast.middlewares import TrustedHostMiddleware
 
-        def __call__(self, scope):
-            if scope["type"] in ("http", "websocket"):
-                headers = Headers(scope=scope)
-                if headers.get("host") != self.host:
-                    return PlainTextResponse("Invalid host header", status_code=400)
-            return self.app(scope)
-
-    app.add_middleware(TrustedHostMiddleware, host="testserver")
-    _add_router()
+    app = Yast()
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["testserver"])
+    _add_router(app)
     client = TestClient(app, base_url="http://error")
     res = client.get("/")
     assert res.status_code == 400
@@ -231,3 +222,30 @@ def test_exception_handler():
     res = client.post("/405")
     assert res.status_code == 405
     assert res.text == "Err 405"
+
+
+def test_subdomain():
+    app = Yast()
+    subdomain = Router()
+
+    @subdomain.route("/")
+    def r_subdomain(req):
+        return PlainTextResponse("Subdomain:" + req.path_params["subdomain"])
+
+    app.host("{subdomain}.example.org", subdomain)
+    from yast.middlewares import TrustedHostMiddleware
+
+    _add_router(app)
+    app.add_middleware(
+        TrustedHostMiddleware, allowed_hosts=["testserver", "*.example.org"]
+    )
+
+    client = TestClient(app, base_url="http://what.example.org")
+    res = client.get("/")
+    assert res.status_code == 200
+    assert res.text == "Subdomain:what"
+
+    client = TestClient(app, base_url="http://abc.example.org")
+    res = client.get("/")
+    assert res.status_code == 200
+    assert res.text == "Subdomain:abc"

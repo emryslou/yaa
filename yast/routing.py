@@ -6,7 +6,7 @@ from asyncio import iscoroutinefunction
 
 from yast.concurrency import run_in_threadpool
 from yast.convertors import CONVERTOR_TYPES, Convertor
-from yast.datastructures import URL, URLPath
+from yast.datastructures import URL, Headers, URLPath
 from yast.exceptions import HttpException
 from yast.requests import Request
 from yast.responses import PlainTextResponse, RedirectResponse
@@ -27,6 +27,40 @@ class Match(enum.Enum):
 PARAM_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
 
 
+def compile_path(
+    path: str,
+) -> typing.Tuple[typing.Pattern, str, typing.Dict[str, Convertor]]:
+    path_regex = "^"
+    path_format = ""
+
+    idx = 0
+    param_converts = {}
+
+    for match in PARAM_REGEX.finditer(path):
+        param_name, convert_type = match.groups("str")
+        convert_type = convert_type.lstrip(":")
+        assert (
+            convert_type in CONVERTOR_TYPES
+        ), f'Unknown path convertor "{convert_type}"'
+        convertor = CONVERTOR_TYPES[convert_type]
+
+        path_regex += path[idx : match.start()]
+        path_regex += "(?P<%s>%s)" % (param_name, convertor.regex)
+
+        path_format += path[idx : match.start()]
+        path_format += "{%s}" % param_name
+
+        param_converts[param_name] = convertor
+
+        idx = match.end()
+    # endfor
+
+    path_regex += path[idx:] + "$"
+    path_format += path[idx:]
+
+    return re.compile(path_regex), path_format, param_converts
+
+
 class BaseRoute(object):
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         raise NotImplementedError()  # pragma: nocover
@@ -36,39 +70,6 @@ class BaseRoute(object):
 
     def __call__(self, scope: Scope) -> ASGIInstance:
         raise NotImplementedError()  # pragma: nocover
-
-    def compile_path(
-        self, path: str
-    ) -> typing.Tuple[typing.Pattern, str, typing.Dict[str, Convertor]]:
-        path_regex = "^"
-        path_format = ""
-
-        idx = 0
-        param_converts = {}
-
-        for match in PARAM_REGEX.finditer(path):
-            param_name, convert_type = match.groups("str")
-            convert_type = convert_type.lstrip(":")
-            assert (
-                convert_type in CONVERTOR_TYPES
-            ), f'Unknown path convertor "{convert_type}"'
-            convertor = CONVERTOR_TYPES[convert_type]
-
-            path_regex += path[idx : match.start()]
-            path_regex += "(?P<%s>%s)" % (param_name, convertor.regex)
-
-            path_format += path[idx : match.start()]
-            path_format += "{%s}" % param_name
-
-            param_converts[param_name] = convertor
-
-            idx = match.end()
-        # endfor
-
-        path_regex += path[idx:] + "$"
-        path_format += path[idx:]
-
-        return re.compile(path_regex), path_format, param_converts
 
     def __str__(self) -> str:
         return "%s(path=%s,endpoint=%s)" % (
@@ -107,9 +108,7 @@ class Route(BaseRoute):
             if "GET" in self.methods:
                 self.methods |= set(["HEAD"])
 
-        (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
-            path
-        )
+        (self.path_regex, self.path_format, self.param_convertors) = compile_path(path)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "http":
@@ -171,9 +170,7 @@ class WebSocketRoute(BaseRoute):
         regex = "^" + path + "$"
         regex = re.sub("{([a-zA-Z_][a-zA-Z0-9_]*)}", r"(?P<\1>[^/]+)", regex)
 
-        (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
-            path
-        )
+        (self.path_regex, self.path_format, self.param_convertors) = compile_path(path)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] == "websocket":
@@ -217,7 +214,7 @@ class Mount(BaseRoute):
         self.app = app
 
         self.name = name
-        (self.path_regex, self.path_format, self.param_convertors) = self.compile_path(
+        (self.path_regex, self.path_format, self.param_convertors) = compile_path(
             path + "/{path:path}"
         )
 
@@ -253,7 +250,7 @@ class Mount(BaseRoute):
                 self.path_format, self.param_convertors, path_params
             )
             if not remaining_params:
-                return URLPath(path, protocol="http")
+                return URLPath(path)
 
         elif self.name is None or name.startswith(self.name + ":"):
             if self.name is None:
@@ -288,6 +285,70 @@ class Mount(BaseRoute):
         )
 
 
+class Host(BaseRoute):
+    def __init__(self, host: str, app: ASGIApp, name: str = None) -> None:
+        self.host = host
+        self.app = app
+        self.name = name
+        (self.host_regex, self.host_format, self.param_convertors) = compile_path(host)
+
+    @property
+    def routes(self) -> typing.List[BaseRoute]:
+        return getattr(self.app, "routes", None)
+
+    def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
+        headers = Headers(scope=scope)
+        host = headers.get("host", "").split(":")[0]
+        matched = self.host_regex.match(host)
+        if matched:
+            matched_params = matched.groupdict()
+            for key, value in matched_params.items():
+                matched_params[key] = self.param_convertors[key].convert(value)
+            path_params = dict(scope.get("path_params", {}))
+            path_params.update(matched_params)
+            child_scope = {"path_params": path_params, "endpoint": self.app}
+            return Match.FULL, child_scope
+
+        return Match.NONE, {}
+
+    def url_path_for(self, name: str, **path_params: str) -> URLPath:
+        if self.name is not None and name == self.name and "path" in path_params:
+            path = path_params.pop("path")
+            host, remaining_params = replace_params(
+                self.host_format, self.param_convertors, path_params
+            )
+            if not remaining_params:
+                return URLPath(path=path, host=host)
+        elif self.name is None or name.startswith(self.name + ":"):
+            if self.name is None:
+                remaining_name = name
+            else:
+                remaining_name = name[len(self.name) + 1 :]
+
+            host, remaining_params = replace_params(
+                self.host_format, self.param_convertors, path_params
+            )
+
+            for route in self.routes or []:
+                try:
+                    url = route.url_path_for(remaining_name, **remaining_params)
+                    return URLPath(path=str(url), protocol=url.protocol, host=host)
+                except NoMatchFound:
+                    pass
+        # endelse
+        raise NoMatchFound()
+
+    def __call__(self, scope: Scope) -> ASGIInstance:
+        return self.app(scope)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, Host)
+            and self.host == other.host
+            and self.app == other.app
+        )
+
+
 class Router(object):
     def __init__(
         self,
@@ -302,6 +363,10 @@ class Router(object):
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
         prefix = Mount(path, app=app, name=name)
         self.routes.append(prefix)
+
+    def host(self, host: str, app: ASGIApp, name: str = None) -> None:
+        route = Host(host, app=app, name=name)
+        self.routes.append(route)
 
     def route(
         self,

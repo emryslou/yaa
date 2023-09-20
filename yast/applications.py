@@ -77,6 +77,9 @@ class Yast(object):
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
         self.router.mount(path, app=app, name=name)
 
+    def host(self, host: str, app: ASGIApp, name: str = None) -> None:
+        self.router.host(host, app=app, name=name)
+
     def add_route(
         self,
         path: str,

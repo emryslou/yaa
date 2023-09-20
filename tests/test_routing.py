@@ -5,7 +5,7 @@ import pytest
 import yast.status as http_status
 from yast import TestClient
 from yast.responses import JSONResponse, PlainTextResponse, Response
-from yast.routing import Mount, NoMatchFound, Route, Router, WebSocketRoute
+from yast.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
 from yast.staticfiles import StaticFiles
 from yast.websockets import WebSocket, WebSocketDisconnect
 
@@ -254,3 +254,82 @@ def test_path_params_convert():
     assert res.status_code == 200
     assert res.json() == {"path": "demo/abc"}
     assert app.url_path_for("path_conv", param="demo/abc") == "/path/demo/abc"
+
+
+def users_api(request):
+    return JSONResponse({"users": [{"username": "eml"}]})
+
+
+mixed_hosts_app = Router(
+    routes=[
+        Host(
+            "www.example.org",
+            app=Router(
+                [
+                    Route("/", home, name="home"),
+                    Route("/users", users, name="users"),
+                ]
+            ),
+        ),
+        Host(
+            "api.example.org",
+            name="api",
+            app=Router([Route("/users", users_api, name="users")]),
+        ),
+    ]
+)
+
+
+def test_host_routing():
+    client = TestClient(mixed_hosts_app, base_url="https://api.example.org/")
+    response = client.get("/users")
+    assert response.status_code == 200
+    assert response.json() == {"users": [{"username": "eml"}]}
+    response = client.get("/")
+    assert response.status_code == 404
+    client = TestClient(mixed_hosts_app, base_url="https://www.example.org/")
+    response = client.get("/users")
+    assert response.status_code == 200
+    assert response.text == "All Users"
+    response = client.get("/")
+    assert response.status_code == 200
+
+
+def test_host_reverse_urls():
+    assert (
+        mixed_hosts_app.url_path_for("home").make_absolute_url("https://whatever")
+        == "https://www.example.org/"
+    )
+    assert (
+        mixed_hosts_app.url_path_for("users").make_absolute_url("https://whatever")
+        == "https://www.example.org/users"
+    )
+    assert (
+        mixed_hosts_app.url_path_for("api:users").make_absolute_url("https://whatever")
+        == "https://api.example.org/users"
+    )
+
+
+def subdomain_app(scope):
+    return JSONResponse({"subdomain": scope["path_params"]["subdomain"]})
+
+
+subdomain_app = Router(
+    routes=[Host("{subdomain}.example.org", app=subdomain_app, name="subdomains")]
+)
+
+
+def test_subdomain_routing():
+    client = TestClient(subdomain_app, base_url="https://foo.example.org/")
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"subdomain": "foo"}
+
+
+def test_subdomain_reverse_urls():
+    assert (
+        subdomain_app.url_path_for(
+            "subdomains", subdomain="foo", path="/homepage"
+        ).make_absolute_url("https://whatever")
+        == "https://foo.example.org/homepage"
+    )

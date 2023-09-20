@@ -31,9 +31,14 @@ notes = sqlalchemy.Table(
 )
 
 
-app = Yast()
-app.add_middleware(
-    DatabaseMiddleware, database_url=DATABASE_URL, rollback_on_shutdown=True
+app = Yast(
+    plugins={
+        "database": {
+            "middleware": {
+                "database": dict(database_url=DATABASE_URL, rollback_on_shutdown=True)
+            }
+        }
+    }
 )
 
 client = TestClient(app)
