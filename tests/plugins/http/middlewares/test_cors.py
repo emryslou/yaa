@@ -1,25 +1,27 @@
-from yast.applications import Yast
+from yast import Yast, TestClient
 from yast.responses import PlainTextResponse
-from yast.testclient import TestClient
 
 
 def test_cors_allow_all():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "cors": dict(
+                        allow_origins=["*"],
+                        allow_headers=["*"],
+                        allow_methods=["*"],
+                        expose_headers=["X-Status"],
+                        allow_credentials=True,
+                    )
+                }
+            }
+        }
+    )
 
     @app.route("/")
     async def home(_):
         return PlainTextResponse("HOME")
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_headers=["*"],
-        allow_methods=["*"],
-        expose_headers=["X-Status"],
-        allow_credentials=True,
-    )
 
     client = TestClient(app)
     headers = {
@@ -45,19 +47,22 @@ def test_cors_allow_all():
 
 
 def test_cors_specific_origin():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "cors": dict(
+                        allow_origins=["https://ex.org"],
+                        allow_headers=["X-Example"],
+                    )
+                }
+            }
+        }
+    )
 
     @app.route("/")
     async def home(_):
         return PlainTextResponse("HOME")
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["https://ex.org"],
-        allow_headers=["X-Example"],
-    )
 
     client = TestClient(app)
     headers = {
@@ -87,19 +92,22 @@ def test_cors_specific_origin():
 
 
 def test_cors_disallowed_preflight():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "cors": dict(
+                        allow_origins=["https://ex.org"],
+                        allow_headers=["X-Example"],
+                    )
+                }
+            }
+        }
+    )
 
     @app.route("/")
     async def home(_):
         return PlainTextResponse("HOME")  # pragma: nocover
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["https://ex.org"],
-        allow_headers=["X-Example"],
-    )
 
     client = TestClient(app)
 
@@ -115,11 +123,16 @@ def test_cors_disallowed_preflight():
 
 
 def test_cors_allow_origin_regex():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
-    app.add_middleware(
-        CORSMiddleware, allow_headers=["X-Example"], allow_origin_regex="https://*"
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "cors": dict(
+                        allow_headers=["X-Example"], allow_origin_regex="https://*"
+                    )
+                }
+            }
+        }
     )
 
     @app.route("/")
@@ -165,10 +178,7 @@ def test_cors_allow_origin_regex():
 
 
 def test_cors_credentialed_requests_return_specific_origin():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
-    app.add_middleware(CORSMiddleware, allow_origins=["*"])
+    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(_):
@@ -183,10 +193,13 @@ def test_cors_credentialed_requests_return_specific_origin():
 
 
 def test_cors_vary_header_defaults_to_orgin():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
-    app.add_middleware(CORSMiddleware, allow_origins=["https://example.org"])
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {"cors": dict(allow_origins=["https://example.org"])}
+            }
+        }
+    )
 
     @app.route("/")
     def homepage(_):
@@ -201,10 +214,13 @@ def test_cors_vary_header_defaults_to_orgin():
 
 
 def test_cors_vary_header_is_properly_set():
-    from yast.middlewares import CORSMiddleware
-
-    app = Yast()
-    app.add_middleware(CORSMiddleware, allow_origins=["https://example.org"])
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {"cors": dict(allow_origins=["https://example.org"])}
+            }
+        }
+    )
 
     @app.route("/")
     def homepage(_):

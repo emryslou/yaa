@@ -102,3 +102,9 @@ def test_force_500_res():
 
     assert res.status_code == 500
     assert res.text == ""
+
+
+def test_app_plugins():
+    from yast import Yast
+
+    app = Yast()

@@ -16,16 +16,13 @@ __name__ = "database"
 
 from yast.applications import Yast
 from yast.datastructures import DatabaseURL
+from yast.plugins import load_middlewares
 
 from .drivers.base import DatabaseBackend, DatabaseSession, DatabaseTransaction, compile
 
 
 def plugin_init(app: Yast, config: dict = {}):
-    mw_db_config = config.get("middleware", {}).get("database", {})
-    if mw_db_config:
-        from yast.plugins.database.middlewares import DatabaseMiddleware
-
-        app.add_middleware(DatabaseMiddleware, **mw_db_config)
+    load_middlewares(app, __package__, config.get("middlewares", {}))
 
 
 def get_database_backend(database_url: DatabaseURL, *args, **kwargs) -> DatabaseBackend:

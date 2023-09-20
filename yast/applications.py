@@ -21,7 +21,12 @@ class Yast(object):
         self.config = {
             "template_directory": template_directory,
             "plugins": {
-                "exceptions": {},
+                "exceptions": {
+                    "middlewares": {
+                        "exception": dict(debug=self.debug),
+                        "servererror": dict(debug=self.debug),
+                    }
+                },
                 "lifespan": {},
             },
         }

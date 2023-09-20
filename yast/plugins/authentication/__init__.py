@@ -1,11 +1,8 @@
 from yast.applications import Yast
-
-from .middlewares import AuthenticationMiddleware
+from yast.plugins import load_middlewares
 
 __name__ = "authentication"
 
 
 def plugin_init(app: Yast, config: dict = {}):
-    mw_cfg = config.pop("middleware", None)
-    if mw_cfg is not None:
-        app.add_middleware(AuthenticationMiddleware, **mw_cfg)
+    load_middlewares(app, __package__, config.pop("middlewares", {}))

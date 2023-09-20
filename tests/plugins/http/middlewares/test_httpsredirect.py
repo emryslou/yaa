@@ -4,15 +4,11 @@ from yast.testclient import TestClient
 
 
 def test_httpsredirect():
-    from yast.middlewares import HttpsRedirectMiddleware
-
-    app = Yast()
+    app = Yast(plugins={"http": {"middlewares": {"httpsredirect": {}}}})
 
     @app.route("/")
     async def home(_):
         return PlainTextResponse("OK")
-
-    app.add_middleware(HttpsRedirectMiddleware)
 
     client = TestClient(app, base_url="https://testserver")
     res = client.get("/?type=https")
@@ -22,3 +18,12 @@ def test_httpsredirect():
     res = client.get("/?type=http", allow_redirects=False)
     assert res.status_code == 301
     assert res.headers["location"] == "https://testserver/?type=http"
+
+    client = TestClient(app, base_url="http://testserver:80")
+    response = client.get("/", allow_redirects=False)
+    assert response.status_code == 301
+    assert response.headers["location"] == "https://testserver/"
+    client = TestClient(app, base_url="http://testserver:123")
+    response = client.get("/", allow_redirects=False)
+    assert response.status_code == 301
+    assert response.headers["location"] == "https://testserver:123/"
