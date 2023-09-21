@@ -4,6 +4,7 @@
 3. applications: auto scan plugins
 4. applications: support subdomain router
 5. formparser: upload file: content-type
+6. base schema: add response; routing mount: add routes; code op
 
 # v0.2.4
 1. support template: default jinja2
