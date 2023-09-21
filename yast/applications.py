@@ -74,6 +74,7 @@ class Yast(object):
         self._debug = val
 
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
+        assert app != self
         self.router.mount(path, app=app, name=name)
 
     def host(self, host: str, app: ASGIApp, name: str = None) -> None:

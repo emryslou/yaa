@@ -8,7 +8,7 @@ except ImportError:  # pragma: no cover
 
 from yast.requests import Request
 from yast.responses import Response
-from yast.routing import BaseRoute, Route
+from yast.routing import BaseRoute, Mount, Route
 
 
 class EndPointInfo(typing.NamedTuple):
@@ -22,20 +22,29 @@ class BaseSchemaGenerator(object):
         raise NotImplementedError()  # pragma: no cover
 
     def get_endpoints(
-        self, routes: typing.List[BaseRoute]
+        self, routes: typing.List[BaseRoute], parent_path: str = ""
     ) -> typing.List[EndPointInfo]:
         endpoints_info = []
-
         for route in routes:
-            if not isinstance(route, Route) or not route.include_in_schema:
+            if isinstance(route, Mount):
+                sub_routes = route.routes or []
+                endpoints_info.extend(
+                    self.get_endpoints(routes=sub_routes, parent_path=route.path)
+                )
+
+            elif not isinstance(route, Route) or not route.include_in_schema:
                 continue
 
-            if inspect.isfunction(route.endpoint) or inspect.ismethod(route.endpoint):
+            elif inspect.isfunction(route.endpoint) or inspect.ismethod(route.endpoint):
                 for method in route.methods or ["GET"]:
                     if method == "HEAD":
                         continue
                     endpoints_info.append(
-                        EndPointInfo(route.path, method.lower(), route.endpoint)
+                        EndPointInfo(
+                            "".join((parent_path, route.path)),
+                            method.lower(),
+                            route.endpoint,
+                        )
                     )
             else:
                 methods = ["get", "post", "put", "patch", "delete", "options"]
@@ -44,7 +53,9 @@ class BaseSchemaGenerator(object):
                         continue
                     func = getattr(route.endpoint, method)
                     endpoints_info.append(
-                        EndPointInfo(route.path, method.lower(), func)
+                        EndPointInfo(
+                            "".join((parent_path, route.path)), method.lower(), func
+                        )
                     )
             # endif
         # endfor
@@ -52,7 +63,16 @@ class BaseSchemaGenerator(object):
 
     def parse_docstring(self, func_or_method: typing.Callable) -> dict:
         docstring = func_or_method.__doc__
-        return yaml.safe_load(docstring) if docstring else {}
+        if not docstring:
+            return {}
+
+        docstring = docstring.split("----")[-1]
+        parsed = yaml.safe_load(docstring)
+
+        if not isinstance(parsed, dict):
+            return {}
+
+        return parsed
 
     def response(self, request: Request) -> Response:
         routes = request.app.routes
@@ -70,11 +90,14 @@ class SchemaGenerator(BaseSchemaGenerator):
         endpoints_info = self.get_endpoints(routes)
 
         for endpoint in endpoints_info:
+            parsed = self.parse_docstring(endpoint.func)
+            if not parsed:
+                continue
+
             if endpoint.path not in schema["paths"]:
                 schema["paths"][endpoint.path] = {}
-            schema["paths"][endpoint.path][endpoint.http_method] = self.parse_docstring(
-                endpoint.func
-            )
+
+            schema["paths"][endpoint.path][endpoint.http_method] = parsed
         # endfor
 
         return schema

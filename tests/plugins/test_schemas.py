@@ -15,6 +15,9 @@ app = Yast(
     }
 )
 
+sub_app = Yast()
+app.mount("/sub", sub_app)
+
 
 @app.ws_route("/ws")
 def ws(session):
@@ -69,9 +72,31 @@ class OrganisationsEndpoint(HttpEndPoint):
         pass  # pragma: no cover
 
 
+@app.route("/docstring_sep")
+def docstring_sep(req):
+    """
+    Test
+    ----
+    responses:
+      200:
+        description: BBBB
+    """
+    pass  # pragma: no cover
+
+
 @app.route("/schema", methods=["GET"], include_in_schema=False)
 def schema(request):
     return schemas.response(request)
+
+
+@sub_app.route("/endpoint")
+def subapp_endpoint(req):
+    """
+    responses:
+      200:
+        description: AAAA
+    """
+    pass  # pragma: no cover
 
 
 def test_schema_generation():
@@ -113,6 +138,24 @@ def test_schema_generation():
                     }
                 },
             },
+            "/docstring_sep": {
+                "get": {
+                    "responses": {
+                        200: {
+                            "description": "BBBB",
+                        }
+                    }
+                }
+            },
+            "/sub/endpoint": {
+                "get": {
+                    "responses": {
+                        200: {
+                            "description": "AAAA",
+                        }
+                    }
+                }
+            },
         },
     }
 
@@ -128,6 +171,11 @@ info:
   version: '1.0'
 openapi: 3.0.0
 paths:
+  /docstring_sep:
+    get:
+      responses:
+        200:
+          description: BBBB
   /orgs:
     get:
       responses:
@@ -142,6 +190,11 @@ paths:
           description: An organisation.
           examples:
             name: Foo Corp.
+  /sub/endpoint:
+    get:
+      responses:
+        200:
+          description: AAAA
   /users:
     get:
       responses:
