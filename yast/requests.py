@@ -2,13 +2,13 @@ import asyncio
 import http.cookies
 import json
 import typing
+import warnings
 from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
 from yast.datastructures import URL, Address, FormData, Headers, QueryParams
 from yast.formparsers import FormParser, MultiPartParser
-# from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.types import Message, Receive, Scope
 
 try:
@@ -19,6 +19,10 @@ except ImportError:  # pragma: no cover
 
 async def empty_receive() -> Message:
     raise RuntimeError("Receive channel has not been made avaible")  # pragma: nocover
+
+
+class State(object):
+    pass
 
 
 class HttpConnection(Mapping):
@@ -87,6 +91,7 @@ class HttpConnection(Mapping):
 
     @property
     def database(self):
+        warnings.warn("attr `database` will be removed in the future")
         assert "database" in self._scope, (
             "`DatabaseMiddleware` must be " "installed to access request.database"
         )
@@ -98,6 +103,12 @@ class HttpConnection(Mapping):
             "auth" in self._scope
         ), "`AuthenticationMiddleware` must be installed to access request.auth"
         return self._scope["auth"]
+
+    @property
+    def state(self) -> State:
+        if "state" not in self._scope:
+            self._scope["state"] = State()
+        return self._scope["state"]
 
     @property
     def user(self) -> typing.Any:

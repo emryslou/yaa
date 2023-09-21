@@ -330,3 +330,18 @@ def test_request_is_disconnected():
     response = client.get("/")
     assert response.json() == {"disconnected": False}
     assert disconnected_after_response
+
+
+def test_request_state():
+    def app(scope):
+        async def asgi(receive, send):
+            request = Request(scope, receive)
+            request.state.example = "abc"
+            response = JSONResponse({"state.example": request["state"].example})
+            await response(receive, send)
+
+        return asgi
+
+    client = TestClient(app)
+    response = client.get("/123?a=abc")
+    assert response.json() == {"state.example": "abc"}
