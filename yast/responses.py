@@ -36,12 +36,16 @@ class Response(object):
         headers: dict = None,
         media_type: str = None,
         background: BackgroundTask = None,
+        method: str = None,
     ) -> None:
         self.body = b"" if content is None else self.render(content)
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
         self.background = background
+        self.send_header_only = (
+            method.upper() in ("HEAD") if method is not None else False
+        )
         self.init_headers(headers)
 
     async def __call__(self, receive: Receive, send: Send) -> None:

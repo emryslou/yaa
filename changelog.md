@@ -7,6 +7,7 @@
 6. base schema: add response; routing mount: add routes; code op
 7. plugin: database: register custome databasebackend
 8. requests: attr: database: removing next, attr: state: add
+9. staticfile: support packages.static
 
 
 # v0.2.4

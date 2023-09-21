@@ -7,6 +7,8 @@ description:
 author: emryslou@gmail.com
 """
 
+
+import functools
 import os
 import stat
 import typing
@@ -16,97 +18,152 @@ from aiofiles.os import stat as aio_stat
 
 from yast.datastructures import Headers
 from yast.responses import FileResponse, PlainTextResponse, Response
-from yast.types import Scope
+from yast.types import ASGIInstance, Receive, Scope, Send
 
-NOT_MODIFIED_HEADERS = (
-    "cache-control",
-    "content-location",
-    "date",
-    "etag",
-    "expires",
-    "vary",
-)
+
+class NotModifiedResponse(Response):
+    NOT_MODIFIED_HEADERS = (
+        "cache-control",
+        "content-location",
+        "date",
+        "etag",
+        "expires",
+        "vary",
+    )
+
+    def __init__(self, headers: Headers) -> None:
+        return super().__init__(
+            status_code=304,
+            headers={
+                name: value
+                for name, value in headers.items()
+                if name in self.NOT_MODIFIED_HEADERS
+            },
+        )
 
 
 class StaticFiles(object):
-    def __init__(self, *, directory, check_dir: bool = True) -> None:
-        if check_dir:
-            assert os.path.isdir(directory), f'Directory "{directory}" does not exists'
+    def __init__(
+        self,
+        *,
+        directory: str = None,
+        packages: typing.List[str] = None,
+        check_dir: bool = True,
+    ) -> None:
         self.directory = directory
+        self.packages = packages
+        self.all_directories = self.get_directories(directory, packages)
         self.config_checked = False
 
-    def __call__(self, scope: Scope):
+        if directory is not None and check_dir:
+            assert os.path.isdir(directory), f'Directory "{directory}" does not exists'
+
+    def get_directories(
+        self, directory: str = None, packages: typing.List[str] = None
+    ) -> typing.List[str]:
+        directories = []
+
+        if directory is not None:
+            directories.append(directory)
+
+        if packages is not None:
+            import importlib
+            import os
+
+            for package in packages:
+                # spec = importlib.util.find_spec(package)
+                # assert spec is not None
+                # assert spec.origin is not None
+                mod = importlib.import_module(package)
+                path = mod.__path__[-1]
+                directory = os.path.normpath(os.path.join(path, "statics"))
+                assert os.path.isdir(directory)
+                directories.append(directory)
+            # endfor
+        # endif
+        return directories
+
+    def __call__(self, scope: Scope) -> ASGIInstance:
         assert scope["type"] == "http"
+
         if scope["method"] not in ("GET", "HEAD"):
             return PlainTextResponse("Method Not Allowed", status_code=405)
+
         path = os.path.normpath(os.path.join(*scope["path"].split("/")))
         if path.startswith(".."):
             return PlainTextResponse("Not Found", status_code=404)
+        return functools.partial(self.asgi, scope=scope, path=path)
 
-        path = os.path.join(self.directory, path)
-        if self.config_checked:
-            check_directory = None
-        else:
-            check_directory = self.directory
+    async def asgi(self, receive: Receive, send: Send, scope: Scope, path: str) -> None:
+        if not self.config_checked:
+            await self.check_config()
             self.config_checked = True
 
-        return _StaticFilesResponser(scope, path, check_directory)
-
-
-class _StaticFilesResponser(object):
-    def __init__(self, scope, path, check_directory=None):
-        self.scope = scope
-        self.path = path
-        self.check_directory = check_directory
-
-    async def check_directory_configured_correctly(self):
-        dir = self.check_directory
-        try:
-            stat_result = await aio_stat(dir)
-        except FileNotFoundError:
-            raise RuntimeError(f"Staticfiles directory {dir} does not found")
-
-        if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
-            raise RuntimeError(f"Staticfiles directory {dir} is not a directory")
-
-    def is_not_modified(self, stat_headers: typing.Dict[str, str]) -> bool:
-        etag = stat_headers["etag"]
-        last_modified = stat_headers["last-modified"]
-        req_headers = Headers(scope=self.scope)
-        if etag == req_headers.get("if-none-match"):
-            return True
-        if "if-modified-since" not in req_headers:
-            return False
-        last_req_time = req_headers["if-modified-since"]
-        return parsedate(last_req_time) >= parsedate(last_modified)
-
-    def not_modified_response(self, stat_headers: dict) -> Response:
-        headers = {
-            name: value
-            for name, value in stat_headers.items()
-            if name in NOT_MODIFIED_HEADERS
-        }
-        return Response(status_code=304, headers=headers)
-
-    async def __call__(self, receive, send):
-        if self.check_directory:
-            await self.check_directory_configured_correctly()
-
-        try:
-            stat_result = await aio_stat(self.path)
-        except FileNotFoundError:
-            res = PlainTextResponse("Not Found", status_code=404)
-        else:
-            mode = stat_result.st_mode
-            if not stat.S_ISREG(mode):
-                res = PlainTextResponse("Not Found", status_code=404)
-            else:
-                stat_headers = FileResponse.get_stat_headers(stat_result)
-                if self.is_not_modified(stat_headers):
-                    res = self.not_modified_response(stat_headers)
-                else:
-                    res = FileResponse(
-                        self.path, stat_result=stat_result, method=self.scope["method"]
-                    )
+        method = scope["method"]
+        headers = Headers(scope=scope)
+        res = await self.get_response(path, method, headers)
 
         await res(receive, send)
+
+    async def get_response(
+        self, path: str, method: str, request_headers: Headers
+    ) -> Response:
+        stat_result = None
+        for directory in self.all_directories:
+            full_path = os.path.join(directory, path)
+            try:
+                stat_result = await aio_stat(full_path)
+            except FileNotFoundError:
+                pass
+            else:
+                break
+
+        if stat_result is None or not os.path.isfile(full_path):
+            return PlainTextResponse("Not Found", status_code=404)
+
+        res = FileResponse(full_path, stat_result=stat_result, method=method)
+        if self.is_not_modified(res.headers, request_headers):
+            return NotModifiedResponse(res.headers)
+
+        return res
+
+    def is_not_modified(
+        self, response_headers: Headers, request_headers: Headers
+    ) -> bool:
+        try:
+            if_none_match = request_headers["if-none-match"]
+            etag = response_headers["etag"]
+            if if_none_match == etag:
+                return True
+        except KeyError:
+            pass
+
+        try:
+            if_modified_since = parsedate(request_headers["if-modified-since"])
+            last_modified = parsedate(response_headers["last-modified"])
+            if (
+                if_modified_since is not None
+                and last_modified is not None
+                and if_modified_since >= last_modified
+            ):
+                return True
+        except KeyError:
+            pass
+
+        return False
+
+    async def check_config(self) -> None:
+        if self.directory is None:
+            return
+
+        try:
+            stat_result = await aio_stat(self.directory)
+        except FileNotFoundError:
+            raise RuntimeWarning(
+                f"StaticFile directory `{self.directory}` does not exists"
+            )
+
+        if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
+            raise RuntimeWarning(
+                f"StaticFile directory `{self.directory}` is not a directory"
+            )

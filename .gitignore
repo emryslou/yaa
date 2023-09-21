@@ -161,3 +161,4 @@ cython_debug/
 .conda
 .history
 .vscode
+.temp

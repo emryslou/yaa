@@ -132,3 +132,11 @@ def test_304_with_last_modified(tmpdir):
 
     assert res.status_code == 200
     assert res.content == b"<file content>"
+
+
+def test_staticfiles_with_package():
+    app = StaticFiles(packages=["tests"])
+    client = TestClient(app)
+    response = client.get("/example.txt")
+    assert response.status_code == 200
+    assert response.text == "123\n"
