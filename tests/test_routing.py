@@ -1,8 +1,7 @@
-import os
-
-import pytest
+import os, pytest
 
 import yast.status as http_status
+
 from yast import TestClient
 from yast.responses import JSONResponse, PlainTextResponse, Response
 from yast.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute

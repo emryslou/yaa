@@ -29,11 +29,7 @@ class Yast(object):
                         "servererror": dict(debug=self.debug),
                     }
                 },
-                "lifespan": {
-                    "middlewares": {
-                        "lifespan": {},
-                    }
-                },
+                "lifespan": {},
             },
         }
         for _k, _cfg in kwargs.pop("plugins", {}).items():

@@ -218,7 +218,7 @@ class Mount(BaseRoute):
         assert path == "" or path.startswith("/"), 'Routed paths must always start "/"'
         assert (
             app is not None or routes is not None
-        ), "`app` or `routes` must be specified one of them"
+        ), "`app=...` or `routes=[...]` must be specified one of them"
         self.path = path.rstrip("/")
         if routes is None:
             self.app = app
@@ -235,7 +235,7 @@ class Mount(BaseRoute):
         return getattr(self.app, "routes", None)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
-        if scope["type"] == "http":
+        if scope["type"] in ("http", "websocket"):
             path = scope["path"]
             match = self.path_regex.match(path)
             if match:
@@ -309,18 +309,20 @@ class Host(BaseRoute):
         return getattr(self.app, "routes", None)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
-        headers = Headers(scope=scope)
-        host = headers.get("host", "").split(":")[0]
-        matched = self.host_regex.match(host)
-        if matched:
-            matched_params = matched.groupdict()
-            for key, value in matched_params.items():
-                matched_params[key] = self.param_convertors[key].convert(value)
-            path_params = dict(scope.get("path_params", {}))
-            path_params.update(matched_params)
-            child_scope = {"path_params": path_params, "endpoint": self.app}
-            return Match.FULL, child_scope
-
+        if scope["type"] in ("http", "websocket"):
+            headers = Headers(scope=scope)
+            host = headers.get("host", "").split(":")[0]
+            matched = self.host_regex.match(host)
+            if matched:
+                matched_params = matched.groupdict()
+                for key, value in matched_params.items():
+                    matched_params[key] = self.param_convertors[key].convert(value)
+                path_params = dict(scope.get("path_params", {}))
+                path_params.update(matched_params)
+                child_scope = {"path_params": path_params, "endpoint": self.app}
+                return Match.FULL, child_scope
+            # endif
+        # endif
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
@@ -371,6 +373,7 @@ class Router(object):
         self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
         self.default = self.not_found if default is None else default
+        self._lifespan = None
 
     def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
         prefix = Mount(path, app=app, name=name)
@@ -444,10 +447,16 @@ class Router(object):
 
         raise NoMatchFound()
 
+    @property
+    def lifespan(self):
+        return self._lifespan
+
+    @lifespan.setter
+    def lifespan(self, lifespan):
+        self._lifespan = lifespan
+
     def __call__(self, scope: Scope) -> ASGIInstance:
         assert scope["type"] in ("http", "websocket", "lifespan")
-        if scope["type"] == "lifespan":
-            return LifespanHandler(scope)
 
         if "router" not in scope:
             scope["router"] = self
@@ -467,15 +476,19 @@ class Router(object):
             scope.update(partial_scope)
             return partial(scope)
 
-        if self.redirect_slashes and not scope["path"].endswith("/"):
-            redirect_scope = dict(scope)
-            redirect_scope["path"] += "/"
+        if scope["type"] == "http" and self.redirect_slashes:
+            if not scope["path"].endswith("/"):
+                redirect_scope = dict(scope)
+                redirect_scope["path"] += "/"
 
-            for route in self.routes:
-                match, child_scope = route.matches(redirect_scope)
-                if match != Match.NONE:
-                    redirect_url = URL(scope=redirect_scope)
-                    return RedirectResponse(url=str(redirect_url))
+                for route in self.routes:
+                    match, child_scope = route.matches(redirect_scope)
+                    if match != Match.NONE:
+                        redirect_url = URL(scope=redirect_scope)
+                        return RedirectResponse(url=str(redirect_url))
+
+        if scope["type"] == "lifespan" and self._lifespan is not None:
+            return self._lifespan(scope)
 
         return self.default(scope)
 
@@ -539,19 +552,6 @@ def replace_params(
             _v = convert.to_string(_v)
             path = path.replace("{" + _k + "}", _v)
             path_params.pop(_k)
+        # end if
+    # end for
     return path, path_params
-
-
-class LifespanHandler(object):
-    def __init__(self, scope: Scope) -> None:
-        pass
-
-    async def __call__(self, receive: Receive, send: Send) -> None:
-        from yast.plugins.lifespan.middlewares import EventType
-
-        for event_type in list(EventType):
-            message = await receive()
-            assert message is not None
-            assert "type" in message
-            assert message["type"] == event_type.lifespan
-            await send({"type": event_type.complete})

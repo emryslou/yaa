@@ -2,17 +2,21 @@ import functools
 import typing
 
 from yast.applications import Yast
-from yast.utils import get_plugin_middlewares
+from yast.plugins import load_middlewares
 
 __name__ = "exceptions"
 
 
 def plugin_init(app: Yast, config: dict = {}) -> None:
-    middlewares = get_plugin_middlewares(__package__)
-    excmv = middlewares["exception"](
-        app.middleware_app, **config["middlewares"]["exception"]
+    assert "middlewares" in config
+    assert "exception" in config["middlewares"]
+    assert "servererror" in config["middlewares"]
+
+    middlewares = load_middlewares(
+        app, __package__, middlewares_config=config["middlewares"]
     )
-    srvmv = middlewares["servererror"](excmv, **config["middlewares"]["servererror"])
+    excmv = middlewares["exception"]
+    srvmv = middlewares["servererror"]
 
     def add_exception_handler(
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
@@ -33,6 +37,6 @@ def plugin_init(app: Yast, config: dict = {}) -> None:
 
         return decorator
 
-    app.middleware_app = srvmv
+    # app.middleware_app = srvmv
     app.add_exception_handler = functools.partial(add_exception_handler, app=app)
     app.exception_handler = functools.partial(exception_handler, app=app)
