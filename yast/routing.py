@@ -208,10 +208,22 @@ class WebSocketRoute(BaseRoute):
 
 
 class Mount(BaseRoute):
-    def __init__(self, path: str, app: ASGIApp, name: str = None) -> None:
+    def __init__(
+        self,
+        path: str,
+        app: ASGIApp = None,
+        routes: typing.List[BaseRoute] = None,
+        name: str = None,
+    ) -> None:
         assert path == "" or path.startswith("/"), 'Routed paths must always start "/"'
+        assert (
+            app is not None or routes is not None
+        ), "`app` or `routes` must be specified one of them"
         self.path = path.rstrip("/")
-        self.app = app
+        if routes is None:
+            self.app = app
+        else:
+            self.app = Router(routes=routes)
 
         self.name = name
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(
@@ -356,7 +368,7 @@ class Router(object):
         redirect_slashes: bool = True,
         default: ASGIApp = None,
     ) -> None:
-        self.routes = [] if routes is None else routes
+        self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
         self.default = self.not_found if default is None else default
 

@@ -8,6 +8,7 @@ from yast.endpoints import HttpEndPoint, WebSocketEndpoint
 from yast.routing import Route
 from yast.websockets import WebSocket, WebSocketDisconnect
 from yast.middlewares import BaseHttpMiddleware
+from yast.plugins.template import templates
 
 
 class Query(graphene.ObjectType):
@@ -41,14 +42,12 @@ app.mount('/docs', StaticFiles(directory='demo/docs'))
 
 @app.route('/')
 def home(request: Request) -> Response:
-    template = app.get_template('home.html')
-    html_content = template.render(request, **{
+    return templates.response('home.html', request=request, context={
         'greeting': 'template',
         'ws_host': 'localhost:5505/ws',
-        'js_version': '126'
+        'js_version': '127'
     })
-    res = Response(html_content, media_type='text/html')
-    return res 
+    
 
 @app.route('/favicon.ico')
 def fav(_):

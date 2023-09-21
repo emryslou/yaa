@@ -9,8 +9,9 @@
         let timer = setInterval(() => {
             ws.send('hello hahah > ' + i)
             i++
-            if (i >= 100) {
+            if (i >= 3) {
                 clearInterval(timer)
+                setTimeout(() => ws.close(), 0)
             }
         }, 1000)
     }

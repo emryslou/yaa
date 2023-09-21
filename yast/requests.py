@@ -41,6 +41,10 @@ class HttpConnection(Mapping):
         return self._url
 
     @property
+    def app(self) -> typing.Any:
+        return self._scope["app"]
+
+    @property
     def headers(self) -> Headers:
         if not hasattr(self, "_headers"):
             self._headers = Headers(scope=self._scope)

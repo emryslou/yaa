@@ -333,3 +333,24 @@ def test_subdomain_reverse_urls():
         ).make_absolute_url("https://whatever")
         == "https://foo.example.org/homepage"
     )
+
+
+def test_mount_routes():
+    def aa(req):
+        return PlainTextResponse("aa")
+
+    app = Router([Mount("/mount", routes=[Route("/aa", endpoint=aa)])])
+
+    client = TestClient(app)
+    res = client.get("/mount/aa")
+    assert res.status_code == 200
+    assert res.text == "aa"
+
+    app = Router([Mount("/mount", app=Router([Route("/aa", endpoint=aa)]))])
+    client = TestClient(app)
+    res = client.get("/mount/aa")
+    assert res.status_code == 200
+    assert res.text == "aa"
+
+    with pytest.raises(AssertionError):
+        app = Router([Mount("/mount")])

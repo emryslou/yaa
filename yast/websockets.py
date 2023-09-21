@@ -53,7 +53,6 @@ class WebSocket(HttpConnection):
                 self.application_state = WebSocketState.DISCONNECTED
             else:
                 self.application_state = WebSocketState.CONNECTED
-
             await self._send(message)
         elif self.application_state == WebSocketState.CONNECTED:
             assert message["type"] in {"websocket.send", "websocket.close"}

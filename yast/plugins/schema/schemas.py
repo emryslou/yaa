@@ -6,6 +6,7 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None  # pragma: no cover
 
+from yast.requests import Request
 from yast.responses import Response
 from yast.routing import BaseRoute, Route
 
@@ -52,6 +53,11 @@ class BaseSchemaGenerator(object):
     def parse_docstring(self, func_or_method: typing.Callable) -> dict:
         docstring = func_or_method.__doc__
         return yaml.safe_load(docstring) if docstring else {}
+
+    def response(self, request: Request) -> Response:
+        routes = request.app.routes
+        schema = self.get_schema(routes=routes)
+        return OpenAPIResponse(content=schema)
 
 
 class SchemaGenerator(BaseSchemaGenerator):

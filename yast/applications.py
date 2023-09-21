@@ -10,12 +10,13 @@ class Yast(object):
     def __init__(
         self,
         debug: bool = False,
+        routes: typing.List[BaseRoute] = None,
         template_directory: str = None,
         config: dict = None,
         **kwargs,
     ) -> None:
         self._debug = debug
-        self.router = Router(routes=[])
+        self.router = Router(routes=routes)
         self.app = self.router
         self.middleware_app = self.app
         self._register_fun_attr = {}
