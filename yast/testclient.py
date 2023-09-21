@@ -10,7 +10,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
 
-from yast.plugins.lifespan.middlewares import EventType as LifespanET
+from yast.plugins.lifespan.types import EventType as LifespanET
 from yast.websockets import WebSocketDisconnect
 
 
