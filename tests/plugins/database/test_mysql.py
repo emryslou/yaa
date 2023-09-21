@@ -34,9 +34,10 @@ notes = sqlalchemy.Table(
 app = Yast(
     plugins={
         "database": {
+            "enable_db_types": [{"db_type": "mysql"}],
             "middlewares": {
                 "database": dict(database_url=DATABASE_URL, rollback_on_shutdown=True)
-            }
+            },
         }
     }
 )
