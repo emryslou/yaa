@@ -58,7 +58,7 @@ class CORSMiddleware(object):
         )
 
         if allow_headers and "*" not in allow_headers:
-            preflight_headers["Access-Control-Allow-Headers"] = ",".join(allow_headers)
+            preflight_headers["Access-Control-Allow-Headers"] = ", ".join(allow_headers)
         if allow_credentials:
             preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
@@ -70,7 +70,7 @@ class CORSMiddleware(object):
 
         self.allow_methods = allow_methods
 
-        self.allow_headers = allow_headers
+        self.allow_headers = [h.lower() for h in allow_headers]
         self.allow_all_headers = "*" in allow_headers
 
         self.simple_headers = simple_headers
@@ -124,7 +124,7 @@ class CORSMiddleware(object):
         if self.allow_all_headers and req_headers is not None:
             headers["Access-Control-Allow-Headers"] = req_headers
         elif req_headers is not None:
-            for header in req_headers.split(","):
+            for header in [h.lower() for h in req_headers.split(",")]:
                 if header.strip() not in self.allow_headers:
                     failures.append("headers")
 

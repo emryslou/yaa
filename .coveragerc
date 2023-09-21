@@ -2,9 +2,13 @@
 exclude_also =
     def __repr__
 
+[tool:pytest]
+addopts = --cov-fail-under=99
+
 [run]
 # https://coverage.readthedocs.io/en/latest/source.html#
 omit = 
+    conftest.py
     tests/test_debug.py
     tools/*.py
-    conftest.py
+    private

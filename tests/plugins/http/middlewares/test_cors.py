@@ -53,7 +53,7 @@ def test_cors_specific_origin():
                 "middlewares": {
                     "cors": dict(
                         allow_origins=["https://ex.org"],
-                        allow_headers=["X-Example"],
+                        allow_headers=["X-Example", "Content-Type"],
                     )
                 }
             }
@@ -68,7 +68,7 @@ def test_cors_specific_origin():
     headers = {
         "Origin": "https://ex.org",
         "Access-Control-Request-Method": "GET",
-        "Access-Control-Request-Headers": "X-Example",
+        "Access-Control-Request-Headers": "X-Example, Content-Type",
     }
     res = client.options("/", headers=headers)
     assert res.status_code == 200
@@ -76,7 +76,7 @@ def test_cors_specific_origin():
     assert "access-control-allow-origin" in res.headers
     assert res.headers["access-control-allow-origin"] == "https://ex.org"
     assert "access-control-allow-headers" in res.headers
-    assert res.headers["access-control-allow-headers"] == "X-Example"
+    assert res.headers["access-control-allow-headers"] == "X-Example, Content-Type"
 
     headers = {"Origin": "https://ex.org"}
     res = client.get("/", headers=headers)
@@ -128,7 +128,8 @@ def test_cors_allow_origin_regex():
             "http": {
                 "middlewares": {
                     "cors": dict(
-                        allow_headers=["X-Example"], allow_origin_regex="https://*"
+                        allow_headers=["X-Example", "Content-Type"],
+                        allow_origin_regex="https://*",
                     )
                 }
             }
@@ -158,13 +159,13 @@ def test_cors_allow_origin_regex():
     headers = {
         "Origin": "https://another.com",
         "Access-Control-Request-Method": "GET",
-        "Access-Control-Request-Headers": "X-Example",
+        "Access-Control-Request-Headers": "X-Example, Content-Type",
     }
     response = client.options("/", headers=headers)
     assert response.status_code == 200
     assert response.text == "OK"
     assert response.headers["access-control-allow-origin"] == "https://another.com"
-    assert response.headers["access-control-allow-headers"] == "X-Example"
+    assert response.headers["access-control-allow-headers"] == "X-Example, Content-Type"
     # Test disallowed pre-flight response
     headers = {
         "Origin": "http://another.com",
