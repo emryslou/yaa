@@ -10,6 +10,9 @@ from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 
 def req_method_content_length_eq_0(headers: list) -> list:
+    import warnings
+
+    warnings.warn("Code Opt: Too ugly, need to find some better way to solve it")
     raw_headers = headers
     headers = []
 

@@ -82,7 +82,7 @@ class Response(object):
             missing_content_type = b"content-type" not in keys
 
         body = getattr(self, "body", b"")
-        if body and missing_content_length:
+        if not self.send_header_only and body and missing_content_length:
             raw_headers.append((b"content-length", str(len(body)).encode("latin-1")))
 
         content_type = self.media_type
@@ -168,11 +168,15 @@ class StreamingResponse(Response):
         headers: dict = None,
         media_type: str = None,
         background: BackgroundTask = None,
+        method: str = None,
     ) -> None:
         self.body_iter = content
         self.status_code = status_code
         self.media_type = self.media_type if media_type is None else media_type
         self.background = background
+        self.send_header_only = (
+            method.upper() in ("HEAD") if method is not None else False
+        )
         self.init_headers(headers)
 
     async def __call__(self, receive: Receive, send: Send):
