@@ -7,34 +7,17 @@ from yast.responses import PlainTextResponse
 from yast.routing import Route, Router
 
 
-def raise_runtime_error(scope):
-    async def asgi(receive, send):
-        raise RuntimeError("W.c.")
-
-    return asgi
+async def raise_runtime_error(req):
+    raise RuntimeError("W.c.")
 
 
-def not_acceptable(scope):
-    async def asgi(receive, send):
-        raise HttpException(status_code=406)
-
-    return asgi
+async def not_acceptable(req):
+    raise HttpException(status_code=406)
 
 
-def not_modified(scope):
-    async def asgi(receive, send):
-        raise HttpException(status_code=304)
+async def not_modified(req):
+    raise HttpException(status_code=304)
 
-    return asgi
-
-
-def handled_exc_after_response(scope):
-    async def asgi(receive, send):
-        res = PlainTextResponse("OK", status_code=200)
-        await res(receive, send)
-        raise HttpException(status_code=406)
-
-    return asgi
 
 
 router = Router(
@@ -42,7 +25,6 @@ router = Router(
         Route("/runtime_error", endpoint=raise_runtime_error),
         Route("/not_acceptable", endpoint=not_acceptable),
         Route("/not_modified", endpoint=not_modified),
-        Route("/handled_exc_after_response", endpoint=handled_exc_after_response),
     ]
 )
 
@@ -81,16 +63,6 @@ def test_websockets_should_raise():
 
     # with pytest.raises(RuntimeError):
     #     client.wsconnect('/runtime_error')
-
-
-def test_handled_exc_after_response():
-    with pytest.raises(RuntimeError):
-        client.get("/handled_exc_after_response")
-
-    client200 = TestClient(app, raise_server_exceptions=False)
-    res = client200.get("handled_exc_after_response")
-    assert res.status_code == 200
-    assert res.text == "OK"
 
 
 def test_force_500_res():

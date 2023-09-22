@@ -46,15 +46,12 @@ class GraphQLApp(object):
             self.executor_class = None
             self.is_async = isinstance(executor, AsyncioExecutor)
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        return functools.partial(self.asgi, scope=scope)
-
-    async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.executor is None and self.executor_class is not None:
             self.executor = self.executor_class()
         req = Request(scope=scope, receive=receive)
         res = await self.handler(req)
-        await res(receive, send)
+        await res(scope, receive, send)
 
     async def handler(self, req: Request) -> Response:
         if req.method in ("GET", "HEAD"):

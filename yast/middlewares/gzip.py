@@ -10,17 +10,18 @@ class GZipMiddleware(object):
         self.app = app
         self.minimum_size = minimum_size
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
             headers = Headers(scope=scope)
             if "gzip" in headers.get("Accept-Encoding", ""):
-                return GZipResponder(self.app, scope, self.minimum_size)
-        return self.app(scope)
+                await GZipResponder(self.app, self.minimum_size)(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
 
 
 class GZipResponder(object):
-    def __init__(self, app: ASGIApp, scope: Scope, minimum_size: int) -> None:
-        self.inner = app(scope)
+    def __init__(self, app: ASGIApp, minimum_size: int) -> None:
+        self.inner = app
         self.minimum_size = minimum_size
         self.send = unattached_send
         self.init_message = {}
@@ -28,9 +29,9 @@ class GZipResponder(object):
         self.gzip_buffer = io.BytesIO()
         self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer)
 
-    async def __call__(self, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         self.send = send
-        await self.inner(receive, self._send)
+        await self.inner(scope, receive, self._send)
 
     async def _send(self, message: Message):
         if message["type"] == "http.response.start":

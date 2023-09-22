@@ -18,14 +18,11 @@ FORCE_MULTIPART = ForceMultipartDict()
 def test_request_url():
     """test"""
 
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            data = {"method": request.method, "url": str(request.url)}
-            response = JSONResponse(data)
-            await response(recv, send)
-
-        return asgi
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        data = {"method": request.method, "url": str(request.url)}
+        response = JSONResponse(data)
+        await response(scope, recv, send)
 
     client = TestClient(app)
     res = client.get("/path/to/page?a=abc")
@@ -36,14 +33,12 @@ def test_request_url():
 
 
 def test_request_query_params():
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            data = {"params": dict(request.query_params)}
-            response = JSONResponse(data)
-            await response(recv, send)
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        data = {"params": dict(request.query_params)}
+        response = JSONResponse(data)
+        await response(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
     res = client.get("/path/to/page?a=abc")
@@ -51,13 +46,10 @@ def test_request_query_params():
 
 
 def test_request_headers():
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            response = JSONResponse({"headers": dict(request.headers)})
-            await response(recv, send)
-
-        return asgi
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        response = JSONResponse({"headers": dict(request.headers)})
+        await response(scope, recv, send)
 
     client = TestClient(app)
     res = client.get("/path/to/page?a=abc", headers={"host": "abc.com"})
@@ -73,14 +65,12 @@ def test_request_headers():
 
 
 def test_request_body():
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            body = await request.body()
-            response = JSONResponse({"body": body.decode()})
-            await response(recv, send)
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        body = await request.body()
+        response = JSONResponse({"body": body.decode()})
+        await response(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
     res = client.get("/")
@@ -94,14 +84,12 @@ def test_request_body():
 
 
 def test_request_json():
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            body = await request.json()
-            response = JSONResponse({"json": body})
-            await response(recv, send)
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        body = await request.json()
+        response = JSONResponse({"json": body})
+        await response(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
 
@@ -110,16 +98,14 @@ def test_request_json():
 
 
 def test_request_stream():
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            body = b""
-            async for chunk in request.stream():
-                body += chunk
-            response = JSONResponse({"body": body.decode()})
-            await response(recv, send)
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        body = b""
+        async for chunk in request.stream():
+            body += chunk
+        response = JSONResponse({"body": body.decode()})
+        await response(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
     res = client.get("/")
@@ -133,19 +119,17 @@ def test_request_stream():
 
 
 def test_request_body_then_stream():
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
 
-            body = await request.body()
+        body = await request.body()
 
-            chunks = b""
-            async for chunk in request.stream():
-                chunks += chunk
-            response = JSONResponse({"body": body.decode(), "stream": chunks.decode()})
-            await response(recv, send)
+        chunks = b""
+        async for chunk in request.stream():
+            chunks += chunk
+        response = JSONResponse({"body": body.decode(), "stream": chunks.decode()})
+        await response(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
     res = client.post("/", data="1234")
@@ -155,20 +139,18 @@ def test_request_body_then_stream():
 def test_request_body_then_stream_err():
     """ """
 
-    def app(scope):
-        async def asgi(recv, send):
-            request = Request(scope, recv)
-            chunks = b""
-            async for chunk in request.stream():
-                chunks += chunk
-            try:
-                body = await request.body()
-            except RuntimeError:
-                body = b"<stream consumed>"
-            response = JSONResponse({"body": body.decode(), "stream": chunks.decode()})
-            await response(recv, send)
+    async def app(scope, recv, send):
+        request = Request(scope, recv)
+        chunks = b""
+        async for chunk in request.stream():
+            chunks += chunk
+        try:
+            body = await request.body()
+        except RuntimeError:
+            body = b"<stream consumed>"
+        response = JSONResponse({"body": body.decode(), "stream": chunks.decode()})
+        await response(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
     res = client.post("/", data="1234")
@@ -176,14 +158,12 @@ def test_request_body_then_stream_err():
 
 
 def test_quest_relative_url():
-    def app(scope):
-        async def asgi(recv, send):
-            req = Request(scope, recv)
-            data = {"method": req.method, "relative_url": req.relative_url}
-            res = JSONResponse(data)
-            await res(recv, send)
+    async def app(scope, recv, send):
+        req = Request(scope, recv)
+        data = {"method": req.method, "relative_url": req.relative_url}
+        res = JSONResponse(data)
+        await res(scope, recv, send)
 
-        return asgi
 
     client = TestClient(app)
 
@@ -195,41 +175,34 @@ def test_quest_relative_url():
 
 
 def test_request_disconnect():
-    def app(scope):
-        async def asgi(recv, send):
-            req = Request(scope, recv)
-            await req.body()
+    async def app(scope, recv, send):
+        req = Request(scope, recv)
+        await req.body()
 
-        return asgi
 
     async def rev(*args, **kwargs):
         return {"type": "http.disconnect"}
 
     scope = {"method": "POST", "path": "/"}
 
-    asgi_call = app(scope)
-
     loop = asyncio.get_event_loop()
     with pytest.raises(ClientDisconnect):
-        loop.run_until_complete(asgi_call(rev, None))
+        loop.run_until_complete(app(scope, rev, None))
         assert True == 1
 
 
 def test_request_cookies():
     from yast.responses import PlainTextResponse, Response
 
-    def app(scope):
-        async def asgi(receive, send):
-            req = Request(scope, receive)
-            mycookie = req.cookie.get("my_cookie")
-            if mycookie:
-                res = PlainTextResponse(mycookie)
-            else:
-                res = PlainTextResponse("Hello, NoCookies")
-                res.set_cookie("my_cookie", "cooooooooooooookies")
-            await res(receive, send)
-
-        return asgi
+    async def app(scope, receive, send):
+        req = Request(scope, receive)
+        mycookie = req.cookie.get("my_cookie")
+        if mycookie:
+            res = PlainTextResponse(mycookie)
+        else:
+            res = PlainTextResponse("Hello, NoCookies")
+            res.set_cookie("my_cookie", "cooooooooooooookies")
+        await res(scope, receive, send)
 
     client = TestClient(app)
     res = client.get("/")
@@ -242,14 +215,12 @@ def test_request_cookies():
 
 
 def test_chunked_encoding():
-    def app(scope):
-        async def asgi(receive, send):
-            request = Request(scope, receive)
-            body = await request.body()
-            response = JSONResponse({"body": body.decode()})
-            await response(receive, send)
+    async def app(scope, receive, send):
+        request = Request(scope, receive)
+        body = await request.body()
+        response = JSONResponse({"body": body.decode()})
+        await response(scope, receive, send)
 
-        return asgi
 
     client = TestClient(app)
 
@@ -262,35 +233,31 @@ def test_chunked_encoding():
 
 
 def test_request_client():
-    def app(scope):
-        async def asgi(receive, send):
-            request = Request(scope, receive)
-            response = JSONResponse(
-                {"host": request.client.host, "port": request.client.port}
-            )
-            await response(receive, send)
+    async def app(scope, receive, send):
+        request = Request(scope, receive)
+        response = JSONResponse(
+            {"host": request.client.host, "port": request.client.port}
+        )
+        await response(scope, receive, send)
 
-        return asgi
 
     client = TestClient(app)
     response = client.get("/")
     assert response.json() == {"host": "testclient", "port": 50000}
 
 
-def app_read_body(scope):
-    async def asgi(receive, send):
-        request = Request(scope, receive)
-        # Read bytes, to force request.stream() to return the already parsed body
-        body_bytes = await request.body()
-        data = await request.form()
-        output = {}
-        for key, value in data.items():
-            output[key] = value
-        await request.close()
-        response = JSONResponse(output)
-        await response(receive, send)
+async def app_read_body(scope, receive, send):
+    request = Request(scope, receive)
+    # Read bytes, to force request.stream() to return the already parsed body
+    body_bytes = await request.body()
+    data = await request.form()
+    output = {}
+    for key, value in data.items():
+        output[key] = value
+    await request.close()
+    response = JSONResponse(output)
+    await response(scope, receive, send)
 
-    return asgi
 
 
 def test_urlencoded_multi_field_app_reads_body(tmpdir):
@@ -314,17 +281,15 @@ def test_request_is_disconnected():
     """
     disconnected_after_response = None
 
-    def app(scope):
-        async def asgi(receive, send):
-            nonlocal disconnected_after_response
-            request = Request(scope, receive)
-            await request.body()
-            disconnected = await request.is_disconnected()
-            response = JSONResponse({"disconnected": disconnected})
-            await response(receive, send)
-            disconnected_after_response = await request.is_disconnected()
+    async def app(scope, receive, send):
+        nonlocal disconnected_after_response
+        request = Request(scope, receive)
+        await request.body()
+        disconnected = await request.is_disconnected()
+        response = JSONResponse({"disconnected": disconnected})
+        await response(scope, receive, send)
+        disconnected_after_response = await request.is_disconnected()
 
-        return asgi
 
     client = TestClient(app)
     response = client.get("/")
@@ -333,14 +298,12 @@ def test_request_is_disconnected():
 
 
 def test_request_state():
-    def app(scope):
-        async def asgi(receive, send):
-            request = Request(scope, receive)
-            request.state.example = "abc"
-            response = JSONResponse({"state.example": request["state"].example})
-            await response(receive, send)
+    async def app(scope, receive, send):
+        request = Request(scope, receive)
+        request.state.example = "abc"
+        response = JSONResponse({"state.example": request["state"].example})
+        await response(scope, receive, send)
 
-        return asgi
 
     client = TestClient(app)
     response = client.get("/123?a=abc")

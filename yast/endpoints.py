@@ -11,19 +11,29 @@ from yast.responses import PlainTextResponse, Response
 from yast.types import Message, Receive, Scope, Send
 from yast.websockets import WebSocket
 
+class _Endpoint(object):
+    _type = ''
+    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        assert scope["type"] == self._type
+        self._scope = scope
+        self._receive = receive
+        self._send = send
+    
+    def __await__(self) -> typing.Generator:
+        return self.dispatch().__await__()
+    
+    async def dispatch(self) -> None:
+        raise NotImplementedError()
 
-class HttpEndPoint(object):
-    def __init__(self, scope: Scope) -> None:
-        assert scope["type"] == "http"
-        self.scope = scope
 
-    async def __call__(self, receive: Receive, send: Send) -> None:
-        req = Request(self.scope, receive)
-        res = await self.dispatch(req)
+class HttpEndPoint(_Endpoint):
+    _type = 'http'
+    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        super().__init__(scope, receive, send)
 
-        await res(receive, send)
+    async def dispatch(self) -> None:
+        req = Request(self._scope, receive=self._receive)
 
-    async def dispatch(self, req: Request) -> Response:
         handler_name = "get" if req.method == "HEAD" else req.method.lower()
         handler = getattr(self, handler_name, self.method_not_allowed)
 
@@ -31,7 +41,8 @@ class HttpEndPoint(object):
             res = await handler(req)
         else:
             res = await run_in_threadpool(handler, req)
-        return res
+        
+        await res(self._scope, self._receive, self._send)
 
     async def method_not_allowed(self, req: Request):
         if "app" in self.scope:
@@ -39,17 +50,17 @@ class HttpEndPoint(object):
         return PlainTextResponse("Method Not Allowed", 405)
 
 
-class WebSocketEndpoint(object):
+class WebSocketEndpoint(_Endpoint):
+    _type = 'websocket'
     encoding = None  # 'text', 'bytes', 'json'
     ws: WebSocket = None
 
-    def __init__(self, scope: Scope) -> None:
-        assert scope["type"] == "websocket"
-        self.scope = scope
-
-    async def __call__(self, receive: Receive, send: Send) -> None:
-        self.ws = WebSocket(self.scope, receive, send)
-        kwargs = self.scope.get("kwargs", {})
+    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        super().__init__(scope, receive, send)
+    
+    async def dispatch(self) -> None:
+        self.ws = WebSocket(self._scope, self._receive, self._send)
+        kwargs = self._scope.get("kwargs", {})
         await self.on_connect(**kwargs)
 
         close_code = status.WS_1000_NORMAL_CLOSURE

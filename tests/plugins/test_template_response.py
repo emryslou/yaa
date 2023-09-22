@@ -7,24 +7,21 @@ from yast.testclient import TestClient
 
 
 def test_template_response():
-    def app(scope):
+    class Template:
+        def __init__(self, name):
+            self.name = name
+
+        def render(self, context):
+            return f"username: {context['username']}"
+    async def app(scope, receive, send):
         req = Request(scope=scope)
 
-        class Template:
-            def __init__(self, name):
-                self.name = name
+        template = Template("index.html")
+        context = {"username": "eml", "request": req}
 
-            def render(self, context):
-                return f"username: {context['username']}"
+        res = TemplateResponse(template=template, context=context)
+        await res(scope, receive, send)
 
-        async def asgi(receive, send):
-            template = Template("index.html")
-            context = {"username": "eml", "request": req}
-
-            res = TemplateResponse(template=template, context=context)
-            await res(receive, send)
-
-        return asgi
 
     client = TestClient(app)
     res = client.get("/")

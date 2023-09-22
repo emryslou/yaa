@@ -44,10 +44,10 @@ async def ws_ep(s):
 
 @app.route("/no_res")
 class NoResApp:
-    def __init__(self, scope):
+    def __init__(self, *args, **kwargs):
         pass
 
-    async def __call__(self, r, s):
+    async def __call__(self, scope, receive, send):
         pass
 
 

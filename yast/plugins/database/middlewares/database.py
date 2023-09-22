@@ -31,11 +31,12 @@ class DatabaseMiddleware(Middleware):
 
         return get_database_backend(database_url)
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "lifespan":
-            return DatabaseLifespan(
-                self.app, scope, startup=[self.startup], shutdown=[self.shutdown]
-            )
+            await DatabaseLifespan(
+                self.app, startup=[self.startup], shutdown=[self.shutdown]
+            )(scope, receive, send)
+            return
 
         if self.session is not None:
             session = self.session
@@ -44,7 +45,7 @@ class DatabaseMiddleware(Middleware):
 
         scope["database"] = session
 
-        return self.app(scope)
+        await self.app(scope, receive, send)
 
     async def startup(self) -> None:
         await self.backend.startup()
@@ -62,14 +63,14 @@ class DatabaseMiddleware(Middleware):
 
 
 class DatabaseLifespan(object):
-    def __init__(self, app: ASGIApp, scope: Scope, **handlers: typing.Callable) -> None:
-        self.inner = app(scope)
+    def __init__(self, app: ASGIApp, **handlers: typing.Callable) -> None:
+        self.inner = app
         self.handlers = {
             event_type: handlers.get(str(event_type), [])
             for event_type in list(EventType)
         }
 
-    async def __call__(self, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         _all_event_spans = {et.lifespan: et for et in list(EventType)}
 
         async def receiver() -> Message:
@@ -79,7 +80,7 @@ class DatabaseLifespan(object):
 
             return message
 
-        await self.inner(receiver, send)
+        await self.inner(scope, receiver, send)
 
     async def run_handlers(self, event_type: str) -> None:
         for handler in self.handlers.get(EventType(event_type), []):

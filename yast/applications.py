@@ -3,7 +3,7 @@ import typing
 from yast.datastructures import URLPath
 from yast.middlewares import BaseHttpMiddleware
 from yast.routing import BaseRoute, Router
-from yast.types import ASGIApp, ASGIInstance, Scope
+from yast.types import ASGIApp, Receive, Scope, Send
 
 
 class Yast(object):
@@ -21,7 +21,6 @@ class Yast(object):
         self.middleware_app = self.app
         self._register_fun_attr = {}
         self.config = {
-            "template_directory": template_directory,
             "plugins": {
                 "exceptions": {
                     "middlewares": {
@@ -140,6 +139,10 @@ class Yast(object):
     def url_path_for(self, name, **path_params: str) -> URLPath:
         return self.router.url_path_for(name=name, **path_params)
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    def __call__(
+            self,
+            scope: Scope,
+            receive: Receive, send: Send
+        ) -> None:
         scope["app"] = self
-        return self.middleware_app(scope)
+        return self.middleware_app(scope, receive, send)

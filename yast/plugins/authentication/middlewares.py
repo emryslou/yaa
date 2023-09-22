@@ -27,10 +27,11 @@ class AuthenticationMiddleware(Middleware):
         self.backend = backend
         self.on_error = on_error if on_error is not None else self.default_on_error
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket"):
-            return functools.partial(self.asgi, scope=scope)
-        return self.app(scope)
+            await self.asgi(scope=scope, receive=receive, send=send)
+        else:
+            await self.app(scope, receive=receive, send=send)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         conn = HttpConnection(scope=scope)
@@ -44,7 +45,7 @@ class AuthenticationMiddleware(Middleware):
                 await ws_close(receive, send)
             else:
                 res = self.on_error(conn, exc)
-                await res(receive, send)
+                await res(scope, receive, send)
 
             return
         if auth_result is None:
@@ -52,7 +53,7 @@ class AuthenticationMiddleware(Middleware):
 
         scope["auth"], scope["user"] = auth_result
 
-        await self.app(scope)(receive, send)
+        await self.app(scope, receive, send)
 
     @staticmethod
     def default_on_error(conn: HttpConnection, exc: Exception) -> Response:

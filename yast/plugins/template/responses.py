@@ -4,7 +4,7 @@ import typing
 from yast.background import BackgroundTask
 from yast.requests import Request
 from yast.responses import Response
-from yast.types import Receive, Send
+from yast.types import Receive, Scope, Send
 
 try:
     import jinja2
@@ -38,7 +38,7 @@ class TemplateResponse(Response):
             background=background,
         )
 
-    async def __call__(self, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         req = self.context["request"]
         assert isinstance(req, Request)
         extensions = req.get("extensions", {})
@@ -50,7 +50,7 @@ class TemplateResponse(Response):
                     "context": self.context,
                 }
             )
-        await super().__call__(receive, send)
+        await super().__call__(scope, receive, send)
 
 
 class Jinja2Template(object):

@@ -52,15 +52,14 @@ class WSGIMiddleware(object):
     def __init__(self, app: ASGIApp, workers: int = 10) -> None:
         self.app = app
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == "http"
-        return WSGIResponser(self.app, scope)
+        await WSGIResponser(self.app)(scope, receive, send)
 
 
 class WSGIResponser(object):
-    def __init__(self, app: ASGIApp, scope: Scope) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
-        self.scope = scope
         self.status = None
         self.response_headers = None
         self.send_event = asyncio.Event()
@@ -70,7 +69,7 @@ class WSGIResponser(object):
         self.exc_info = None
         self._running = True
 
-    async def __call__(self, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         body = b""
         more_body = True
         while more_body:
@@ -78,7 +77,7 @@ class WSGIResponser(object):
             body += message.get("body", b"")
             more_body = message.get("more_body", False)
 
-        environ = build_environ(self.scope, body)
+        environ = build_environ(scope, body)
         wsgi = run_in_threadpool(self.wsgi, environ, self.start_response)
 
         sender = self.loop.create_task(self.sender(send))

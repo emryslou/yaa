@@ -11,8 +11,8 @@ class Lifespan(BaseRoute):
     def __init__(self, **handlers: typing.List[typing.Callable]) -> None:
         self.handlers = {et: handlers.get(str(et), []) for et in list(EventType)}
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        return self.asgi
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.asgi(receive, send)
 
     async def asgi(self, receive: Receive, send: Send) -> None:
         """

@@ -6,11 +6,12 @@ import ujson as json
 from itsdangerous.exc import BadTimeSignature, SignatureExpired
 
 from yast.datastructures import MutableHeaders
+from yast.middlewares.core import Middleware
 from yast.requests import Request
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 
-class SessionMiddleware(object):
+class SessionMiddleware(Middleware):
     def __init__(
         self,
         app: ASGIApp,
@@ -28,7 +29,7 @@ class SessionMiddleware(object):
         if https_only:
             self.security_flags += "; secure"
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket"):
             req = Request(scope=scope)
             if self.session_cookie in req.cookie:
@@ -40,12 +41,11 @@ class SessionMiddleware(object):
                     scope["session"] = {}
             else:
                 scope["session"] = {}
-            return functools.partial(self.asgi, scope=scope)
-
-        return self.app(scope)
+            await self.asgi(scope=scope, receive=receive, send=send)
+        else:
+            await self.app(scope, receive, send)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
-        inner = self.app(scope)
         was_empty_session = not scope["session"]
 
         async def sender(message: Message) -> None:
@@ -74,4 +74,4 @@ class SessionMiddleware(object):
                     pass
             await send(message)
 
-        await inner(receive, sender)
+        await self.app(scope, receive, sender)

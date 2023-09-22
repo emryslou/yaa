@@ -32,10 +32,11 @@ class ServerErrorMiddleware(object):
         self.handler = handler
         self.debug = debug
 
-    def __call__(self, scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
-            return self.app(scope)
-        return functools.partial(self.asgi, scope=scope)
+            await self.app(scope, receive=receive, send=send)
+        else:
+            await self.asgi(scope=scope, receive=receive, send=send)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         res_start = False
@@ -53,7 +54,7 @@ class ServerErrorMiddleware(object):
             await send(msg)
 
         try:
-            await self.app(scope)(receive, _send)
+            await self.app(scope, receive, _send)
         except Exception as exc:
             if not res_start:
                 req = Request(scope=scope)
@@ -67,7 +68,7 @@ class ServerErrorMiddleware(object):
                     else:
                         res = await run_in_threadpool(self.handler, req, exc)
                 # endif
-                await res(receive, send)
+                await res(scope, receive, send)
             # endif
             raise exc from None
 

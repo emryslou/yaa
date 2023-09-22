@@ -1,13 +1,14 @@
 import typing
 
 from yast.datastructures import URL, Headers
+from yast.middlewares.core import Middleware
 from yast.responses import PlainTextResponse, RedirectResponse, Response
-from yast.types import ASGIApp, Scope
+from yast.types import ASGIApp, Receive, Scope, Send
 
 ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."
 
 
-class TrustedHostMiddleware(object):
+class TrustedHostMiddleware(Middleware):
     def __init__(
         self,
         app: ASGIApp,
@@ -23,7 +24,7 @@ class TrustedHostMiddleware(object):
         self.allow_any = "*" in self.allowed_hosts
         self.www_redirect = www_redirect
 
-    def __call__(self, scope: Scope) -> Response:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket") and not self.allow_any:
             headers = Headers(scope=scope)
             host = headers.get("host", "").split(":")[0]
@@ -41,7 +42,11 @@ class TrustedHostMiddleware(object):
                 if found_www_redirect and self.www_redirect:
                     url = URL(scope=scope)
                     redirect_url = url.replace(netloc="www." + url.netloc)
-                    return RedirectResponse(url=str(redirect_url))
-                return PlainTextResponse("Invalid host header", status_code=400)
+                    res = RedirectResponse(url=str(redirect_url))
+                else:
+                    res = PlainTextResponse("Invalid host header", status_code=400)
+                
+                await res(scope, receive, send)
+                return 
 
-        return self.app(scope)
+        await self.app(scope, receive, send)

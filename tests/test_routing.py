@@ -22,10 +22,6 @@ def users(req):
     return Response(content, media_type="text/plain")
 
 
-def staticfiles(req):
-    return Response("xxxx", media_type="image/ping")
-
-
 def http_endpoint(req):
     return Response("Hello, Http", media_type="text/plain")
 
@@ -42,7 +38,7 @@ app = Router(
                 ]
             ),
         ),
-        Mount("/static", app=staticfiles),
+        Mount("/static", app=Response("xxxx", media_type="image/png")),
     ]
 )
 
@@ -182,12 +178,8 @@ def test_url_for():
     )
 
 
-def ok(request):
-    return PlainTextResponse("OK")
-
-
 def test_mount_urls():
-    mounted = Router([Mount("/users", ok, name="users")])
+    mounted = Router([Mount("/users", PlainTextResponse("OK"), name="users")])
     client = TestClient(mounted)
     assert client.get("/users").status_code == 200
     assert client.get("/users").url == "http://testserver/users/"
@@ -197,9 +189,9 @@ def test_mount_urls():
 
 
 def test_reverse_mount_urls():
-    mounted = Router([Mount("/users", ok, name="users")])
+    mounted = Router([Mount("/users", PlainTextResponse("OK"), name="users")])
     assert mounted.url_path_for("users", path="/a") == "/users/a"
-    users = Router([Route("/{username}", ok, name="user")])
+    users = Router([Route("/{username}", PlainTextResponse("OK"), name="user")])
     mounted = Router([Mount("/{subpath}/users", users, name="users")])
     assert (
         mounted.url_path_for("users:user", subpath="test", username="tom")
@@ -309,12 +301,12 @@ def test_host_reverse_urls():
     )
 
 
-def subdomain_app(scope):
-    return JSONResponse({"subdomain": scope["path_params"]["subdomain"]})
+async def subdomain_app_(scope, receive, send):
+    await JSONResponse({"subdomain": scope["path_params"]["subdomain"]})(scope, receive, send)
 
 
 subdomain_app = Router(
-    routes=[Host("{subdomain}.example.org", app=subdomain_app, name="subdomains")]
+    routes=[Host("{subdomain}.example.org", app=subdomain_app_, name="subdomains")]
 )
 
 
@@ -356,6 +348,6 @@ def test_mount_routes():
 
 
 def test_mount_at_root():
-    mounted = Router([Mount("/", ok, name="users")])
+    mounted = Router([Mount("/", PlainTextResponse("OK"), name="users")])
     client = TestClient(mounted)
     assert client.get("/").status_code == 200

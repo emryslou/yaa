@@ -9,11 +9,9 @@ from yast.responses import JSONResponse
 
 
 def test_handler():
-    def app(scope):
-        async def asgi(rec, send):
-            raise RuntimeError("Some error happens")
+    async def app(scope, receive, send):
+        raise RuntimeError("Some error happens")
 
-        return asgi
 
     def error_500(req, exc):
         return JSONResponse({"detail": "Srv Err"}, status_code=500)
@@ -26,11 +24,9 @@ def test_handler():
 
 
 def test_debug_text():
-    def app(scope):
-        async def asgi(rec, send):
-            raise RuntimeError("Some error happens")
+    async def app(scope, receive, send):
+        raise RuntimeError("Some error happens")
 
-        return asgi
 
     app = ServerErrorMiddleware(app, debug=True)
     client = TestClient(app, raise_server_exceptions=False)
@@ -41,11 +37,9 @@ def test_debug_text():
 
 
 def test_debug_html():
-    def app(scope):
-        async def asgi(rec, send):
-            raise RuntimeError("Some error happens")
+    async def app(scope, receive, send):
+        raise RuntimeError("Some error happens")
 
-        return asgi
 
     app = ServerErrorMiddleware(app, debug=True)
     client = TestClient(app, raise_server_exceptions=False)
@@ -57,7 +51,7 @@ def test_debug_html():
 
 
 def test_error_during_scope():
-    def app(scope):
+    async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
     app = ServerErrorMiddleware(app, debug=True)
@@ -73,12 +67,12 @@ def test_debug_not_http():
     DebugMiddleware should just pass through any non-http messages as-is.
     """
 
-    def app(scope):
+    async def app(scope, receive, send):
         raise RuntimeError("Something went wrong")
 
     app = ServerErrorMiddleware(app)
     with pytest.raises(RuntimeError):
-        app({"type": "websocket"})
+        app({"type": "websocket"}, None, None)
 
 
 def test_req_method_head_content_length_eq_0():

@@ -68,7 +68,9 @@ class BaseRoute(object):
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
         raise NotImplementedError()  # pragma: nocover
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(
+            self, scope: Scope, receive: Receive, send: Send
+        ) -> None:
         raise NotImplementedError()  # pragma: nocover
 
     def __str__(self) -> str:
@@ -136,13 +138,18 @@ class Route(BaseRoute):
         )
         return URLPath(protocol="http", path=path)
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(
+            self,
+            scope: Scope,
+            receive: Receive, send: Send
+        ) -> None:
         if self.methods and scope["method"] not in self.methods:
             if "app" in scope:
                 raise HttpException(status_code=405)
-            return PlainTextResponse("Method Not Allowed", 405)
-
-        return self.app(scope)
+            res = PlainTextResponse("Method Not Allowed", 405)
+            await res(scope, receive=receive, send=send)
+        else:
+            await self.app(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -196,8 +203,12 @@ class WebSocketRoute(BaseRoute):
         assert not remaining_params
         return URLPath(protocol="websocket", path=path)
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        return self.app(scope)
+    async def __call__(
+            self,
+            scope: Scope,
+            receive: Receive, send: Send
+        ) -> None:
+        await self.app(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -286,8 +297,8 @@ class Mount(BaseRoute):
 
         raise NoMatchFound()
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        return self.app(scope)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -352,8 +363,10 @@ class Host(BaseRoute):
         # endelse
         raise NoMatchFound()
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        return self.app(scope)
+    async def __call__(
+            self, scope: Scope, receive: Receive, send: Send
+        ) -> None:
+        await self.app(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -430,13 +443,14 @@ class Router(object):
         instance = WebSocketRoute(path, name=name, endpoint=route)
         self.routes.append(instance)
 
-    def not_found(self, scope: Scope) -> ASGIInstance:
+    async def not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "websocket":
-            return WebSocketClose()
+            await WebSocketClose()(receive, send)
+            return
 
         if "app" in scope:
             raise HttpException(status_code=404)
-        return PlainTextResponse("Not Found", 404)
+        await PlainTextResponse("Not Found", 404)(scope, receive, send)
 
     def url_path_for(self, name: str, **path_params) -> URLPath:
         for route in self.routes:
@@ -455,7 +469,10 @@ class Router(object):
     def lifespan(self, lifespan):
         self._lifespan = lifespan
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(
+            self, scope: Scope,
+            receive: Receive, send: Send
+        ) -> None:
         assert scope["type"] in ("http", "websocket", "lifespan")
 
         if "router" not in scope:
@@ -467,14 +484,16 @@ class Router(object):
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
                 scope.update(child_scope)
-                return route(scope)
+                await route(scope, receive=receive, send=send)
+                return
             elif match == Match.PARTIAL and partial is None:
                 partial = route
                 partial_scope = child_scope
 
         if partial is not None:
             scope.update(partial_scope)
-            return partial(scope)
+            await partial(scope, receive=receive, send=send)
+            return
 
         if scope["type"] == "http" and self.redirect_slashes:
             if not scope["path"].endswith("/"):
@@ -485,12 +504,15 @@ class Router(object):
                     match, child_scope = route.matches(redirect_scope)
                     if match != Match.NONE:
                         redirect_url = URL(scope=redirect_scope)
-                        return RedirectResponse(url=str(redirect_url))
+                        res = RedirectResponse(url=str(redirect_url))
+                        await res(scope=scope, receive=receive, send=send)
+                        return
 
         if self._lifespan is not None and scope["type"] == "lifespan":
-            return self._lifespan(scope)
+            await self._lifespan(scope, receive=receive, send=send)
+            return
 
-        return self.default(scope)
+        await self.default(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, Router) and self.routes == other.routes
@@ -500,36 +522,33 @@ class ProtocalRouter(object):
     def __init__(self, protocals: typing.Dict[str, ASGIApp]) -> None:
         self.protocals = protocals
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
-        return self.protocals[scope["type"]](scope)
+    async def __call__(
+            self,
+            scope: Scope,
+            receive: Receive, send: Send
+        ) -> None:
+        await self.protocals[scope["type"]](scope, receive=receive, send=send)
 
 
 def req_res(func: typing.Callable):
     is_coroutine = iscoroutinefunction(func)
 
-    def app(scope: Scope) -> ASGIInstance:
-        async def awaitable(recv: Receive, send: Send) -> None:
-            req = Request(scope, recv)
-            # kwargs = scope.get("kwargs", {})
-            if is_coroutine:
-                res = await func(req)
-            else:
-                res = await run_in_threadpool(func, req)
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        req = Request(scope, receive)
+        if is_coroutine:
+            res = await func(req)
+        else:
+            res = await run_in_threadpool(func, req)
 
-            await res(recv, send)
-
-        return awaitable
+        await res(scope, receive, send)
 
     return app
 
 
 def ws_session(func: typing.Callable):
-    def app(scope: Scope) -> ASGIInstance:
-        async def awaitable(recv: Receive, send: Send) -> None:
-            session = WebSocket(scope, recv, send)
-            await func(session)
-
-        return awaitable
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        session = WebSocket(scope, receive, send)
+        await func(session)
 
     return app
 

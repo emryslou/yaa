@@ -3,6 +3,7 @@ import re
 import typing
 
 from yast.datastructures import Headers, MutableHeaders
+from yast.middlewares.core import Middleware
 from yast.responses import PlainTextResponse, Response
 from yast.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -16,7 +17,7 @@ ALL_METHODS = (
 )
 
 
-class CORSMiddleware(object):
+class CORSMiddleware(Middleware):
     def __init__(
         self,
         app: ASGIApp,
@@ -76,7 +77,7 @@ class CORSMiddleware(object):
         self.simple_headers = simple_headers
         self.preflight_headers = preflight_headers
 
-    def __call__(self, scope: Scope) -> Response:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
             method = scope["method"]
             headers = Headers(scope=scope)
@@ -84,15 +85,17 @@ class CORSMiddleware(object):
 
             if origin is not None:
                 if method == "OPTIONS" and "access-control-request-method" in headers:
-                    return self.preflight_response(headers)
+                    await self.preflight_response(headers)(scope, receive, send)
                 else:
-                    return functools.partial(
-                        self.simple_response,
+                    await self.simple_response(
                         scope=scope,
+                        receive=receive, send=send,
                         origin=origin,
                         request_headers=headers,
                     )
-        return self.app(scope)
+                return
+        
+        await self.app(scope, receive, send)
 
     def is_allowed_origin(self, origin: str) -> bool:
         if self.allow_all_origins:
@@ -142,9 +145,8 @@ class CORSMiddleware(object):
         origin=None,
         request_headers=None,
     ):
-        inner = self.app(scope)
         send = functools.partial(self.send, send=send, request_headers=request_headers)
-        await inner(receive, send)
+        await self.app(scope, receive, send)
 
     async def send(self, message: Message, send: Send, request_headers=None) -> None:
         if message["type"] != "http.response.start":

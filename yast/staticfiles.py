@@ -83,16 +83,20 @@ class StaticFiles(object):
         # endif
         return directories
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == "http"
 
         if scope["method"] not in ("GET", "HEAD"):
-            return PlainTextResponse("Method Not Allowed", status_code=405)
+            res = PlainTextResponse("Method Not Allowed", status_code=405)
+            await res(scope=scope, receive=receive, send=send)
+            return 
 
         path = os.path.normpath(os.path.join(*scope["path"].split("/")))
         if path.startswith(".."):
-            return PlainTextResponse("Not Found", status_code=404)
-        return functools.partial(self.asgi, scope=scope, path=path)
+            res = PlainTextResponse("Not Found", status_code=404)
+            await res(scope=scope, receive=receive, send=send)
+            return 
+        await self.asgi(scope=scope, receive=receive, send=send, path=path)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope, path: str) -> None:
         if not self.config_checked:
@@ -103,7 +107,7 @@ class StaticFiles(object):
         headers = Headers(scope=scope)
         res = await self.get_response(path, method, headers)
 
-        await res(receive, send)
+        await res(scope, receive=receive, send=send)
 
     async def get_response(
         self, path: str, method: str, request_headers: Headers

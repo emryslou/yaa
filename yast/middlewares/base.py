@@ -18,26 +18,24 @@ class BaseHttpMiddleware(Middleware):
         self.app = app
         self.dispatch_func = dispatch if dispatch is not None else self.dispath
 
-    def __call__(self, scope: Scope) -> ASGIInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
-            return self.app(scope)
+            await self.app(scope, receive, send)
+            return
 
-        return functools.partial(self.asgi, scope=scope)
-
-    async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         req = Request(scope, receive=receive)
         res = await self.dispatch_func(req, self.call_next)
-        await res(receive, send)
+        await res(scope, receive, send)
+        
 
     async def call_next(self, req: Request) -> ASGIInstance:
-        inner = self.app(dict(req))
 
         loop = asyncio.get_event_loop()
         queue = asyncio.Queue()
 
         async def coro() -> None:
             try:
-                await inner(req._receive, queue.put)
+                await self.app(dict(req), req._receive, queue.put)
             finally:
                 await queue.put(None)
 
