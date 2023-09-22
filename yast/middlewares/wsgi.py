@@ -10,7 +10,7 @@ from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
 def build_environ(scope: Scope, body: bytes) -> dict:
     environ = {
         "REQUEST_METHOD": scope["method"],
-        "SCRIPT_NAME": "",
+        "SCRIPT_NAME": scope.get("root_path", ""),
         "PATH_INFO": scope["path"],
         "QUERY_STRING": scope["query_string"].decode("ascii"),
         "SERVER_PROTOCOL": "HTTP/%s" % scope["http_version"],

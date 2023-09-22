@@ -59,10 +59,10 @@ def test_config(tmpdir):
     assert repr(secrect) == "Secret('********')"
     assert str(secrect) == "abcd123"
 
-    assert config.get('EE01') == '1'
-    assert config.get('EE01', cast=bool) == True
-    assert config.get('FF01') == '0'
-    assert config.get('FF01', cast=bool) == False
+    assert config.get("EE01") == "1"
+    assert config.get("EE01", cast=bool) == True
+    assert config.get("FF01") == "0"
+    assert config.get("FF01", cast=bool) == False
 
 
 def test_no_env_file(tmpdir):
