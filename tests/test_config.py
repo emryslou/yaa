@@ -14,6 +14,8 @@ def test_config(tmpdir):
         file.write("BB = 12\n")
         file.write("CC = true\n")
         file.write("DD = false\n")
+        file.write("EE01 = 1\n")
+        file.write("FF01 = 0\n")
         file.write("PASSWD = abcd123")
 
     config = Config(path, environ={"DEBUG": "true"})
@@ -56,6 +58,11 @@ def test_config(tmpdir):
     secrect = config.get("PASSWD", cast=Secret)
     assert repr(secrect) == "Secret('********')"
     assert str(secrect) == "abcd123"
+
+    assert config.get('EE01') == '1'
+    assert config.get('EE01', cast=bool) == True
+    assert config.get('FF01') == '0'
+    assert config.get('FF01', cast=bool) == False
 
 
 def test_no_env_file(tmpdir):

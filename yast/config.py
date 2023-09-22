@@ -108,7 +108,9 @@ class Config(object):
         elif cast is bool and isinstance(value, str):
             _bool_map = {
                 "true": True,
+                "1": True,
                 "false": False,
+                "0": False,
             }
             if value not in _bool_map:
                 raise ValueError(
