@@ -8,21 +8,6 @@ from yast.responses import HTMLResponse, PlainTextResponse, Response
 from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
-def req_method_content_length_eq_0(headers: list) -> list:
-    import warnings
-
-    warnings.warn("Code Opt: Too ugly, need to find some better way to solve it")
-    raw_headers = headers
-    headers = []
-
-    for header_name, header_value in raw_headers:
-        if b"content-length" == header_name:
-            header_value = b"0"
-        headers.append((header_name, header_value))
-
-    return headers
-
-
 class ServerErrorMiddleware(object):
     def __init__(
         self, app: ASGIApp, handler: typing.Callable = None, debug: bool = False
@@ -45,10 +30,10 @@ class ServerErrorMiddleware(object):
 
             if msg["type"] == "http.response.start":
                 res_start = True
-                if scope["method"].upper() == "HEAD":
-                    msg["headers"] = req_method_content_length_eq_0(
-                        msg.get("headers", [])
-                    )
+                # if scope["method"].upper() == "HEAD":
+                #     msg["headers"] = req_method_content_length_eq_0(
+                #         msg.get("headers", [])
+                #     )
 
             await send(msg)
 

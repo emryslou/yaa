@@ -124,7 +124,7 @@ class StaticFiles(object):
         if stat_result is None or not os.path.isfile(full_path):
             return PlainTextResponse("Not Found", status_code=404)
 
-        res = FileResponse(full_path, stat_result=stat_result, method=method)
+        res = FileResponse(full_path, stat_result=stat_result)
         if self.is_not_modified(res.headers, request_headers):
             return NotModifiedResponse(res.headers)
 

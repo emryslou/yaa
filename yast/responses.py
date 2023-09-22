@@ -36,16 +36,12 @@ class Response(object):
         headers: dict = None,
         media_type: str = None,
         background: BackgroundTask = None,
-        method: str = None,
     ) -> None:
         self.body = b"" if content is None else self.render(content)
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
         self.background = background
-        self.send_header_only = (
-            method.upper() in ("HEAD") if method is not None else False
-        )
         self.init_headers(headers)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -53,14 +49,32 @@ class Response(object):
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": [
-                    [key.encode(), self.headers[key].encode()] for key in self.headers
-                ],
+                "headers": self.get_send_headers(scope),
             }
         )
-        await send({"type": "http.response.body", "body": self.body})
+        if scope["method"] not in ("HEAD"):
+            await send({"type": "http.response.body", "body": self.body})
+        else:
+            await send({"type": "http.response.body"})
+
         if self.background is not None:
             await self.background()
+
+    def get_send_headers(self, scope: Scope):
+        _headers = []
+        for key in self.headers:
+            if scope["method"] in ("HEAD"):
+                if key.encode().lower() == b"content-length":
+                    value = b"0"
+                else:
+                    value = self.headers[key]
+            else:
+                value = self.headers[key]
+            if isinstance(value, bytes):
+                value = value.decode()
+            _headers.append([key.encode(), value.encode()])
+
+        return _headers
 
     def render(self, content: typing.Any) -> bytes:
         if isinstance(content, bytes):
@@ -82,7 +96,7 @@ class Response(object):
             missing_content_type = b"content-type" not in keys
 
         body = getattr(self, "body", b"")
-        if not self.send_header_only and body and missing_content_length:
+        if body and missing_content_length:
             raw_headers.append((b"content-length", str(len(body)).encode("latin-1")))
 
         content_type = self.media_type
@@ -184,17 +198,18 @@ class StreamingResponse(Response):
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": [
-                    [key.encode(), self.headers[key].encode()] for key in self.headers
-                ],
+                "headers": self.get_send_headers(scope),
             }
         )
 
-        async for chunk in self.body_iter:
-            if not isinstance(chunk, bytes):
-                chunk = chunk.encode(self.charset)
-            await send({"type": "http.response.body", "body": chunk, "more_body": True})
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
+        if scope["method"] not in ("HEAD"):
+            async for chunk in self.body_iter:
+                if not isinstance(chunk, bytes):
+                    chunk = chunk.encode(self.charset)
+                await send(
+                    {"type": "http.response.body", "body": chunk, "more_body": True}
+                )
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
         if self.background is not None:
             await self.background()
 
@@ -212,13 +227,12 @@ class FileResponse(Response):
         background: BackgroundTask = None,
         filename: str = None,
         stat_result: os.stat_result = None,
-        method: str = None,
+        # method: str = None,
     ) -> None:
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
         self.status_code = 200
         self.filename = filename
-        self.send_header_only = method is not None and method.upper() == "HEAD"
         if media_type is None:
             media_type = guess_type(filename or path)[0] or "text/plain"
 
@@ -236,8 +250,6 @@ class FileResponse(Response):
     def set_stat_headers(self, stat_result: os.stat_result):
         stat_headers = self.get_stat_headers(stat_result)
         for _name, _value in stat_headers.items():
-            if self.send_header_only and _name == "content-length":
-                continue
             self.headers.setdefault(_name, _value)
 
     @classmethod
@@ -268,10 +280,10 @@ class FileResponse(Response):
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": self.raw_headers,
+                "headers": self.get_send_headers(scope),
             }
         )
-        if self.send_header_only:
+        if scope["method"] in ("HEAD"):
             await send({"type": "http.response.body"})
         else:
             async with aiofiles.open(self.path, mode="rb") as file:
