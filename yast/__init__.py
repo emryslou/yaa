@@ -1,4 +1,4 @@
-__version__ = "0.2.5"
+__version__ = "0.3.0"
 __description__ = "yet another startlette as yast"
 
 __all__ = ["Yast", "TestClient"]

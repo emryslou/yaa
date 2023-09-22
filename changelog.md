@@ -1,3 +1,5 @@
+# v0.3.0
+
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
 2. database support: mysql
