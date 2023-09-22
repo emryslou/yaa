@@ -227,7 +227,7 @@ class Mount(BaseRoute):
 
         self.name = name
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(
-            path + "/{path:path}"
+            self.path + "/{path:path}"
         )
 
     @property

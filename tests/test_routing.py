@@ -353,3 +353,9 @@ def test_mount_routes():
 
     with pytest.raises(AssertionError):
         app = Router([Mount("/mount")])
+
+
+def test_mount_at_root():
+    mounted = Router([Mount("/", ok, name="users")])
+    client = TestClient(mounted)
+    assert client.get("/").status_code == 200
