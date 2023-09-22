@@ -16,7 +16,12 @@ from email.utils import parsedate
 from aiofiles.os import stat as aio_stat
 
 from yast.datastructures import Headers
-from yast.responses import FileResponse, PlainTextResponse, Response
+from yast.responses import (
+    FileResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
 from yast.types import Receive, Scope, Send
 
 
@@ -47,11 +52,13 @@ class StaticFiles(object):
         *,
         directory: str = None,
         packages: typing.List[str] = None,
+        html: bool = False,
         check_dir: bool = True,
     ) -> None:
         self.directory = directory
         self.packages = packages
         self.all_directories = self.get_directories(directory, packages)
+        self.html = html
         self.config_checked = False
 
         if directory is not None and check_dir:
@@ -85,49 +92,76 @@ class StaticFiles(object):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == "http"
 
+        path = self.get_path(scope)
+        res = await self.get_response(path, scope)
+        await res(scope, receive=receive, send=send)
+
+    def get_path(self, scope: Scope) -> str:
+        return os.path.normpath(os.path.join(*scope["path"].split("/")))
+
+    async def get_response(
+        self,
+        path: str,
+        scope: Scope,
+    ) -> Response:
         if scope["method"] not in ("GET", "HEAD"):
-            res = PlainTextResponse("Method Not Allowed", status_code=405)
-            await res(scope=scope, receive=receive, send=send)
-            return
+            return PlainTextResponse("Method Not Allowed", status_code=405)
 
-        path = os.path.normpath(os.path.join(*scope["path"].split("/")))
         if path.startswith(".."):
-            res = PlainTextResponse("Not Found", status_code=404)
-            await res(scope=scope, receive=receive, send=send)
-            return
-        await self.asgi(scope=scope, receive=receive, send=send, path=path)
+            return PlainTextResponse("Not Found", status_code=404)
 
-    async def asgi(self, receive: Receive, send: Send, scope: Scope, path: str) -> None:
         if not self.config_checked:
             await self.check_config()
             self.config_checked = True
 
-        method = scope["method"]
-        headers = Headers(scope=scope)
-        res = await self.get_response(path, method, headers)
+        full_path, stat_result = await self.lookup_path(path)
+        if stat_result and stat.S_ISREG(stat_result.st_mode):
+            return self.file_response(full_path, stat_result, scope=scope)
 
-        await res(scope, receive=receive, send=send)
+        elif stat_result and stat.S_ISDIR(stat_result.st_mode) and self.html:
+            index_path = os.path.join(path, "index.html")
+            full_path, stat_result = await self.lookup_path(index_path)
+            if stat_result is not None and stat.S_ISREG(stat_result.st_mode):
+                if not scope["path"].endswith("/"):
+                    from yast.datastructures import URL
 
-    async def get_response(
-        self, path: str, method: str, request_headers: Headers
-    ) -> Response:
-        stat_result = None
+                    url = URL(scope=scope)
+                    url = url.replace(path=url.path + "/")
+                    return RedirectResponse(url)
+                return self.file_response(full_path, stat_result, scope)
+
+        if self.html:
+            full_path, stat_result = await self.lookup_path("404.html")
+            if stat_result is not None and stat.S_ISREG(stat_result.st_mode):
+                return self.file_response(full_path, stat_result, scope, 404)
+
+        return PlainTextResponse("Not Found", status_code=404)
+
+    async def lookup_path(
+        self, path: str
+    ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         for directory in self.all_directories:
             full_path = os.path.join(directory, path)
             try:
                 stat_result = await aio_stat(full_path)
+                return full_path, stat_result
             except FileNotFoundError:
                 pass
-            else:
-                break
 
-        if stat_result is None or not os.path.isfile(full_path):
-            return PlainTextResponse("Not Found", status_code=404)
+        return "", None
 
-        res = FileResponse(full_path, stat_result=stat_result)
-        if self.is_not_modified(res.headers, request_headers):
-            return NotModifiedResponse(res.headers)
+    def file_response(
+        self,
+        full_path: str,
+        stat_result: os.stat_result,
+        scope: Scope,
+        status_code: int = 200,
+    ) -> Response:
+        req_headers = Headers(scope=scope)
 
+        res = FileResponse(full_path, status_code=status_code, stat_result=stat_result)
+        if self.is_not_modified(res.headers, req_headers):
+            res = NotModifiedResponse(res.headers)
         return res
 
     def is_not_modified(

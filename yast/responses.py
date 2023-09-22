@@ -222,16 +222,16 @@ class FileResponse(Response):
     def __init__(
         self,
         path: str,
+        status_code: int = 200,
         headers: dict = None,
         media_type: str = None,
         background: BackgroundTask = None,
         filename: str = None,
         stat_result: os.stat_result = None,
-        # method: str = None,
     ) -> None:
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
-        self.status_code = 200
+        self.status_code = status_code
         self.filename = filename
         if media_type is None:
             media_type = guess_type(filename or path)[0] or "text/plain"
