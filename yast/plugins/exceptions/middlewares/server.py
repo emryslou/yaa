@@ -1,12 +1,11 @@
 import asyncio
-import functools
 import traceback
 import typing
 
 from yast.concurrency import run_in_threadpool
 from yast.requests import Request
 from yast.responses import HTMLResponse, PlainTextResponse, Response
-from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
+from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
 def req_method_content_length_eq_0(headers: list) -> list:

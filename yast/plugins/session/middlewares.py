@@ -1,4 +1,3 @@
-import functools
 from base64 import b64decode, b64encode
 
 import itsdangerous
@@ -8,7 +7,7 @@ from itsdangerous.exc import BadTimeSignature, SignatureExpired
 from yast.datastructures import MutableHeaders
 from yast.middlewares.core import Middleware
 from yast.requests import Request
-from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
+from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class SessionMiddleware(Middleware):

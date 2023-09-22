@@ -139,10 +139,6 @@ class Yast(object):
     def url_path_for(self, name, **path_params: str) -> URLPath:
         return self.router.url_path_for(name=name, **path_params)
 
-    def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
         return self.middleware_app(scope, receive, send)

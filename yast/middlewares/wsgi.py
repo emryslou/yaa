@@ -4,7 +4,7 @@ import sys
 import typing
 
 from yast.concurrency import run_in_threadpool
-from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
+from yast.types import ASGIApp, Receive, Scope, Send
 
 
 def build_environ(scope: Scope, body: bytes) -> dict:

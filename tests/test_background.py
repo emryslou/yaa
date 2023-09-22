@@ -74,7 +74,6 @@ def test_multiple_tasks():
         )
         await response(scope, receive, send)
 
-
     client = TestClient(app)
     response = client.get("/")
     assert response.text == "tasks initiated"

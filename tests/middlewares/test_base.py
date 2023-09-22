@@ -47,7 +47,10 @@ class NoResApp:
     def __init__(self, *args, **kwargs):
         pass
 
-    async def __call__(self, scope, receive, send):
+    def __await__(self) -> typing.Generator:
+        return self.__call__().__await__()
+
+    async def __call__(self):
         pass
 
 

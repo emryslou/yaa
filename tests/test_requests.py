@@ -39,7 +39,6 @@ def test_request_query_params():
         response = JSONResponse(data)
         await response(scope, recv, send)
 
-
     client = TestClient(app)
     res = client.get("/path/to/page?a=abc")
     assert res.json() == {"params": {"a": "abc"}}
@@ -71,7 +70,6 @@ def test_request_body():
         response = JSONResponse({"body": body.decode()})
         await response(scope, recv, send)
 
-
     client = TestClient(app)
     res = client.get("/")
     assert res.json() == {"body": ""}
@@ -90,7 +88,6 @@ def test_request_json():
         response = JSONResponse({"json": body})
         await response(scope, recv, send)
 
-
     client = TestClient(app)
 
     res = client.post("/", json={"a": "123"})
@@ -105,7 +102,6 @@ def test_request_stream():
             body += chunk
         response = JSONResponse({"body": body.decode()})
         await response(scope, recv, send)
-
 
     client = TestClient(app)
     res = client.get("/")
@@ -130,7 +126,6 @@ def test_request_body_then_stream():
         response = JSONResponse({"body": body.decode(), "stream": chunks.decode()})
         await response(scope, recv, send)
 
-
     client = TestClient(app)
     res = client.post("/", data="1234")
     assert res.json() == {"body": "1234", "stream": "1234"}
@@ -151,7 +146,6 @@ def test_request_body_then_stream_err():
         response = JSONResponse({"body": body.decode(), "stream": chunks.decode()})
         await response(scope, recv, send)
 
-
     client = TestClient(app)
     res = client.post("/", data="1234")
     assert res.json() == {"body": "<stream consumed>", "stream": "1234"}
@@ -163,7 +157,6 @@ def test_quest_relative_url():
         data = {"method": req.method, "relative_url": req.relative_url}
         res = JSONResponse(data)
         await res(scope, recv, send)
-
 
     client = TestClient(app)
 
@@ -178,7 +171,6 @@ def test_request_disconnect():
     async def app(scope, recv, send):
         req = Request(scope, recv)
         await req.body()
-
 
     async def rev(*args, **kwargs):
         return {"type": "http.disconnect"}
@@ -221,7 +213,6 @@ def test_chunked_encoding():
         response = JSONResponse({"body": body.decode()})
         await response(scope, receive, send)
 
-
     client = TestClient(app)
 
     def post_body():
@@ -240,7 +231,6 @@ def test_request_client():
         )
         await response(scope, receive, send)
 
-
     client = TestClient(app)
     response = client.get("/")
     assert response.json() == {"host": "testclient", "port": 50000}
@@ -257,7 +247,6 @@ async def app_read_body(scope, receive, send):
     await request.close()
     response = JSONResponse(output)
     await response(scope, receive, send)
-
 
 
 def test_urlencoded_multi_field_app_reads_body(tmpdir):
@@ -290,7 +279,6 @@ def test_request_is_disconnected():
         await response(scope, receive, send)
         disconnected_after_response = await request.is_disconnected()
 
-
     client = TestClient(app)
     response = client.get("/")
     assert response.json() == {"disconnected": False}
@@ -303,7 +291,6 @@ def test_request_state():
         request.state.example = "abc"
         response = JSONResponse({"state.example": request["state"].example})
         await response(scope, receive, send)
-
 
     client = TestClient(app)
     response = client.get("/123?a=abc")

@@ -1,4 +1,5 @@
 import graphene
+import pytest
 
 try:
     from graphql.execution.executors.asyncio import AsyncioExecutor
@@ -42,10 +43,6 @@ class Query(graphene.ObjectType):
 schema = graphene.Schema(query=Query)
 app = GraphQLApp(schema=schema)
 client = TestClient(app)
-
-
-def test_init():
-    _ = GraphQLApp(schema=schema)
 
 
 def test_get():
@@ -125,19 +122,20 @@ class AsyncQuery(graphene.ObjectType):
 
 
 async_schema = graphene.Schema(query=AsyncQuery)
-async_app = GraphQLApp(schema=async_schema, executor=AsyncioExecutor())
-async_cls_app = GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor)
 
 
+@pytest.mark.timeout(20)
 def test_graphql_async():
-    client = TestClient(async_app)
+    app = Yast()
+    app.add_route('/', GraphQLApp(schema=async_schema, executor=AsyncioExecutor()))
+    client = TestClient(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
 
 
 def test_graphql_async_cls():
-    client = TestClient(async_cls_app)
+    client = TestClient(GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor))
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}

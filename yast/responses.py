@@ -48,11 +48,7 @@ class Response(object):
         )
         self.init_headers(headers)
 
-    async def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await send(
             {
                 "type": "http.response.start",
@@ -183,11 +179,7 @@ class StreamingResponse(Response):
         )
         self.init_headers(headers)
 
-    async def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await send(
             {
                 "type": "http.response.start",
@@ -260,11 +252,7 @@ class FileResponse(Response):
             "etag": etag,
         }
 
-    async def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.stat_result is None:
             try:
                 stat_result = await aio_stat(self.path)

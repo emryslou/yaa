@@ -1,10 +1,9 @@
-import functools
 import typing
 
 from yast.middlewares.core import Middleware
 from yast.requests import HttpConnection
 from yast.responses import PlainTextResponse, Response
-from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
+from yast.types import ASGIApp, Receive, Scope, Send
 
 from .base import (
     AuthCredentials,

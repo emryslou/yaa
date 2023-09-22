@@ -10,7 +10,7 @@ from yast.datastructures import URL, Headers, URLPath
 from yast.exceptions import HttpException
 from yast.requests import Request
 from yast.responses import PlainTextResponse, RedirectResponse
-from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
+from yast.types import ASGIApp, Receive, Scope, Send
 from yast.websockets import WebSocket, WebSocketClose
 
 
@@ -68,9 +68,7 @@ class BaseRoute(object):
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
         raise NotImplementedError()  # pragma: nocover
 
-    async def __call__(
-            self, scope: Scope, receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         raise NotImplementedError()  # pragma: nocover
 
     def __str__(self) -> str:
@@ -138,11 +136,7 @@ class Route(BaseRoute):
         )
         return URLPath(protocol="http", path=path)
 
-    async def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.methods and scope["method"] not in self.methods:
             if "app" in scope:
                 raise HttpException(status_code=405)
@@ -203,11 +197,7 @@ class WebSocketRoute(BaseRoute):
         assert not remaining_params
         return URLPath(protocol="websocket", path=path)
 
-    async def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.app(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -363,9 +353,7 @@ class Host(BaseRoute):
         # endelse
         raise NoMatchFound()
 
-    async def __call__(
-            self, scope: Scope, receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.app(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -469,10 +457,7 @@ class Router(object):
     def lifespan(self, lifespan):
         self._lifespan = lifespan
 
-    async def __call__(
-            self, scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] in ("http", "websocket", "lifespan")
 
         if "router" not in scope:
@@ -522,11 +507,7 @@ class ProtocalRouter(object):
     def __init__(self, protocals: typing.Dict[str, ASGIApp]) -> None:
         self.protocals = protocals
 
-    async def __call__(
-            self,
-            scope: Scope,
-            receive: Receive, send: Send
-        ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.protocals[scope["type"]](scope, receive=receive, send=send)
 
 

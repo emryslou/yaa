@@ -12,7 +12,6 @@ def test_handler():
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
-
     def error_500(req, exc):
         return JSONResponse({"detail": "Srv Err"}, status_code=500)
 
@@ -27,7 +26,6 @@ def test_debug_text():
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
-
     app = ServerErrorMiddleware(app, debug=True)
     client = TestClient(app, raise_server_exceptions=False)
     res = client.get("/", headers={"Accept": "text/plain, */*"})
@@ -39,7 +37,6 @@ def test_debug_text():
 def test_debug_html():
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
-
 
     app = ServerErrorMiddleware(app, debug=True)
     client = TestClient(app, raise_server_exceptions=False)
@@ -66,13 +63,13 @@ def test_debug_not_http():
     """
     DebugMiddleware should just pass through any non-http messages as-is.
     """
+    from yast.concurrency import run_in_threadpool, asyncio
 
     async def app(scope, receive, send):
         raise RuntimeError("Something went wrong")
 
-    app = ServerErrorMiddleware(app)
     with pytest.raises(RuntimeError):
-        app({"type": "websocket"}, None, None)
+        asyncio.run(ServerErrorMiddleware(app)({"type": "websocket"}, None, None))
 
 
 def test_req_method_head_content_length_eq_0():

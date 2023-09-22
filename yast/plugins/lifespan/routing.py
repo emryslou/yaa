@@ -2,7 +2,7 @@ import asyncio
 import typing
 
 from yast.routing import BaseRoute, Match
-from yast.types import ASGIInstance, Receive, Scope, Send
+from yast.types import Receive, Scope, Send
 
 from .types import EventType
 

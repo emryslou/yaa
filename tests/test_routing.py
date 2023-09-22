@@ -302,7 +302,9 @@ def test_host_reverse_urls():
 
 
 async def subdomain_app_(scope, receive, send):
-    await JSONResponse({"subdomain": scope["path_params"]["subdomain"]})(scope, receive, send)
+    await JSONResponse({"subdomain": scope["path_params"]["subdomain"]})(
+        scope, receive, send
+    )
 
 
 subdomain_app = Router(

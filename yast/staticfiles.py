@@ -8,7 +8,6 @@ author: emryslou@gmail.com
 """
 
 
-import functools
 import os
 import stat
 import typing
@@ -18,7 +17,7 @@ from aiofiles.os import stat as aio_stat
 
 from yast.datastructures import Headers
 from yast.responses import FileResponse, PlainTextResponse, Response
-from yast.types import ASGIInstance, Receive, Scope, Send
+from yast.types import Receive, Scope, Send
 
 
 class NotModifiedResponse(Response):
@@ -89,13 +88,13 @@ class StaticFiles(object):
         if scope["method"] not in ("GET", "HEAD"):
             res = PlainTextResponse("Method Not Allowed", status_code=405)
             await res(scope=scope, receive=receive, send=send)
-            return 
+            return
 
         path = os.path.normpath(os.path.join(*scope["path"].split("/")))
         if path.startswith(".."):
             res = PlainTextResponse("Not Found", status_code=404)
             await res(scope=scope, receive=receive, send=send)
-            return 
+            return
         await self.asgi(scope=scope, receive=receive, send=send, path=path)
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope, path: str) -> None:

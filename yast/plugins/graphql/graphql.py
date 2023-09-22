@@ -1,4 +1,3 @@
-import functools
 import typing
 
 import ujson as json
@@ -23,7 +22,7 @@ from yast.responses import (
     PlainTextResponse,
     Response,
 )
-from yast.types import ASGIInstance, Receive, Scope, Send
+from yast.types import Receive, Scope, Send
 
 
 class GraphQLApp(object):
@@ -56,7 +55,7 @@ class GraphQLApp(object):
     async def handler(self, req: Request) -> Response:
         if req.method in ("GET", "HEAD"):
             if "text/html" in req.headers.get("Accept", ""):
-                return await self.handle_graphiql(req)
+                return self.handle_graphiql(req)
 
             data = req.query_params
         elif req.method == "POST":
@@ -104,7 +103,7 @@ class GraphQLApp(object):
 
         return JSONResponse(res_data, status_code=status_code)
 
-    async def handle_graphiql(self, req: Request) -> Response:
+    def handle_graphiql(self, req: Request) -> Response:
         text = GRAPHIQL.replace("{{REQUEST_PATH}}", json.dumps(req.url.path))
         return HTMLResponse(text)
 
@@ -117,6 +116,7 @@ class GraphQLApp(object):
         operation_name=None,
     ):
         if self.is_async:
+            print('debug -- 01')
             return await self.schema.execute(
                 query,
                 variable=variable,

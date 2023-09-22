@@ -57,7 +57,7 @@ async def multi_items_app(scope, receive, send):
     await response(scope, receive, send)
 
 
-async def app_read_body(scope,receive, send):
+async def app_read_body(scope, receive, send):
     request = Request(scope, receive)
     # Read bytes, to force request.stream() to return the already parsed body
     body_bytes = await request.body()
@@ -68,7 +68,6 @@ async def app_read_body(scope,receive, send):
     await request.close()
     response = JSONResponse(output)
     await response(scope, receive, send)
-
 
 
 def test_multipart_request_data(tmpdir):

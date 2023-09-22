@@ -1,7 +1,7 @@
 import asyncio
 import http
-import io
 import inspect
+import io
 import json
 import queue
 import threading
@@ -12,12 +12,13 @@ from urllib.parse import unquote, urljoin, urlsplit
 import requests
 
 from yast.plugins.lifespan.types import EventType as LifespanET
-from yast.types import Message, Receive, Scope, Send
+from yast.types import Receive, Scope, Send
 from yast.websockets import WebSocketDisconnect
 
 ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
 ASGI2App = typing.Callable[[Scope], ASGIInstance]
 ASGI3App = typing.Callable[[Scope, Receive, Send], typing.Awaitable[None]]
+
 
 class _HeaderDict(requests.packages.urllib3._collections.HTTPHeaderDict):
     def get_all(self, key, default):
@@ -55,7 +56,7 @@ def _is_asgi3(app: typing.Union[ASGI2App, ASGI3App]) -> bool:
         return hasattr(app, "__await__")
     elif inspect.isfunction(app):
         return asyncio.iscoroutinefunction(app)
-    
+
     call = getattr(app, "__call__", None)
     return asyncio.iscoroutinefunction(call)
 
@@ -64,8 +65,10 @@ class _WrapASGI2:
     """
     Provide an ASGI3 interface onto an ASGI2 app.
     """
+
     def __init__(self, app: ASGI2App) -> None:
         self.app = app
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.app(scope, receive, send)
 
@@ -216,7 +219,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         try:
             loop.run_until_complete(self.app(scope, receive, send))
         except BaseException as exc:
@@ -397,7 +400,9 @@ class TestClient(requests.Session):
 
     async def lifespan(self) -> None:
         try:
-            await self.app({"type": "lifespan"}, self.receive_queue.get, self.send_queue.put)
+            await self.app(
+                {"type": "lifespan"}, self.receive_queue.get, self.send_queue.put
+            )
         finally:
             await self.send_queue.put(None)
 

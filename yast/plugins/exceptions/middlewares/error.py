@@ -75,7 +75,6 @@ class ExceptionMiddleware(Middleware):
 
             await res(scope, receive, sender)
 
-
     def http_exception(self, req: Request, exc: type) -> Response:
         assert isinstance(exc, HttpException)
         if exc.status_code in {204, 304}:

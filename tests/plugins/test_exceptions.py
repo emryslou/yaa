@@ -19,7 +19,6 @@ async def not_modified(req):
     raise HttpException(status_code=304)
 
 
-
 router = Router(
     [
         Route("/runtime_error", endpoint=raise_runtime_error),

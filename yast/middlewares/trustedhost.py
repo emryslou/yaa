@@ -2,7 +2,7 @@ import typing
 
 from yast.datastructures import URL, Headers
 from yast.middlewares.core import Middleware
-from yast.responses import PlainTextResponse, RedirectResponse, Response
+from yast.responses import PlainTextResponse, RedirectResponse
 from yast.types import ASGIApp, Receive, Scope, Send
 
 ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."
@@ -45,8 +45,8 @@ class TrustedHostMiddleware(Middleware):
                     res = RedirectResponse(url=str(redirect_url))
                 else:
                     res = PlainTextResponse("Invalid host header", status_code=400)
-                
+
                 await res(scope, receive, send)
-                return 
+                return
 
         await self.app(scope, receive, send)

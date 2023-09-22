@@ -89,12 +89,13 @@ class CORSMiddleware(Middleware):
                 else:
                     await self.simple_response(
                         scope=scope,
-                        receive=receive, send=send,
+                        receive=receive,
+                        send=send,
                         origin=origin,
                         request_headers=headers,
                     )
                 return
-        
+
         await self.app(scope, receive, send)
 
     def is_allowed_origin(self, origin: str) -> bool:

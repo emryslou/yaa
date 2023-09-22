@@ -13,6 +13,7 @@ def test_template_response():
 
         def render(self, context):
             return f"username: {context['username']}"
+
     async def app(scope, receive, send):
         req = Request(scope=scope)
 
@@ -21,7 +22,6 @@ def test_template_response():
 
         res = TemplateResponse(template=template, context=context)
         await res(scope, receive, send)
-
 
     client = TestClient(app)
     res = client.get("/")

@@ -13,7 +13,6 @@ async def app(scope, recv, send):
     await send({"type": "http.response.body", "body": b"Hello"})
 
 
-
 def test_app():
     client = TestClient(app)
     res = client.get("/")

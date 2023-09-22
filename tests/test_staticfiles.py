@@ -49,6 +49,8 @@ def test_staticfiles_config_check_occurs_only_once(tmpdir):
 
 
 def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
+    from yast.applications import Yast
+
     directory = os.path.join(tmpdir, "foo")
     os.mkdir(directory)
 
@@ -56,11 +58,14 @@ def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
     with open(path, "w") as file:
         file.write("outside root dir")
 
-    app = StaticFiles(directory=directory)
+    app = Yast()
+    app.add_route("/", StaticFiles(directory=tmpdir))
+    #    app = StaticFiles(directory=directory)
+    client = TestClient(app)
     # We can't test this with 'requests', so we call the app directly here.
-    response = app({"type": "http", "method": "GET", "path": "/../example.txt"})
+    response = client.get("/../example.txt")
     assert response.status_code == 404
-    assert response.body == b"Not Found"
+    assert response.text == "Not Found"
 
 
 def test_check_dir(tmpdir):

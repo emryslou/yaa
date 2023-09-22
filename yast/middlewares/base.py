@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import typing
 
 from yast.middlewares.core import Middleware
@@ -26,10 +25,8 @@ class BaseHttpMiddleware(Middleware):
         req = Request(scope, receive=receive)
         res = await self.dispatch_func(req, self.call_next)
         await res(scope, receive, send)
-        
 
     async def call_next(self, req: Request) -> ASGIInstance:
-
         loop = asyncio.get_event_loop()
         queue = asyncio.Queue()
 

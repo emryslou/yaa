@@ -47,8 +47,8 @@ def test_websocket_endpoint_on_connect():
         async def on_connect(self, **kwargs: typing.Any) -> None:
             assert self.ws["subprotocols"] == ["soap", "wamp"]
             await self.ws.accept(subprotocol="wamp")
-    
-    assert inspect.isawaitable(WebSocketEndpoint({'type': 'websocket'}, None, None))
+
+    assert inspect.isawaitable(WebSocketEndpoint({"type": "websocket"}, None, None))
 
     client = TestClient(WsApp)
     with client.wsconnect("/ws", subprotocols=["soap", "wamp"]) as s:

@@ -25,7 +25,6 @@ class test_websocket_query_params:
         await session.send_json({"params": dict(session.query_params)})
         await session.close()
 
-
     client = TestClient(app)
     with client.wsconnect("/aaa?b=ccc&d=22&ff=sss") as ss:
         data = ss.receive_json()
@@ -61,7 +60,6 @@ class test_websocket_headers:
         await session.send_json({"port": session.url.port})
         await session.close()
 
-
     client = TestClient(app)
     with client.wsconnect("ws://www.example.com:123/a?cc=cc") as ss:
         data = ss.receive_json()
@@ -76,7 +74,6 @@ def test_websocket_send_and_receive_text():
         data = await session.receive_text()
         await session.send_text("Message was: " + data)
         await session.close()
-
 
     client = TestClient(app)
     with client.wsconnect("/") as session:
@@ -107,7 +104,6 @@ def test_websocket_send_and_receive_json():
         data = await session.receive_json()
         await session.send_bytes({"json": data})
         await session.close()
-
 
     client = TestClient(app)
     with client.wsconnect("/") as session:
@@ -140,7 +136,6 @@ def test_application_close():
         await session.accept()
         await session.close(status.WS_1001_GOING_AWAY)
 
-
     client = TestClient(app)
     with client.wsconnect("/") as session:
         with pytest.raises(WebSocketDisconnect) as exc:
@@ -149,10 +144,9 @@ def test_application_close():
 
 
 def test_rejected_connection():
-    async def app(scope,receive, send):
+    async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.close(status.WS_1008_POLICY_VIOLATION)
-
 
     client = TestClient(app)
     with pytest.raises(WebSocketDisconnect) as exc:
@@ -167,7 +161,6 @@ def test_subprotocol():
         await session.accept(subprotocol="wamp")
         await session.close()
 
-
     client = TestClient(app)
     with client.wsconnect("/", subprotocols=["soap", "wamp"]) as session:
         assert session.accepted_subprotocol == "wamp"
@@ -176,7 +169,6 @@ def test_subprotocol():
 def test_websocket_exception():
     async def app(scope, receive, send):
         assert False
-
 
     client = TestClient(app)
     with pytest.raises(AssertionError):
@@ -189,7 +181,6 @@ def test_duplicate_close():
         await session.accept()
         await session.close()
         await session.close()
-
 
     client = TestClient(app)
     with pytest.raises(RuntimeError):

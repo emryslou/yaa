@@ -5,7 +5,7 @@ from yast.datastructures import DatabaseURL
 from yast.middlewares.core import Middleware
 from yast.plugins.database.drivers.base import DatabaseBackend
 from yast.plugins.lifespan.types import EventType
-from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
+from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class DatabaseMiddleware(Middleware):

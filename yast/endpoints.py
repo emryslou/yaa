@@ -7,27 +7,30 @@ import yast.status as status
 from yast.concurrency import run_in_threadpool
 from yast.exceptions import HttpException
 from yast.requests import Request
-from yast.responses import PlainTextResponse, Response
+from yast.responses import PlainTextResponse
 from yast.types import Message, Receive, Scope, Send
 from yast.websockets import WebSocket
 
+
 class _Endpoint(object):
-    _type = ''
+    _type = ""
+
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == self._type
         self._scope = scope
         self._receive = receive
         self._send = send
-    
+
     def __await__(self) -> typing.Generator:
         return self.dispatch().__await__()
-    
+
     async def dispatch(self) -> None:
         raise NotImplementedError()
 
 
 class HttpEndPoint(_Endpoint):
-    _type = 'http'
+    _type = "http"
+
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
         super().__init__(scope, receive, send)
 
@@ -41,23 +44,23 @@ class HttpEndPoint(_Endpoint):
             res = await handler(req)
         else:
             res = await run_in_threadpool(handler, req)
-        
+
         await res(self._scope, self._receive, self._send)
 
     async def method_not_allowed(self, req: Request):
-        if "app" in self.scope:
+        if "app" in self._scope:
             raise HttpException(status_code=405)  # pragma: nocover
         return PlainTextResponse("Method Not Allowed", 405)
 
 
 class WebSocketEndpoint(_Endpoint):
-    _type = 'websocket'
+    _type = "websocket"
     encoding = None  # 'text', 'bytes', 'json'
     ws: WebSocket = None
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
         super().__init__(scope, receive, send)
-    
+
     async def dispatch(self) -> None:
         self.ws = WebSocket(self._scope, self._receive, self._send)
         kwargs = self._scope.get("kwargs", {})
