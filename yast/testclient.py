@@ -53,7 +53,8 @@ def _get_reason_phrase(status_code):
 
 def _is_asgi3(app: typing.Union[ASGI2App, ASGI3App]) -> bool:
     if inspect.isclass(app):
-        return hasattr(app, "__await__")
+        if hasattr(app, "__await__"):
+            return True
     elif inspect.isfunction(app):
         return asyncio.iscoroutinefunction(app)
 
@@ -70,7 +71,7 @@ class _WrapASGI2:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive, send)
+        await self.app(scope)(receive, send)
 
 
 class _ASGIAdapter(requests.adapters.HTTPAdapter):
@@ -284,8 +285,9 @@ class WebSocketTestSession(object):
             self.__sput(exc)
 
     async def _asgi_receive(self):
-        msg = self._receive_queue.get()
-        return msg
+        while self._receive_queue.empty():
+            await asyncio.sleep(0)
+        return self._receive_queue.get()
 
     async def _asgi_send(self, message):
         self.__sput(message)
@@ -354,7 +356,7 @@ class TestClient(requests.Session):
             app = typing.cast(ASGI2App, app)
             asgi_app = _WrapASGI2(app)
 
-        adapter = _ASGIAdapter(app, raise_server_exceptions)
+        adapter = _ASGIAdapter(asgi_app, raise_server_exceptions)
         self.mount("http://", adapter)
         self.mount("https://", adapter)
         self.mount("ws://", adapter)
@@ -400,6 +402,7 @@ class TestClient(requests.Session):
 
     async def lifespan(self) -> None:
         try:
+            print("debug -- 01", self.app, type(self.app))
             await self.app(
                 {"type": "lifespan"}, self.receive_queue.get, self.send_queue.put
             )

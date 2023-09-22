@@ -79,3 +79,9 @@ def test_www_redirect():
     response = client.get("/")
     assert response.status_code == 200
     assert response.url == "https://www.example.com/"
+
+
+def test_default_allowed_hosts():
+    app = Yast()
+    middleware = TrustedHostMiddleware(app)
+    assert middleware.allowed_hosts == ["*"]

@@ -310,4 +310,4 @@ class RedirectResponse(Response):
         super().__init__(b"", status_code=status_code, headers=headers)
 
         # todo: why: '&' repeat
-        self.headers["location"] = quote_plus(str(url), safe=":/#?&=@[]!$&'()*+,;")
+        self.headers["location"] = quote_plus(str(url), safe=":/%#?&=@[]!$&'()*+,;")

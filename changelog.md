@@ -1,7 +1,7 @@
 # v0.3.0
 1. asgi: 2.0 -> 3.0
 2. StaticFiles: dir => dir/index.html, not found(html=True): 404.html
-
+3. Adding a percent sign to redirect with quoted params
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

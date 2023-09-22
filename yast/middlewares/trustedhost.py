@@ -12,9 +12,11 @@ class TrustedHostMiddleware(Middleware):
     def __init__(
         self,
         app: ASGIApp,
-        allowed_hosts: typing.List[str] = ["*"],
+        allowed_hosts: typing.List[str] = None,
         www_redirect: bool = True,
     ) -> None:
+        if allowed_hosts is None:
+            allowed_hosts = ["*"]
         for pattern in allowed_hosts:
             assert "*" not in pattern[1:], ENFORCE_DOMAIN_WILDCARD
             if pattern.startswith("*") and pattern != "*":
