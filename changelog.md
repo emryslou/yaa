@@ -8,6 +8,8 @@
 7. plugin: database: register custome databasebackend
 8. requests: attr: database: removing next, attr: state: add
 9. staticfile: support packages.static
+10. wsgi: script read from scope[root_path]
+11. config bool: 1 => True, 0 => False
 
 
 # v0.2.4
