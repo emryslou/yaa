@@ -1,4 +1,6 @@
 # v0.3.0
+1. asgi: 2.0 -> 3.0
+
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

@@ -116,7 +116,6 @@ class GraphQLApp(object):
         operation_name=None,
     ):
         if self.is_async:
-            print('debug -- 01')
             return await self.schema.execute(
                 query,
                 variable=variable,
