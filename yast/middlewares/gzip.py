@@ -2,7 +2,6 @@ import gzip
 import io
 
 from yast.datastructures import Headers, MutableHeaders
-from yast.message_handler import MessageHandler
 from yast.types import ASGIApp, ASGIInstance, Message, Receive, Scope, Send
 
 
@@ -28,21 +27,15 @@ class GZipResponder(object):
         self.started = False
         self.gzip_buffer = io.BytesIO()
         self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer)
-        self.msg_handler = MessageHandler()
 
     async def __call__(self, receive: Receive, send: Send) -> None:
         self.send = send
         await self.inner(receive, self._send)
 
     async def _send(self, message: Message):
-        @self.msg_handler.on_type("http.response.start")
-        async def msg_http_response_start(message: Message):
+        if message["type"] == "http.response.start":
             self.init_message = message
-
-        # endfunc
-
-        @self.msg_handler.on_type("http.response.body")
-        async def msg_http_response_body(message: Message):
+        elif message["type"] == "http.response.body":
             if not self.started:
                 self.started = True
                 body = message.get("body", b"")
@@ -82,10 +75,6 @@ class GZipResponder(object):
                 self.gzip_buffer.seek(0)
                 self.gzip_buffer.truncate()
                 await self.send(message)
-            # endif
-
-        # endfunc
-        await self.msg_handler(message)
 
 
 async def unattached_send(_):

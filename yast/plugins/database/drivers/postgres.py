@@ -7,7 +7,12 @@ from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql import ClauseElement
 
 from yast.datastructures import DatabaseURL
-from yast.plugins.database.drivers.base import DatabaseBackend, DatabaseSession, DatabaseTransaction, compile
+from yast.plugins.database.drivers.base import (
+    DatabaseBackend,
+    DatabaseSession,
+    DatabaseTransaction,
+    compile,
+)
 
 
 class PostgresBackend(DatabaseBackend):

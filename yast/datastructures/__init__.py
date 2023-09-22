@@ -16,4 +16,12 @@ __all__ = [
 
 from .form import FormData, FormValue, UploadFile
 from .headers import Headers, MutableHeaders
-from .urls import URL, Address, CommaSeparatedStrings, DatabaseURL, QueryParams, Secret, URLPath
+from .urls import (
+    URL,
+    Address,
+    CommaSeparatedStrings,
+    DatabaseURL,
+    QueryParams,
+    Secret,
+    URLPath,
+)

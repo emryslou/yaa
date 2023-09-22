@@ -6,7 +6,12 @@ from yast.requests import HttpConnection
 from yast.responses import PlainTextResponse, Response
 from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
 
-from .base import AuthCredentials, AuthenticationBackend, AuthenticationError, UnauthenticatedUser
+from .base import (
+    AuthCredentials,
+    AuthenticationBackend,
+    AuthenticationError,
+    UnauthenticatedUser,
+)
 
 
 class AuthenticationMiddleware(Middleware):

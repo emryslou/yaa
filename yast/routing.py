@@ -487,7 +487,7 @@ class Router(object):
                         redirect_url = URL(scope=redirect_scope)
                         return RedirectResponse(url=str(redirect_url))
 
-        if scope["type"] == "lifespan" and self._lifespan is not None:
+        if self._lifespan is not None and scope["type"] == "lifespan":
             return self._lifespan(scope)
 
         return self.default(scope)

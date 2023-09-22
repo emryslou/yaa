@@ -17,7 +17,12 @@ import yast.status as web_status
 from yast.background import BackgroundTasks
 from yast.concurrency import run_in_threadpool
 from yast.requests import Request
-from yast.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from yast.responses import (
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    Response,
+)
 from yast.types import ASGIInstance, Receive, Scope, Send
 
 

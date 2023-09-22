@@ -21,7 +21,12 @@ from yast.applications import Yast
 from yast.datastructures import DatabaseURL
 from yast.plugins import load_middlewares
 
-from .drivers.base import DatabaseBackend, DatabaseSession, DatabaseTransaction, compile
+from .drivers.base import (
+    DatabaseBackend,
+    DatabaseSession,
+    DatabaseTransaction,
+    compile,
+)
 
 
 def register_db_type(

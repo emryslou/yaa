@@ -7,4 +7,4 @@ fi
 set -x
 
 ${PREFIX}black yast tests
-${PREFIX}isort --multi-line=3 --trailing-comma --force-grid-wrap=0 --combine-as --line-width 120 yast
+${PREFIX}isort --multi-line=3 --trailing-comma --force-grid-wrap=0 --combine-as --line-width 80 yast
