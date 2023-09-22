@@ -51,7 +51,7 @@ def home(request: Request) -> Response:
 
 @app.route('/favicon.ico')
 def fav(_):
-    return FileResponse('/static/favicon.ico', 302)
+    return FileResponse('/static/favicon.ico')
 
 class Demo(HttpEndPoint):
     def get(self, request: Request, **kwargs):

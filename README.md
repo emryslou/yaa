@@ -1,8 +1,19 @@
 # 介绍
 yet another startlette
 
-# 当前版本 0.2.5
-1. Opt: Add ImmutableMultiDict
+# 版本 0.2.5
+1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
+2. database support: mysql
+3. applications: auto scan plugins
+4. applications: support subdomain router
+5. formparser: upload file: content-type
+6. base schema: add response; routing mount: add routes; code op
+7. plugin: database: register custome databasebackend
+8. requests: attr: database: removing next, attr: state: add
+9. staticfile: support packages.static
+10. wsgi: script read from scope[root_path]
+11. config bool: 1 => True, 0 => False
+
 
 # 功能说明
 1. 内置测试客户端 `TestClient`
@@ -23,6 +34,9 @@ pyyaml
 sqlalchemy >= 1.0, < 2.0.0
 asyncpg
 psycopg2-binary
+aiomysql
+pymysql
+cryptography
 pytest
 pytest-cov
 pytest-timeout

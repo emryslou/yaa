@@ -32,7 +32,7 @@ class Tools(object):
 
                 gfile.writelines(write_lines)
         
-    def cmd_readme(self):
+    def cmd_readme(self, **kwargs):
         project_dir = self.proj_dir
         version_changelog = {
             'version': 'latest',
@@ -47,7 +47,7 @@ class Tools(object):
                 elif line == '':
                     break
                 else:
-                    version_changelog['changelog'] += line
+                    version_changelog['changelog'] += line + '\n'
         
         with open(f'{project_dir}/requirement.txt') as requiremt:
             for line in requiremt:

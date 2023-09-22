@@ -1,7 +1,7 @@
 # 介绍
 yet another startlette
 
-# 当前版本 {{__version__}}
+# 版本 {{__version__}}
 {{__changelog__}}
 
 # 功能说明
