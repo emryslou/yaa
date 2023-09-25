@@ -38,7 +38,7 @@ app = Yast(
 
 
 app.mount('/static', StaticFiles(directory='demo/static'))
-app.mount('/docs', StaticFiles(directory='demo/docs'))
+app.mount('/docs', StaticFiles(directory='demo/docs', html=True))
 
 @app.route('/')
 def home(request: Request) -> Response:

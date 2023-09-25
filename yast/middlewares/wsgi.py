@@ -78,17 +78,24 @@ class WSGIResponser(object):
             more_body = message.get("more_body", False)
 
         environ = build_environ(scope, body)
-        wsgi = run_in_threadpool(self.wsgi, environ, self.start_response)
+        sender = None
+        try:
+            wsgi = run_in_threadpool(self.wsgi, environ, self.start_response)
 
-        sender = self.loop.create_task(self.sender(send))
-        await asyncio.wait_for(wsgi, None)
+            sender = self.loop.create_task(self.sender(send))
+            await asyncio.wait_for(wsgi, None)
 
-        self.send_queue.append(None)
-        self.send_event.set()
-        await asyncio.wait_for(sender, None)
+            self.send_queue.append(None)
+            self.send_event.set()
+            await asyncio.wait_for(sender, None)
 
-        if self.exc_info is not None:
-            raise self.exc_info[0].with_traceback(self.exc_info[1], self.exc_info[2])
+            if self.exc_info is not None:
+                raise self.exc_info[0].with_traceback(
+                    self.exc_info[1], self.exc_info[2]
+                )
+        finally:
+            if sender and not sender.done():
+                sender.cancel()
 
     async def sender(self, send: Send) -> None:
         while True:

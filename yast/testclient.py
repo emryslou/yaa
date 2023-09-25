@@ -402,7 +402,6 @@ class TestClient(requests.Session):
 
     async def lifespan(self) -> None:
         try:
-            print("debug -- 01", self.app, type(self.app))
             await self.app(
                 {"type": "lifespan"}, self.receive_queue.get, self.send_queue.put
             )

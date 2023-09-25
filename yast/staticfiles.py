@@ -36,7 +36,7 @@ class NotModifiedResponse(Response):
     )
 
     def __init__(self, headers: Headers) -> None:
-        return super().__init__(
+        super().__init__(
             status_code=304,
             headers={
                 name: value

@@ -289,7 +289,7 @@ def test_request_state():
     async def app(scope, receive, send):
         request = Request(scope, receive)
         request.state.example = "abc"
-        response = JSONResponse({"state.example": request["state"].example})
+        response = JSONResponse({"state.example": request.state.example})
         await response(scope, receive, send)
 
     client = TestClient(app)

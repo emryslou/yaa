@@ -104,9 +104,9 @@ class Route(BaseRoute):
         if methods is None:
             self.methods = None
         else:
-            self.methods = set([method.upper() for method in methods])
+            self.methods = set(method.upper() for method in methods)
             if "GET" in self.methods:
-                self.methods |= set(["HEAD"])
+                self.methods.add("HEAD")
 
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(path)
 
@@ -167,9 +167,6 @@ class WebSocketRoute(BaseRoute):
             self.app = ws_session(endpoint)
         else:
             self.app = endpoint
-
-        regex = "^" + path + "$"
-        regex = re.sub("{([a-zA-Z_][a-zA-Z0-9_]*)}", r"(?P<\1>[^/]+)", regex)
 
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(path)
 

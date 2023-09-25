@@ -10,7 +10,7 @@ from yast.types import ASGIInstance
 
 
 class VenderMiddleware(BaseHttpMiddleware):
-    async def dispath(self, req: Request, call_next: typing.Callable) -> ASGIInstance:
+    async def dispatch(self, req: Request, call_next: typing.Callable) -> ASGIInstance:
         res = await call_next(req)
         res.headers["Vendor-Header"] = "Vendor"
         return res
@@ -97,3 +97,32 @@ def test_decorator():
     res = client.get("/homepage")
     assert res.text == "Homepage"
     assert res.headers["Handler"] == "@Func"
+
+
+def test_state_data_across_multiple_middlewares():
+    expected_value = "yes"
+
+    class aMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            request.state.show_me = expected_value
+            response = await call_next(request)
+            return response
+
+    class bMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            response.headers["X-State-Show-Me"] = request.state.show_me
+            return response
+
+    app = Yast()
+    app.add_middleware(aMiddleware)
+    app.add_middleware(bMiddleware)
+
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse("OK")
+
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.text == "OK"
+    assert response.headers["X-State-Show-Me"] == expected_value

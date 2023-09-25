@@ -22,12 +22,28 @@ async def empty_receive() -> Message:
 
 
 class State(object):
-    pass
+    __state__ = {}
+
+    def __init__(self, state_dict: dict = {}):
+        self.__state__ = state_dict
+
+    def __getattr__(self, __key):
+        return self.__state__[__key]
+
+    def __setattr__(self, __key, __value):
+        self.__state__[__key] = __value
+
+    def __iter__(self) -> Iterator:
+        return enumerate(self.__state__)
+
+    def __repr__(self) -> str:
+        return "State(%s)(%s)" % (self.__state__, self.__hash__)
 
 
 class HttpConnection(Mapping):
     def __init__(self, scope: Scope, *args, **kwargs) -> None:
         self._scope = scope
+        self._scope.setdefault("state", {})
 
     def __getitem__(self, __key: typing.Any) -> typing.Any:
         return self._scope[__key]
@@ -106,9 +122,9 @@ class HttpConnection(Mapping):
 
     @property
     def state(self) -> State:
-        if "state" not in self._scope:
-            self._scope["state"] = State()
-        return self._scope["state"]
+        if not hasattr(self, "_state"):
+            self._state = State(self._scope["state"])
+        return self._state
 
     @property
     def user(self) -> typing.Any:

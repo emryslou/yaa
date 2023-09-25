@@ -3,14 +3,25 @@ import os
 import pytest
 
 from yast import TestClient, Yast
+from yast.datastructures import URL
 from yast.plugins.database.decorators import transaction
 from yast.plugins.database.middlewares import DatabaseMiddleware
 from yast.requests import Request
 from yast.responses import JSONResponse
 
-os.environ[
-    "YAST_TEST_DB_POSTGRES"
-] = "postgresql://postgres:password@localhost:5432/postgres"
+try:
+    url = URL("postgresql://postgres:password@localhost:5432/postgres")
+    os.environ["YAST_TEST_DB_MYSQL"] = str(url)
+    import socket
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    sock.connect((url.hostname, url.port))
+    os.environ["YAST_TEST_DB_POSTGRES"] = str(url)
+except Exception as exc:
+    pytest.skip(f"test db cannot connected {exc}", allow_module_level=True)
+
+
 app = Yast()
 
 

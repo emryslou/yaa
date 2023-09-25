@@ -3,14 +3,23 @@ import os
 import pytest
 
 from yast import TestClient, Yast
+from yast.datastructures import URL
 from yast.plugins.database.decorators import transaction
 from yast.plugins.database.middlewares import DatabaseMiddleware
 from yast.requests import Request
 from yast.responses import JSONResponse
 
-os.environ[
-    "YAST_TEST_DB_MYSQL"
-] = "mysql+pymysql://root:password@localhost:3306/test_yast"
+try:
+    url = URL("mysql+pymysql://root:password@localhost:3306/test_yast")
+    os.environ["YAST_TEST_DB_MYSQL"] = str(url)
+    import socket
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    sock.connect((url.hostname, url.port))
+except Exception as exc:
+    print(f"{exc}")
+    pytest.skip(f"test db cannot connected {exc}", allow_module_level=True)
 
 
 def test_env():
