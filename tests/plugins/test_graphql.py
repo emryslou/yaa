@@ -48,13 +48,13 @@ client = TestClient(app)
 def test_get():
     res = client.get("/?query={hello}")
     assert res.status_code == 200
-    assert res.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert res.json() == {"data": {"hello": "Hello stranger"}}
 
 
 def test_post():
     res = client.post("/?query={hello}")
     assert res.status_code == 200
-    assert res.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert res.json() == {"data": {"hello": "Hello stranger"}}
 
 
 def test_json():
@@ -62,7 +62,7 @@ def test_json():
         "/", data="{hello}", headers={"Content-Type": "application/graphql"}
     )
     assert res.status_code == 200
-    assert res.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert res.json() == {"data": {"hello": "Hello stranger"}}
 
 
 def test_post_invalid_media_type():
@@ -111,7 +111,7 @@ def test_add_graphql_route():
     client = TestClient(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
-    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
 class AsyncQuery(graphene.ObjectType):
@@ -131,14 +131,14 @@ def test_graphql_async():
     client = TestClient(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
-    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
 def test_graphql_async_cls():
     client = TestClient(GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor))
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
-    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
 def test_context():
@@ -150,7 +150,7 @@ def test_context():
         "/", json={"query": "{whoami}"}, headers={"Authorization": "Bearer 123"}
     )
     assert res.status_code == 200
-    assert res.json() == {"data": {"whoami": "Zhangsan"}, "errors": None}
+    assert res.json() == {"data": {"whoami": "Zhangsan"}}
 
 
 def test_app_plugin():
@@ -170,4 +170,4 @@ def test_app_plugin():
     client = TestClient(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
-    assert response.json() == {"data": {"hello": "Hello stranger"}, "errors": None}
+    assert response.json() == {"data": {"hello": "Hello stranger"}}
