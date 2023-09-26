@@ -1,7 +1,7 @@
 (function (window) {
     let host = document.querySelector('#ws_host').getAttribute('value')
-    console.log(host)
-    let ws = new window.WebSocket('ws://' + host)
+    let protocal = window.location.protocol == 'https:' ? 'wss': 'ws'
+    let ws = new window.WebSocket(protocal + '://' + host)
     let msg_container = document.querySelector('#receive_msg')
     ws.onopen = function () {
         ws.send('send data ... ')
@@ -29,4 +29,5 @@
         console.log('err', e)
     }
     ws.onerror = function (ev) { }
+    console.log('ws ....')
 })(window)

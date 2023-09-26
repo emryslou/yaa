@@ -41,17 +41,19 @@ app.mount('/static', StaticFiles(directory='demo/static'))
 app.mount('/docs', StaticFiles(directory='demo/docs', html=True))
 
 @app.route('/')
-def home(request: Request) -> Response:
-    return templates.response('home.html', request=request, context={
+async def home(request: Request) -> Response:
+    await request.send_push_promise('static/js/ws.js')
+    res = templates.response('home.html', request=request, context={
         'greeting': 'template',
         'ws_host': 'localhost:5505/ws',
-        'js_version': '127'
+        'js_version': '130'
     })
+    return res
     
 
 @app.route('/favicon.ico')
 def fav(_):
-    return FileResponse('/static/favicon.ico')
+    return FileResponse('demo/static/favicon.ico')
 
 class Demo(HttpEndPoint):
     def get(self, request: Request, **kwargs):

@@ -36,6 +36,7 @@ SERVER_PUSH_HEADERS_TO_COPY = {
 async def empty_receive() -> Message:
     raise RuntimeError("Receive channel has not been made avaible")  # pragma: nocover
 
+
 async def empty_send(message: Message) -> None:
     raise RuntimeError("Send channel has not been made avaible")  # pragma: nocover
 
@@ -150,10 +151,8 @@ class ClientDisconnect(Exception):
 
 class Request(HttpConnection):
     def __init__(
-            self, scope: Scope,
-            receive: Receive = empty_receive,
-            send: Send = empty_send
-        ):
+        self, scope: Scope, receive: Receive = empty_receive, send: Send = empty_send
+    ):
         super().__init__(scope=scope)
         self._receive = receive
         self._send = send
@@ -210,10 +209,10 @@ class Request(HttpConnection):
 
     async def body(self) -> bytes:
         if not hasattr(self, "_body"):
-            body = b""
+            chunks = []
             async for chunk in self.stream():
-                body += chunk
-            self._body = body
+                chunks.append(chunk)
+            self._body = b"".join(chunks)
         return self._body
 
     async def json(self) -> typing.Any:
@@ -258,16 +257,14 @@ class Request(HttpConnection):
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
-        if 'http.response.push' in self.scope.get('extensions', {}):
+        if "http.response.push" in self.scope.get("extensions", {}):
             raw_headers = []
             for name in SERVER_PUSH_HEADERS_TO_COPY:
                 for value in self.headers.getlist(name):
-                    raw_headers.append((
-                        name.encode('latin-1'), value.encode('latin-1')
-                    ))
-            
-            await self._send({
-                'type': 'http.response.push',
-                'path': path,
-                'headers': raw_headers
-            })
+                    raw_headers.append(
+                        (name.encode("latin-1"), value.encode("latin-1"))
+                    )
+            print("push file", path)
+            await self._send(
+                {"type": "http.response.push", "path": path, "headers": raw_headers}
+            )
