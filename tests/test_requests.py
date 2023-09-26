@@ -295,3 +295,24 @@ def test_request_state():
     client = TestClient(app)
     response = client.get("/123?a=abc")
     assert response.json() == {"state.example": "abc"}
+
+
+def test_state():
+    from yast.requests import State
+
+    s = State({"aa": "cc"})
+
+    assert s.aa == "cc"
+
+    s.bb = "xx"
+
+    assert s.bb == "xx"
+
+    delattr(s, "bb")
+
+    with pytest.raises(AttributeError):
+        _ = s.bb
+
+    s._state["cc"] = "cc"
+
+    assert s.cc == "cc"

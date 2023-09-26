@@ -22,22 +22,28 @@ async def empty_receive() -> Message:
 
 
 class State(object):
-    __state__ = {}
-
     def __init__(self, state_dict: dict = {}):
-        self.__state__ = state_dict
+        self._state = state_dict
 
     def __getattr__(self, __key):
-        return self.__state__[__key]
+        try:
+            return self._state[__key]
+        except KeyError:
+            raise AttributeError(
+                f"`{self.__class__.__name__}` has no attribute `{__key}`"
+            )
 
     def __setattr__(self, __key, __value):
-        self.__state__[__key] = __value
+        if __key == "_state":
+            super().__setattr__(__key, __value)
+        else:
+            self._state[__key] = __value
 
     def __iter__(self) -> Iterator:
-        return enumerate(self.__state__)
+        return enumerate(self._state)
 
-    def __repr__(self) -> str:
-        return "State(%s)(%s)" % (self.__state__, self.__hash__)
+    def __delattr__(self, __key):
+        del self._state[__key]
 
 
 class HttpConnection(Mapping):
@@ -63,6 +69,10 @@ class HttpConnection(Mapping):
     @property
     def app(self) -> typing.Any:
         return self._scope["app"]
+
+    @property
+    def scope(self):
+        return self._scope
 
     @property
     def headers(self) -> Headers:

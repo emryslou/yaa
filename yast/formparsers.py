@@ -31,6 +31,13 @@ class MultiPartMessage(enum.Enum):
     END = 8
 
 
+def _user_safe_decode(src: bytes, codec: str) -> str:
+    try:
+        return src.decode(codec)
+    except (LookupError, UnicodeDecodeError):
+        return src.decode("latin-1")
+
+
 class FormParser(object):
     def __init__(
         self, headers: Headers = None, stream: typing.AsyncGenerator[bytes, None] = None
@@ -82,8 +89,8 @@ class FormParser(object):
                 elif msg_type == FormMessage.FIELD_DATA:
                     field_value += msg_bytes
                 elif msg_type == FormMessage.FIELD_END:
-                    name = unquote_plus(field_name.decode("latin-1"))
-                    value = unquote_plus(field_value.decode("latin-1"))
+                    name = unquote_plus(field_name.decode("utf-8"))
+                    value = unquote_plus(field_value.decode("utf-8"))
                     items.append((name, value))
                 elif msg_type == FormMessage.END:
                     pass
@@ -128,6 +135,9 @@ class MultiPartParser(object):
 
     async def parse(self) -> FormData:
         content_type, params = parse_options_header(self.headers["Content-Type"])
+        charset = params.get(b"charset", "utf-8")
+        if isinstance(charset, bytes):
+            charset = charset.decode("utf-8")
         boundary = params.get(b"boundary")
         _mpm_attrs = [f"on_{fm.name.lower()}" for fm in list(MultiPartMessage)]
         callbacks = {
@@ -135,7 +145,8 @@ class MultiPartParser(object):
         }
         parser = multipart.MultipartParser(boundary, callbacks)
         header_field, header_value = b"", b""
-        raw_headers = []
+        content_disposition = None
+        content_type = b""
         field_name = ""
         data = b""
         _file = None
@@ -149,25 +160,32 @@ class MultiPartParser(object):
 
             for msg_type, msg_bytes in messages:
                 if msg_type == MultiPartMessage.PART_BEGIN:
-                    raw_headers = []
+                    content_disposition = None
+                    content_type = b""
                     data = b""
                 elif msg_type == MultiPartMessage.HEADER_FIELD:
                     header_field += msg_bytes
                 elif msg_type == MultiPartMessage.HEADER_VALUE:
                     header_value += msg_bytes
                 elif msg_type == MultiPartMessage.HEADER_END:
-                    raw_headers.append((header_field.lower(), header_value))
+                    # raw_headers.append((header_field.lower(), header_value))
+                    field = header_field.lower()
+                    if field == b"content-disposition":
+                        content_disposition = header_value
+                    elif field == b"content-type":
+                        content_type = header_value
+
                     header_field, header_value = b"", b""
                 elif msg_type == MultiPartMessage.HEADERS_FINISHED:
-                    headers = Headers(raw=raw_headers)
-                    content_disposition = headers.get("Content-Disposition")
                     disposition, options = parse_options_header(content_disposition)
-                    field_name = options[b"name"].decode("latin-1")
-                    content_type = headers.get("Content-Type", "")
+                    field_name = _user_safe_decode(options[b"name"], charset)
 
                     if b"filename" in options:
-                        filename = options[b"filename"].decode("latin-1")
-                        _file = UploadFile(filename=filename, content_type=content_type)
+                        filename = _user_safe_decode(options[b"filename"], charset)
+                        _file = UploadFile(
+                            filename=filename,
+                            content_type=content_type.decode("latin-1"),
+                        )
                     else:
                         _file = None
 
@@ -178,7 +196,7 @@ class MultiPartParser(object):
                         await _file.write(msg_bytes)
                 elif msg_type == MultiPartMessage.PART_END:
                     if _file is None:
-                        items.append((field_name, data.decode("latin-1")))
+                        items.append((field_name, _user_safe_decode(data, charset)))
                     else:
                         await _file.seek(0)
                         items.append((field_name, _file))

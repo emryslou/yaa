@@ -16,14 +16,14 @@ def test_httpsredirect():
 
     client = TestClient(app)
     res = client.get("/?type=http", allow_redirects=False)
-    assert res.status_code == 301
+    assert res.status_code == 308
     assert res.headers["location"] == "https://testserver/?type=http"
 
     client = TestClient(app, base_url="http://testserver:80")
     response = client.get("/", allow_redirects=False)
-    assert response.status_code == 301
+    assert response.status_code == 308
     assert response.headers["location"] == "https://testserver/"
     client = TestClient(app, base_url="http://testserver:123")
     response = client.get("/", allow_redirects=False)
-    assert response.status_code == 301
+    assert response.status_code == 308
     assert response.headers["location"] == "https://testserver:123/"

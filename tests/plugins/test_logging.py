@@ -4,7 +4,7 @@ from yast.responses import PlainTextResponse
 
 
 def test_trace():
-    app = Yast(plugins={"http": {"middlewares": {"trace": {}}}})
+    app = Yast(plugins={"logging": {"middlewares": {"trace": {}}}})
 
     @app.route("/")
     async def home(req: Request):

@@ -272,3 +272,15 @@ def test_form_urlencode():
 
     res = client.post("/", data={"abc": "123 @ aaa"})
     assert res.json() == {"form": {"abc": "123 @ aaa"}}
+
+
+def test_json_none_response():
+    from yast.responses import JSONResponse
+
+    async def app(scope, receive, send):
+        response = JSONResponse(None)
+        await response(scope, receive, send)
+
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.json() is None

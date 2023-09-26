@@ -116,3 +116,16 @@ def test_csv():
     assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
     assert repr(csv) == "CommaSeparatedStrings(['localhost', '127.0.0.1', '0.0.0.0'])"
     assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+
+
+def test_url_query_params():
+    u = URL("https://example.org/path/?page=3")
+    assert u.query == "page=3"
+    u = u.include_query_params(page=4)
+    assert str(u) == "https://example.org/path/?page=4"
+    u = u.include_query_params(search="testing")
+    assert str(u) == "https://example.org/path/?page=4&search=testing"
+    u = u.replace_query_params(order="name")
+    assert str(u) == "https://example.org/path/?order=name"
+    u = u.remove_query_params("order")
+    assert str(u) == "https://example.org/path/"

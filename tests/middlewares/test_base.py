@@ -126,3 +126,38 @@ def test_state_data_across_multiple_middlewares():
     response = client.get("/")
     assert response.text == "OK"
     assert response.headers["X-State-Show-Me"] == expected_value
+
+
+@pytest.mark.skip("multi-middlewares run order")
+def test_multiple_middlewares_run_order():
+    class aMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            if not hasattr(request.state, "show_me"):
+                request.state.show_me = self.__class__.__name__
+            else:
+                request.state.show_me += "," + self.__class__.__name__
+            response = await call_next(request)
+            return response
+
+    class bMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            if not hasattr(request.state, "show_me"):
+                request.state.show_me = self.__class__.__name__
+            else:
+                request.state.show_me += "," + self.__class__.__name__
+            response = await call_next(request)
+            response.headers["X-State-Show-Me"] = request.state.show_me
+            return response
+
+    app = Yast()
+    app.add_middleware(aMiddleware)
+    app.add_middleware(bMiddleware)
+
+    @app.route("/")
+    def homepage(request: Request):
+        return PlainTextResponse("OK")
+
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.text == "OK"
+    assert response.headers["X-State-Show-Me"] == ""

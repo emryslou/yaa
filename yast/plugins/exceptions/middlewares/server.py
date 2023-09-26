@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import traceback
 import typing
 
@@ -8,7 +9,7 @@ from yast.responses import HTMLResponse, PlainTextResponse, Response
 from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
-class ServerErrorMiddleware(object):
+class ServerErrorMiddleware:
     def __init__(
         self, app: ASGIApp, handler: typing.Callable = None, debug: bool = False
     ) -> None:
@@ -18,109 +19,212 @@ class ServerErrorMiddleware(object):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
-            await self.app(scope, receive=receive, send=send)
-        else:
-            await self.asgi(scope=scope, receive=receive, send=send)
+            await self.app(scope, receive, send)
+            return
 
-    async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
-        res_start = False
+        response_started = False
 
-        async def _send(msg: Message):
-            nonlocal res_start, send
+        async def _send(message: Message) -> None:
+            nonlocal response_started, send
 
-            if msg["type"] == "http.response.start":
-                res_start = True
-                # if scope["method"].upper() == "HEAD":
-                #     msg["headers"] = req_method_content_length_eq_0(
-                #         msg.get("headers", [])
-                #     )
-
-            await send(msg)
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
 
         try:
             await self.app(scope, receive, _send)
         except Exception as exc:
-            if not res_start:
-                req = Request(scope=scope)
+            if not response_started:
+                request = Request(scope)
                 if self.debug:
-                    res = self.debug_response(req, exc)
+                    # In debug mode, return traceback responses.
+                    response = self.debug_response(request, exc)
                 elif self.handler is None:
-                    res = self.error_response(req, exc)
+                    # Use our default 500 error handler.
+                    response = self.error_response(request, exc)
                 else:
+                    # Use an installed 500 error handler.
                     if asyncio.iscoroutinefunction(self.handler):
-                        res = await self.handler(req, exc)
+                        response = await self.handler(request, exc)
                     else:
-                        res = await run_in_threadpool(self.handler, req, exc)
-                # endif
-                await res(scope, receive, send)
-            # endif
+                        response = await run_in_threadpool(self.handler, request, exc)
+
+                await response(scope, receive, send)
+
+            # We always continue to raise the exception.
+            # This allows servers to log the error, or allows test clients
+            # to optionally raise the error within the test case.
             raise exc from None
 
-    def debug_response(self, req: Request, exc: Exception) -> Response:
-        accept = req.headers.get("accept", "")
-        debug_gen = DebuggerGenerator(exc)
+    def format_line(
+        self, position: int, line: str, frame_lineno: int, center_lineno: int
+    ) -> str:
+        values = {
+            "line": line.replace(" ", "&nbsp"),
+            "lineno": frame_lineno + (position - center_lineno),
+        }
 
-        if "text/html" in accept:
-            content = debug_gen.html()
-            return HTMLResponse(content, status_code=500)
+        if position != center_lineno:
+            return LINE.format(**values)
+        return CENTER_LINE.format(**values)
 
-        content = debug_gen.text()
-        return PlainTextResponse(content, status_code=500)
-
-    def error_response(self, req: Request, exc: Exception) -> Response:
-        return PlainTextResponse("Internal Server Error", status_code=500)
-
-
-class DebuggerGenerator(object):
-    def __init__(self, exc: Exception) -> None:
-        self.exc = exc
-        self.traceback_obj = traceback.TracebackException.from_exception(
-            exc, capture_locals=True
+    def generate_frame_html(
+        self, frame: inspect.FrameInfo, center_lineno: int, is_collapsed: bool
+    ) -> str:
+        code_context = "".join(
+            self.format_line(context_position, line, frame.lineno, center_lineno)
+            for context_position, line in enumerate(frame.code_context)
         )
-        self.error = f"{self.traceback_obj.exc_type.__name__}" f": {self.traceback_obj}"
 
-    def gen_frame_html(self, frame: traceback.FrameSummary) -> str:
         values = {
             "frame_filename": frame.filename,
             "frame_lineno": frame.lineno,
-            "frame_name": frame.name,
-            "frame_line": frame.line,
+            "frame_name": frame.function,
+            "code_context": code_context,
+            "collapsed": "collapsed" if is_collapsed else "",
         }
         return FRAME_TEMPLATE.format(**values)
 
-    def html(self) -> str:
-        html = "".join(
-            [self.gen_frame_html(frame) for frame in self.traceback_obj.stack]
+    def generate_html(self, exc: Exception, limit: int = 7) -> str:
+        traceback_obj = traceback.TracebackException.from_exception(
+            exc, capture_locals=True, limit=limit
         )
-        values = {"style": STYLES, "error": self.error, "ext_html": html}
-        return TEMPLATE.format(**values)
 
-    def text(self) -> str:
-        return "".join(traceback.format_tb(self.exc.__traceback__))
+        center_lineno = int((limit - 1) / 2)
+        exc_html = ""
+        is_collapsed = False
+
+        if exc.__traceback__ is not None:
+            frames = inspect.getinnerframes(exc.__traceback__, limit)
+            for frame in reversed(frames):
+                exc_html += self.generate_frame_html(frame, center_lineno, is_collapsed)
+                is_collapsed = True
+
+        error = f"{traceback_obj.exc_type.__name__}: {traceback_obj}"
+
+        return TEMPLATE.format(styles=STYLES, js=JS, error=error, exc_html=exc_html)
+
+    def generate_plain_text(self, exc: Exception) -> str:
+        return "".join(traceback.format_tb(exc.__traceback__))
+
+    def debug_response(self, request: Request, exc: Exception) -> Response:
+        accept = request.headers.get("accept", "")
+
+        if "text/html" in accept:
+            content = self.generate_html(exc)
+            return HTMLResponse(content, status_code=500)
+        content = self.generate_plain_text(exc)
+        return PlainTextResponse(content, status_code=500)
+
+    def error_response(self, request: Request, exc: Exception) -> Response:
+        return PlainTextResponse("Internal Server Error", status_code=500)
 
 
-STYLES = """\
-    .traceback-container {border: 1px solid #038BB8;}
-    .traceback-title {background-color: #038BB8;color: lemonchiffon;padding: 12px;font-size: 20px;margin-top: 0px;}
-    .traceback-content {padding: 5px 0px 20px 20px;}
-    .frame-line {font-weight: unset;padding: 10px 10px 10px 20px;background-color: #E4F4FD;
-    margin-left: 10px;margin-right: 10px;font: #394D54;color: #191f21;font-size: 17px;border: 1px solid #c7dce8;}
+STYLES = """
+p {
+    color: #211c1c;
+}
+.traceback-container {
+    border: 1px solid #038BB8;
+}
+.traceback-title {
+    background-color: #038BB8;
+    color: lemonchiffon;
+    padding: 12px;
+    font-size: 20px;
+    margin-top: 0px;
+}
+.frame-line {
+    padding-left: 10px;
+}
+.center-line {
+    background-color: #038BB8;
+    color: #f9f6e1;
+    padding: 5px 0px 5px 5px;
+}
+.lineno {
+    margin-right: 5px;
+}
+.frame-filename {
+    font-weight: unset;
+    padding: 10px 10px 10px 0px;
+    background-color: #E4F4FD;
+    margin-right: 10px;
+    font: #394D54;
+    color: #191f21;
+    font-size: 17px;
+    border: 1px solid #c7dce8;
+}
+.collapse-btn {
+    float: right;
+    padding: 0px 5px 1px 5px;
+    border: solid 1px #96aebb;
+    cursor: pointer;
+}
+.collapsed {
+  display: none;
+}
+.source-code {
+  font-family: courier;
+  font-size: small;
+  padding-bottom: 10px;
+}
 """
+
+JS = """
+<script type="text/javascript">
+    function collapse(element){
+        const frameId = element.getAttribute("data-frame-id");
+        const frame = document.getElementById(frameId);
+
+        if (frame.classList.contains("collapsed")){
+            element.innerHTML = "&#8210;";
+            frame.classList.remove("collapsed");
+        } else {
+            element.innerHTML = "+";
+            frame.classList.add("collapsed");
+        }
+    }
+</script>
+"""
+
 TEMPLATE = """
-    <style type='text/css'>{style}</style>
-    <title>Starlette Debugger</title>
-    <h1>500 Server Error</h1>
-    <h2>{error}</h2>
-    <div class='traceback-container'>
-    <p class='traceback-title'>Traceback</p>
-    <div class='traceback-content'>{ext_html}</div>
-    </div>
+<html>
+    <head>
+        <style type='text/css'>
+            {styles}
+        </style>
+        <title>Starlette Debugger</title>
+    </head>
+    <body>
+        <h1>500 Server Error</h1>
+        <h2>{error}</h2>
+        <div class="traceback-container">
+            <p class="traceback-title">Traceback</p>
+            <div>{exc_html}</div>
+        </div>
+        {js}
+    </body>
+</html>
 """
+
 FRAME_TEMPLATE = """
-    <p>
-    File <span class='debug-filename'>`{frame_filename}`</span>,
+<div>
+    <p class="frame-filename"><span class="debug-filename frame-line">File {frame_filename}</span>,
     line <i>{frame_lineno}</i>,
     in <b>{frame_name}</b>
-    <p class='frame-line'>{frame_line}</p>
+    <span class="collapse-btn" data-frame-id="{frame_filename}-{frame_lineno}" onclick="collapse(this)">&#8210;</span>
     </p>
+    <div id="{frame_filename}-{frame_lineno}" class="source-code {collapsed}">{code_context}</div>
+</div>
+"""
+
+LINE = """
+<p><span class="frame-line">
+<span class="lineno">{lineno}.</span> {line}</span></p>
+"""
+
+CENTER_LINE = """
+<p class="center-line"><span class="frame-line center-line">
+<span class="lineno">{lineno}.</span> {line}</span></p>
 """

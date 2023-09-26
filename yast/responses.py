@@ -37,7 +37,7 @@ class Response(object):
         media_type: str = None,
         background: BackgroundTask = None,
     ) -> None:
-        self.body = b"" if content is None else self.render(content)
+        self.body = self.render(content)
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
@@ -77,6 +77,8 @@ class Response(object):
         return _headers
 
     def render(self, content: typing.Any) -> bytes:
+        if content is None:
+            content = b""
         if isinstance(content, bytes):
             return content
         return content.encode(self.charset)
@@ -305,7 +307,7 @@ class FileResponse(Response):
 
 class RedirectResponse(Response):
     def __init__(
-        self, url: typing.Union[str, URL], status_code=302, headers: dict = None
+        self, url: typing.Union[str, URL], status_code=307, headers: dict = None
     ):
         super().__init__(b"", status_code=status_code, headers=headers)
 

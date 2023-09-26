@@ -6,7 +6,7 @@ from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
 from yast.types import Scope
 
-from .types import ImmutableMultiDict
+from .types import ImmutableMultiDict, MultiDict
 
 Address = namedtuple("Address", ["host", "port"])
 
@@ -194,6 +194,28 @@ class URL(object):
             kwargs["netloc"] = netloc
         components = self.components._replace(**kwargs)
         return self.__class__(components.geturl())
+
+    def include_query_params(self, **kwargs: typing.Any) -> "URL":
+        params = MultiDict(parse_qsl(self.query))
+        params.update({str(key): str(value) for key, value in kwargs.items()})
+        query = urlencode(params.multi_items())
+        return self.replace(query=query)
+
+    def replace_query_params(self, **kwargs: typing.Any) -> "URL":
+        query = urlencode([(str(key), str(value)) for key, value in kwargs.items()])
+        return self.replace(query=query)
+
+    def remove_query_params(
+        self, keys: typing.Union[str, typing.Sequence[str]]
+    ) -> "URL":
+        if isinstance(keys, str):
+            keys = [keys]
+        params = MultiDict(parse_qsl(self.query))
+        for key in keys:
+            params.pop(key, None)
+
+        query = urlencode(params.multi_items())
+        return self.replace(query=query)
 
     def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
         return str(self) == str(other)

@@ -109,10 +109,11 @@ def test_app_error():
 
 
 def test_app_add_middleware():
-    from yast.middlewares import TrustedHostMiddleware
-
-    app = Yast()
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["testserver"])
+    app = Yast(
+        plugins={
+            "http": {"middlewares": {"trustedhost": dict(allowed_hosts=["testserver"])}}
+        }
+    )
     _add_router(app)
     client = TestClient(app, base_url="http://error")
     res = client.get("/")
@@ -202,7 +203,15 @@ def test_exception_handler():
 
 
 def test_subdomain():
-    app = Yast()
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "trustedhost": dict(allowed_hosts=["testserver", "*.example.org"])
+                }
+            }
+        }
+    )
     subdomain = Router()
 
     @subdomain.route("/")
@@ -210,12 +219,8 @@ def test_subdomain():
         return PlainTextResponse("Subdomain:" + req.path_params["subdomain"])
 
     app.host("{subdomain}.example.org", subdomain)
-    from yast.middlewares import TrustedHostMiddleware
 
     _add_router(app)
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["testserver", "*.example.org"]
-    )
 
     client = TestClient(app, base_url="http://what.example.org")
     res = client.get("/")

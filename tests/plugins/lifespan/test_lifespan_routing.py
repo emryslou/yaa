@@ -159,3 +159,30 @@ def test_app_add_event_handler():
         client.get("/")
     assert startup_complete
     assert shutdown_complete
+
+
+def test_startup_runtime_error():
+    import pytest
+
+    startup_failed = False
+
+    def run_startup():
+        raise RuntimeError()
+
+    router = Router(routes=[Lifespan(startup=[run_startup])])
+
+    async def app(scope, receive, send):
+        async def _send(message):
+            nonlocal startup_failed
+            if message["type"] == "lifespan.startup.failed":
+                startup_failed = True
+
+            return await send(message)
+
+        await router(scope, receive, _send)
+
+    with pytest.raises(RuntimeError):
+        with TestClient(app):
+            pass  # pragma: nocover
+
+    assert startup_failed

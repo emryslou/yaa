@@ -141,6 +141,13 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             "extensions": {"http.response.template": {}},
         }
 
+        request_complete = False
+        response_started = False
+        response_complete = False
+        raw_kwargs = {"body": io.BytesIO()}
+        template = None
+        context = None
+
         async def receive():
             nonlocal request_complete, response_complete
             if request_complete:
@@ -207,13 +214,6 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             elif message["type"] == "http.response.template":
                 template = message["template"]
                 context = message["context"]
-
-        request_complete = False
-        response_started = False
-        response_complete = False
-        raw_kwargs = {"body": io.BytesIO()}
-        template = None
-        context = None
 
         try:
             loop = asyncio.get_event_loop()
@@ -412,9 +412,10 @@ class TestClient(requests.Session):
         event_type = LifespanET(event_type)
         await self.receive_queue.put({"type": event_type.lifespan})
         message = await self.send_queue.get()
-        if message is None:
-            self.task.result()
-        assert message["type"] == event_type.complete
-
-        if event_type == LifespanET.SHUTDOWN:
+        if event_type == LifespanET.STARTUP:
+            if message["type"] == f"{event_type.lifespan}.failed":
+                message = await self.send_queue.get()
+                if message is None:
+                    self.task.result()
+        elif event_type == LifespanET.SHUTDOWN:
             await self.task

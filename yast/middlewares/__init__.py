@@ -2,10 +2,10 @@ __all__ = [
     "Middleware",
     # "ExceptionMiddleware",
     # "CORSMiddleware",
-    "GZipMiddleware",
+    # "GZipMiddleware",
     # "HttpsRedirectMiddleware",
     # "LifespanMiddleware",
-    "TrustedHostMiddleware",
+    # "TrustedHostMiddleware",
     "WSGIMiddleware",
     "BaseHttpMiddleware",
     # "ServerErrorMiddleware",
@@ -19,8 +19,8 @@ from .core import Middleware
 # from .database import DatabaseMiddleware
 # from .errors import ServerErrorMiddleware
 # from .exception import ExceptionMiddleware
-from .gzip import GZipMiddleware
+# from .gzip import GZipMiddleware
 # from .httpsredirect import HttpsRedirectMiddleware
 # from .sessions import SessionMiddleware
-from .trustedhost import TrustedHostMiddleware
+# from .trustedhost import TrustedHostMiddleware
 from .wsgi import WSGIMiddleware

@@ -15,6 +15,6 @@ class HttpsRedirectMiddleware(Middleware):
             netloc = url.hostname if url.port in (80, 443) else url.netloc
             url = url.replace(scheme=redirect_scheme, netloc=netloc)
 
-            await RedirectResponse(url, status_code=301)(scope, receive, send)
+            await RedirectResponse(url, status_code=308)(scope, receive, send)
         else:
             await self.app(scope, receive, send)

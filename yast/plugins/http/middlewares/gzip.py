@@ -2,12 +2,13 @@ import gzip
 import io
 
 from yast.datastructures import Headers, MutableHeaders
+from yast.middlewares import Middleware
 from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
-class GZipMiddleware(object):
+class GZipMiddleware(Middleware):
     def __init__(self, app: ASGIApp, minimum_size: int = 500) -> None:
-        self.app = app
+        super().__init__(app)
         self.minimum_size = minimum_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

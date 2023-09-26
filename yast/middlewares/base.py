@@ -28,7 +28,7 @@ class BaseHttpMiddleware(Middleware):
     async def call_next(self, req: Request) -> ASGIInstance:
         loop = asyncio.get_event_loop()
         queue = asyncio.Queue()
-        scope = dict(req)
+        scope = req.scope
 
         receive = req.receive
         send = queue.put

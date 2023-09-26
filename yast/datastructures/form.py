@@ -7,6 +7,8 @@ from .types import ImmutableMultiDict
 
 
 class UploadFile(object):
+    spool_max_size = 1024 * 1024
+
     def __init__(
         self,
         filename: str,
@@ -16,7 +18,7 @@ class UploadFile(object):
         self.filename = filename
         self.content_type = content_type
         if file is None:
-            file = tempfile.SpooledTemporaryFile()
+            file = tempfile.SpooledTemporaryFile(max_size=self.spool_max_size)
         self.file = file
 
     async def write(self, data: typing.Union[bytes, str]) -> None:

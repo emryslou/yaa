@@ -28,7 +28,14 @@ class Lifespan(BaseRoute):
         for _ in list(EventType):
             message = await receive()
             event_type = EventType.get_by_lifespan(message["type"])
-            await self.handler(event_type)
+            try:
+                await self.handler(event_type)
+            except BaseException:
+                import traceback
+
+                msg = traceback.format_exc()
+                await send({"type": f"{event_type.lifespan}.failed", "message": msg})
+                raise
             await send({"type": event_type.complete})
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:

@@ -1,20 +1,23 @@
 import pytest
 
 from yast.applications import Yast
-from yast.middlewares import TrustedHostMiddleware
 from yast.responses import PlainTextResponse
 from yast.testclient import TestClient
 
 
 @pytest.mark.timeout(30)
 def test_trustedhost():
-    app = Yast()
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {"trustedhost": dict(allowed_hosts=["aa.com", "bb.com"])}
+            }
+        }
+    )
 
     @app.route("/")
     async def home(_):
         return PlainTextResponse("OK")
-
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["aa.com", "bb.com"])
 
     client = TestClient(app, base_url="http://aa.com")
     res = client.get("/")
@@ -33,15 +36,19 @@ def test_trustedhost():
 
 
 def test_wildcard():
-    app = Yast()
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "trustedhost": dict(allowed_hosts=["aa.com", "bb.com", "*.ff.com"])
+                }
+            }
+        }
+    )
 
     @app.route("/")
     async def home(_):
         return PlainTextResponse("OK")
-
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["aa.com", "bb.com", "*.ff.com"]
-    )
 
     client = TestClient(
         app,
@@ -68,8 +75,13 @@ def test_wildcard():
 
 
 def test_www_redirect():
-    app = Yast()
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["www.example.com"])
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {"trustedhost": dict(allowed_hosts=["www.example.com"])}
+            }
+        }
+    )
 
     @app.route("/")
     def homepage(request):
@@ -82,6 +94,9 @@ def test_www_redirect():
 
 
 def test_default_allowed_hosts():
-    app = Yast()
+    app = Yast(plugins={"http": {"middlewares": {"trustedhost": {}}}})
+
+    from yast.plugins.http.middlewares import TrustedHostMiddleware
+
     middleware = TrustedHostMiddleware(app)
     assert middleware.allowed_hosts == ["*"]
