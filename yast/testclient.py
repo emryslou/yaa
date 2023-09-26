@@ -75,8 +75,14 @@ class _WrapASGI2:
 
 
 class _ASGIAdapter(requests.adapters.HTTPAdapter):
-    def __init__(self, app: ASGI3App, raise_server_exceptions=True) -> None:
+    def __init__(
+            self,
+            app: ASGI3App,
+            raise_server_exceptions=True,
+            root_path: str = '',
+        ) -> None:
         self.app = app
+        self.root_path = root_path
         self.raise_server_exceptions = raise_server_exceptions
 
     def send(self, request, *args, **kwargs):
@@ -116,7 +122,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             scope = {
                 "type": "websocket",
                 "path": unquote(path),
-                "root_path": "",
+                "root_path": self.root_path,
                 "scheme": scheme,
                 "query_string": query.encode(),
                 "headers": headers,
@@ -132,7 +138,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             "http_version": "1.1",
             "method": request.method,
             "path": unquote(path),
-            "root_path": "",
+            "root_path": self.root_path,
             "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
@@ -347,6 +353,7 @@ class TestClient(requests.Session):
         app: typing.Union[ASGI2App, ASGI3App],
         base_url: str = "http://testserver",
         raise_server_exceptions=True,
+        root_path: str = '',
     ) -> None:
         super().__init__()
         if _is_asgi3(app):
@@ -356,7 +363,9 @@ class TestClient(requests.Session):
             app = typing.cast(ASGI2App, app)
             asgi_app = _WrapASGI2(app)
 
-        adapter = _ASGIAdapter(asgi_app, raise_server_exceptions)
+        adapter = _ASGIAdapter(
+                asgi_app, raise_server_exceptions, root_path=root_path
+            )
         self.mount("http://", adapter)
         self.mount("https://", adapter)
         self.mount("ws://", adapter)

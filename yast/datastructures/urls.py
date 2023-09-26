@@ -57,7 +57,7 @@ class QueryParams(ImmutableMultiDict):
 
         if scope is not None:
             assert value is None, "Cannot set both `value` and `scope`"
-            value = scope["query_string"].decode("latin-1")
+            value = scope.get("query_string", b'').decode("latin-1")
 
         if isinstance(value, str) or isinstance(value, bytes):
             if isinstance(value, bytes):
@@ -95,7 +95,7 @@ class URL(object):
             assert not components, "Cannot set both `**components` and `scope`"
             scheme = scope.get("scheme", "http")
             path = scope.get("root_path", "") + scope["path"]
-            query_string = scope["query_string"]
+            query_string = scope.get("query_string", b'')
 
             server = scope.get("server", None)
             host_header = None
@@ -274,4 +274,7 @@ class URLPath(str):
         else:
             netloc = base_url.netloc
 
-        return str(URL(scheme=scheme, netloc=netloc, path=str(self)))
+        path = (base_url.path.rstrip('/') + str(self))
+        # path = str(self)
+        # print('debug -- 01', path)
+        return str(URL(scheme=scheme, netloc=netloc, path=path))

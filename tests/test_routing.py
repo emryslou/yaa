@@ -2,7 +2,7 @@ import os, pytest
 
 import yast.status as http_status
 
-from yast import TestClient
+from yast import TestClient, Yast
 from yast.responses import JSONResponse, PlainTextResponse, Response
 from yast.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
 from yast.staticfiles import StaticFiles
@@ -104,6 +104,13 @@ def test_url_for():
     assert app.url_path_for("home") == "/"
     assert app.url_path_for("users", username="eml") == "/users/eml"
     assert app.url_path_for("users") == "/users"
+    assert app.url_path_for('home').make_absolute_url(base_url='https://ex.org/root_path/') == 'https://ex.org/root_path/'
+    assert (
+        app.url_path_for("user", username="eml").make_absolute_url(
+            base_url="https://example.org/root_path/"
+        )
+        == "https://example.org/root_path/users/eml"
+    )
 
 
 def test_endpoint():
@@ -353,3 +360,35 @@ def test_mount_at_root():
     mounted = Router([Mount("/", PlainTextResponse("OK"), name="users")])
     client = TestClient(mounted)
     assert client.get("/").status_code == 200
+
+
+
+async def echo_urls(request):
+    return JSONResponse(
+        {
+            "index": request.url_for("index"),
+            "submount": request.url_for("mount:submount"),
+        }
+    )
+
+echo_url_routes = [
+    Route("/", echo_urls, name="index", methods=["GET"]),
+    Mount(
+        "/submount",
+        name="mount",
+        routes=[Route("/", echo_urls, name="submount", methods=["GET"])],
+    ),
+]
+def test_url_for_with_root_path():
+    app = Yast(routes=echo_url_routes)
+    client = TestClient(app, base_url="https://www.example.org/", root_path="/sub_path")
+    response = client.get("/")
+    assert response.json() == {
+        "index": "https://www.example.org/sub_path/",
+        "submount": "https://www.example.org/sub_path/submount/",
+    }
+    response = client.get("/submount/")
+    assert response.json() == {
+        "index": "https://www.example.org/sub_path/",
+        "submount": "https://www.example.org/sub_path/submount/",
+    }

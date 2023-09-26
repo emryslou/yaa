@@ -60,6 +60,20 @@ class HttpConnection(Mapping):
         if not hasattr(self, "_url"):
             self._url = URL(scope=self._scope)
         return self._url
+    
+
+    @property
+    def base_url(self) -> "URL":
+        if not hasattr(self, '_base_url'):
+            base_url_scope = dict(self._scope)
+            base_url_scope['path'] = '/'
+            base_url_scope['query_string'] = b''
+            base_url_scope['root_path'] = base_url_scope.get(
+                'app_root_path', base_url_scope.get('root_path', '')
+            )
+            self._base_url = URL(scope=base_url_scope)
+        
+        return self._base_url
 
     @property
     def app(self) -> typing.Any:
@@ -142,7 +156,7 @@ class HttpConnection(Mapping):
         router = self._scope["router"]
 
         url = router.url_path_for(name, **path_params)
-        return url.make_absolute_url(base_url=self.url)
+        return url.make_absolute_url(base_url=self.base_url)
 
 
 class ClientDisconnect(Exception):
