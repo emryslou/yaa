@@ -129,3 +129,14 @@ def test_url_query_params():
     assert str(u) == "https://example.org/path/?order=name"
     u = u.remove_query_params("order")
     assert str(u) == "https://example.org/path/"
+
+
+def test_url_blank_params():
+    q = QueryParams("a=123&abc&def&b=456")
+    assert "a" in q
+    assert "abc" in q
+    assert "def" in q
+    assert "b" in q
+    assert len(q.get("abc")) == 0
+    assert len(q["a"]) == 3
+    assert list(q.keys()) == ["a", "abc", "def", "b"]

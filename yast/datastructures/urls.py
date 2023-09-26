@@ -62,7 +62,7 @@ class QueryParams(ImmutableMultiDict):
         if isinstance(value, str) or isinstance(value, bytes):
             if isinstance(value, bytes):
                 value = value.decode("latin-1")
-            super().__init__(parse_qsl(value))
+            super().__init__(parse_qsl(value, keep_blank_values=True))
         else:
             super().__init__(value)
 
@@ -196,7 +196,7 @@ class URL(object):
         return self.__class__(components.geturl())
 
     def include_query_params(self, **kwargs: typing.Any) -> "URL":
-        params = MultiDict(parse_qsl(self.query))
+        params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         params.update({str(key): str(value) for key, value in kwargs.items()})
         query = urlencode(params.multi_items())
         return self.replace(query=query)
@@ -210,7 +210,7 @@ class URL(object):
     ) -> "URL":
         if isinstance(keys, str):
             keys = [keys]
-        params = MultiDict(parse_qsl(self.query))
+        params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         for key in keys:
             params.pop(key, None)
 
