@@ -6,7 +6,7 @@ from itsdangerous.exc import BadTimeSignature, SignatureExpired
 
 from yast.datastructures import MutableHeaders
 from yast.middlewares.core import Middleware
-from yast.requests import Request
+from yast.requests import HttpConnection
 from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
@@ -30,9 +30,9 @@ class SessionMiddleware(Middleware):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket"):
-            req = Request(scope=scope)
-            if self.session_cookie in req.cookie:
-                data = req.cookie[self.session_cookie].encode("utf-8")
+            conn = HttpConnection(scope=scope)
+            if self.session_cookie in conn.cookie:
+                data = conn.cookie[self.session_cookie].encode("utf-8")
                 try:
                     data = self.signer.unsign(data, max_age=self.max_age)
                     scope["session"] = json.loads(b64decode(data))

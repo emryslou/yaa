@@ -94,7 +94,7 @@ class WSGIResponser(object):
                     self.exc_info[1], self.exc_info[2]
                 )
         finally:
-            if sender and not sender.done():
+            if not sender.done():
                 sender.cancel()
 
     async def sender(self, send: Send) -> None:
