@@ -67,3 +67,21 @@ def test_debug_not_http():
 
     with pytest.raises(RuntimeError):
         asyncio.run(ServerErrorMiddleware(app)({"type": "websocket"}, None, None))
+
+
+def test_repr():
+    from yast.exceptions import HttpException
+
+    assert repr(HttpException(404)) == (
+        "HttpException(status_code=404, detail='Not Found')"
+    )
+    assert repr(HttpException(404, detail="Not Found: foo")) == (
+        "HttpException(status_code=404, detail='Not Found: foo')"
+    )
+
+    class CustomHTTPException(HttpException):
+        pass
+
+    assert repr(CustomHTTPException(500, detail="Something custom")) == (
+        "CustomHTTPException(status_code=500, detail='Something custom')"
+    )
