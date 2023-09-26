@@ -1,6 +1,6 @@
 import typing
 
-from yast.datastructures import URLPath
+from yast.datastructures import State, URLPath
 from yast.middlewares import BaseHttpMiddleware
 from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, Receive, Scope, Send
@@ -16,6 +16,7 @@ class Yast(object):
         **kwargs,
     ) -> None:
         self._debug = debug
+        self.state = State()
         self.router = Router(routes=routes)
         self.app = self.router
         self.middleware_app = self.app

@@ -7,9 +7,16 @@ from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
-from yast.datastructures import URL, Address, FormData, Headers, QueryParams
+from yast.datastructures import (
+    URL,
+    Address,
+    FormData,
+    Headers,
+    QueryParams,
+    State,
+)
 from yast.formparsers import FormParser, MultiPartParser
-from yast.types import Message, Receive, Scope
+from yast.types import Message, Receive, Scope, Send
 
 try:
     from multipart.multipart import parse_options_header
@@ -17,33 +24,20 @@ except ImportError:  # pragma: no cover
     parse_options_header = None  # pragma: no cover
 
 
+SERVER_PUSH_HEADERS_TO_COPY = {
+    "accept",
+    "accept-encoding",
+    "accept-language",
+    "cache-control",
+    "user-agent",
+}
+
+
 async def empty_receive() -> Message:
     raise RuntimeError("Receive channel has not been made avaible")  # pragma: nocover
 
-
-class State(object):
-    def __init__(self, state_dict: dict = {}):
-        self._state = state_dict
-
-    def __getattr__(self, __key):
-        try:
-            return self._state[__key]
-        except KeyError:
-            raise AttributeError(
-                f"`{self.__class__.__name__}` has no attribute `{__key}`"
-            )
-
-    def __setattr__(self, __key, __value):
-        if __key == "_state":
-            super().__setattr__(__key, __value)
-        else:
-            self._state[__key] = __value
-
-    def __iter__(self) -> Iterator:
-        return enumerate(self._state)
-
-    def __delattr__(self, __key):
-        del self._state[__key]
+async def empty_send(message: Message) -> None:
+    raise RuntimeError("Send channel has not been made avaible")  # pragma: nocover
 
 
 class HttpConnection(Mapping):
@@ -155,9 +149,14 @@ class ClientDisconnect(Exception):
 
 
 class Request(HttpConnection):
-    def __init__(self, scope: Scope, receive: Receive = None):
+    def __init__(
+            self, scope: Scope,
+            receive: Receive = empty_receive,
+            send: Send = empty_send
+        ):
         super().__init__(scope=scope)
-        self._receive = empty_receive if receive is None else receive
+        self._receive = receive
+        self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
 
@@ -257,3 +256,18 @@ class Request(HttpConnection):
                 self._is_disconnected = True
 
         return self._is_disconnected
+
+    async def send_push_promise(self, path: str) -> None:
+        if 'http.response.push' in self.scope.get('extensions', {}):
+            raw_headers = []
+            for name in SERVER_PUSH_HEADERS_TO_COPY:
+                for value in self.headers.getlist(name):
+                    raw_headers.append((
+                        name.encode('latin-1'), value.encode('latin-1')
+                    ))
+            
+            await self._send({
+                'type': 'http.response.push',
+                'path': path,
+                'headers': raw_headers
+            })

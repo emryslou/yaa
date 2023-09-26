@@ -512,7 +512,7 @@ def req_res(func: typing.Callable):
     is_coroutine = iscoroutinefunction(func)
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        req = Request(scope, receive)
+        req = Request(scope, receive, send=send)
         if is_coroutine:
             res = await func(req)
         else:

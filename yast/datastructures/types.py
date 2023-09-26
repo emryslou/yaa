@@ -1,5 +1,6 @@
 import itertools
 import typing
+from typing import Iterator
 
 
 class ImmutableMultiDict(typing.Mapping):
@@ -144,3 +145,28 @@ class MultiDict(ImmutableMultiDict):
         ]
 
         self._dict.update(itertools.chain(items_, kwargs.items()))
+
+
+class State(object):
+    def __init__(self, state_dict: dict = {}):
+        self._state = state_dict
+
+    def __getattr__(self, __key):
+        try:
+            return self._state[__key]
+        except KeyError:
+            raise AttributeError(
+                f"`{self.__class__.__name__}` has no attribute `{__key}`"
+            )
+
+    def __setattr__(self, __key, __value):
+        if __key == "_state":
+            super().__setattr__(__key, __value)
+        else:
+            self._state[__key] = __value
+
+    def __iter__(self) -> Iterator:
+        return enumerate(self._state)
+
+    def __delattr__(self, __key):
+        del self._state[__key]
