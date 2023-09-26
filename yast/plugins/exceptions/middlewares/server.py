@@ -74,7 +74,7 @@ class ServerErrorMiddleware:
     ) -> str:
         code_context = "".join(
             self.format_line(context_position, line, frame.lineno, center_lineno)
-            for context_position, line in enumerate(frame.code_context)
+            for context_position, line in enumerate(frame.code_context or [])
         )
 
         values = {
@@ -98,7 +98,9 @@ class ServerErrorMiddleware:
         if exc.__traceback__ is not None:
             frames = inspect.getinnerframes(exc.__traceback__, limit)
             for frame in reversed(frames):
-                exc_html += self.generate_frame_html(frame, center_lineno, is_collapsed)
+                exc_html += self.generate_frame_html(
+                        frame, center_lineno, is_collapsed
+                    )
                 is_collapsed = True
 
         error = f"{traceback_obj.exc_type.__name__}: {html.escape(str(traceback_obj))}"
