@@ -40,40 +40,39 @@ class ExceptionMiddleware(Middleware):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive=receive, send=send)
-            return
 
-        responsed_started = False
+        else:
+            responsed_started = False
 
-        async def sender(message):
-            nonlocal responsed_started
-            if message["type"] == "http.response.start":
-                responsed_started = True
-            await send(message)
+            async def sender(message):
+                nonlocal responsed_started
+                if message["type"] == "http.response.start":
+                    responsed_started = True
+                await send(message)
 
-        try:
-            await self.app(scope, receive, sender)
-        except Exception as exc:
-            handler = None
-            if isinstance(exc, HttpException):
-                handler = self._status_handlers.get(exc.status_code)
-            if handler is None:
-                handler = self._lookup_exception_handler(exc)
+            try:
+                await self.app(scope, receive, sender)
+            except Exception as exc:
+                handler = None
+                if isinstance(exc, HttpException):
+                    handler = self._status_handlers.get(exc.status_code)
+                if handler is None:
+                    handler = self._lookup_exception_handler(exc)
+                if handler is None:
+                    raise exc from None
 
-            if handler is None:
-                raise exc from None
+                if responsed_started:
+                    raise RuntimeError(
+                        "Caught handled exception, but response already started"
+                    )
 
-            if responsed_started:
-                raise RuntimeError(
-                    "Caught handled exception, but response already started"
-                )
+                req = Request(scope, receive)
+                if asyncio.iscoroutinefunction(handler):
+                    res = await handler(req, exc)
+                else:
+                    res = await run_in_threadpool(handler, req, exc)
 
-            req = Request(scope, receive)
-            if asyncio.iscoroutinefunction(handler):
-                res = await handler(req, exc)
-            else:
-                res = await run_in_threadpool(handler, req, exc)
-
-            await res(scope, receive, sender)
+                await res(scope, receive, sender)
 
     def http_exception(self, req: Request, exc: type) -> Response:
         assert isinstance(exc, HttpException)
