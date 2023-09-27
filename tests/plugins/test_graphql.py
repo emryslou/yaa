@@ -141,7 +141,6 @@ def test_graphql_async_cls():
     assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
-@pytest.mark.skip("batch test skip it")
 def test_context():
     graphql_app = Yast()
     graphql_app.add_route("/", GraphQLApp(schema=schema))

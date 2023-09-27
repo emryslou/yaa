@@ -2,7 +2,7 @@ import pytest
 
 from yast import TestClient
 from yast.exceptions import HttpException
-from yast.plugins.exceptions.middlewares.error import ExceptionMiddleware
+from yast.plugins.exceptions.middlewares.exception import ExceptionMiddleware
 from yast.responses import PlainTextResponse
 from yast.routing import Route, Router
 
