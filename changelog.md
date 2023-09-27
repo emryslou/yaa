@@ -4,6 +4,7 @@
 3. Adding a percent sign to redirect with quoted params
 4. app run: trace-id
 5. server-push , app state
+6. [known issue] see skip test case
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
