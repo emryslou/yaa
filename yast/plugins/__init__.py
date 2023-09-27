@@ -10,6 +10,9 @@ class _plugin_middlewares(object):
     def add(self, key, cls, options):
         self.middlewares[key] = (cls, options)
 
+    def clear(self):
+        self.middlewares = {}
+
 
 plugin_middlewares = _plugin_middlewares()
 
@@ -24,7 +27,6 @@ def load_middlewares(app: Yast, package: str, middlewares_config: dict = {}):
             plugin_middlewares.add(
                 f"{package}.{mw_name}", middlewares[mw_name], mw_config
             )
-            # klass[mw_name] = app.add_middleware(middlewares[mw_name], **mw_config)
         else:
             warnings.warn(f"middleware {mw_name} not found, and skipped")
 

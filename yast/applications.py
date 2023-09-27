@@ -53,6 +53,9 @@ class Yast(object):
 
         module_name = "yast.plugins"
         module = importlib.import_module(module_name)
+        plugin_middlewares = getattr(module, "plugin_middlewares")
+        plugin_middlewares.clear()
+
         scan_path = os.path.dirname(module.__file__)
         for file in os.listdir(scan_path):
             package_path = os.path.join(scan_path, file)

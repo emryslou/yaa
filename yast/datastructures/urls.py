@@ -275,6 +275,4 @@ class URLPath(str):
             netloc = base_url.netloc
 
         path = base_url.path.rstrip("/") + str(self)
-        # path = str(self)
-        # print('debug -- 01', path)
         return str(URL(scheme=scheme, netloc=netloc, path=path))
