@@ -483,9 +483,14 @@ class Router(object):
             return
 
         if scope["type"] == "http" and self.redirect_slashes:
-            if not scope["path"].endswith("/"):
+            if scope["path"].endswith("/"):
+                redirect_path = scope["path"].rstrip("/")
+            else:
+                redirect_path = scope["path"] + "/"
+
+            if redirect_path:
                 redirect_scope = dict(scope)
-                redirect_scope["path"] += "/"
+                redirect_scope["path"] = redirect_path
 
                 for route in self.routes:
                     match, child_scope = route.matches(redirect_scope)

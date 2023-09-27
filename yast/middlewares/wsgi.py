@@ -123,7 +123,7 @@ class WSGIResponser(object):
             status_code_str, _ = status.split(" ", 1)
             status_code = int(status_code_str)
             headers = [
-                (name.encode("ascii"), value.encode("ascii"))
+                (name.strip().encode("ascii"), value.encode("ascii"))
                 for name, value in response_headers
             ]
 
