@@ -10,26 +10,35 @@ from yast.types import ASGIApp, Receive, Scope, Send
 
 
 class ExceptionMiddleware(Middleware):
-    def __init__(self, app: ASGIApp, debug: bool = False) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        debug: bool = False,
+        handlers: typing.Dict[
+            typing.Union[int, typing.Type[Exception]], typing.Callable
+        ] = None,
+    ) -> None:
         self.app = app
         self.debug = debug
         self._status_handlers: typing.Dict[int, typing.Callable] = {}
         self._exception_handlers = {
             HttpException: self.http_exception,
         }
+        for _type, _handler in (handlers or {}).items():
+            self.add_exception_handler(_type, _handler)
 
     def add_exception_handler(
         self,
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
         handler: typing.Callable,
     ) -> None:
-        if isinstance(exc_class_or_status_code, Exception):
+        if isinstance(exc_class_or_status_code, BaseException):
             self._exception_handlers[exc_class_or_status_code] = handler
         elif isinstance(exc_class_or_status_code, int):
             self._status_handlers[exc_class_or_status_code] = handler
 
     def _lookup_exception_handler(
-        self, exc: Exception
+        self, exc: BaseException
     ) -> typing.Optional[typing.Callable]:
         for cls in type(exc).__mro__:
             handler = self._exception_handlers.get(cls)
@@ -40,7 +49,6 @@ class ExceptionMiddleware(Middleware):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive=receive, send=send)
-
         else:
             responsed_started = False
 

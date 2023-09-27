@@ -69,8 +69,6 @@ def create_test_base():
     # reconnect
     url = url.replace(path="/" + database)
     engine = sqlalchemy.create_engine(str(url))
-    engine.execute("create database if not exists " + database)
-
     metadata.create_all(engine)
     yield
     engine.execute("drop table notes")

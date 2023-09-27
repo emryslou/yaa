@@ -104,7 +104,10 @@ def test_url_for():
     assert app.url_path_for("home") == "/"
     assert app.url_path_for("users", username="eml") == "/users/eml"
     assert app.url_path_for("users") == "/users"
-    assert app.url_path_for('home').make_absolute_url(base_url='https://ex.org/root_path/') == 'https://ex.org/root_path/'
+    assert (
+        app.url_path_for("home").make_absolute_url(base_url="https://ex.org/root_path/")
+        == "https://ex.org/root_path/"
+    )
     assert (
         app.url_path_for("user", username="eml").make_absolute_url(
             base_url="https://example.org/root_path/"
@@ -362,7 +365,6 @@ def test_mount_at_root():
     assert client.get("/").status_code == 200
 
 
-
 async def echo_urls(request):
     return JSONResponse(
         {
@@ -370,6 +372,7 @@ async def echo_urls(request):
             "submount": request.url_for("mount:submount"),
         }
     )
+
 
 echo_url_routes = [
     Route("/", echo_urls, name="index", methods=["GET"]),
@@ -379,6 +382,8 @@ echo_url_routes = [
         routes=[Route("/", echo_urls, name="submount", methods=["GET"])],
     ),
 ]
+
+
 def test_url_for_with_root_path():
     app = Yast(routes=echo_url_routes)
     client = TestClient(app, base_url="https://www.example.org/", root_path="/sub_path")
@@ -397,10 +402,11 @@ def test_url_for_with_root_path():
 double_mount_routes = [
     Mount(
         "/mount",
-        name="mount", 
+        name="mount",
         routes=[Mount("/static", ..., name="static")],
     ),
 ]
+
 
 def test_url_for_with_double_mount():
     app = Yast(routes=double_mount_routes)

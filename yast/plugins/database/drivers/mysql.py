@@ -20,6 +20,7 @@ class MysqlBackend(DatabaseBackend):
     def __init__(self, database_url: typing.Union[str, DatabaseURL]) -> None:
         self.database_url = DatabaseURL(database_url)
         self.dialect = self.get_dialect()
+        self.pool = None
 
     def get_dialect(self) -> Dialect:
         return pymysql.dialect(paramstyle="pyformat")
@@ -35,12 +36,12 @@ class MysqlBackend(DatabaseBackend):
         )
 
     async def shutdown(self) -> None:
-        assert self.pool is not None, "DatabaseBackend is not running"
+        assert self.pool is not None, self.__class__.__name__ + " is not running"
         self.pool.close()
         self.pool = None
 
     def session(self) -> "MysqlSession":
-        assert self.pool is not None, "DatabaseBackend is not running"
+        assert self.pool is not None, self.__class__.__name__ + " is not running"
         return MysqlSession(self.pool, self.dialect)
 
 

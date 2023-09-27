@@ -1,7 +1,7 @@
 import typing
 
 from yast.datastructures import State, URLPath
-from yast.middlewares import BaseHttpMiddleware
+from yast.middlewares import BaseHttpMiddleware, Middleware
 from yast.routing import BaseRoute, Router
 from yast.types import ASGIApp, Receive, Scope, Send
 
@@ -11,35 +11,42 @@ class Yast(object):
         self,
         debug: bool = False,
         routes: typing.List[BaseRoute] = None,
-        template_directory: str = None,
-        config: dict = None,
+        middlewares: typing.List[typing.Tuple[Middleware, dict]] = None,
+        exception_handlers: typing.Dict[
+            typing.Union[int, typing.Type[Exception]], typing.Callable
+        ] = None,
+        on_startup: typing.List[typing.Callable] = None,
+        on_shutdown: typing.List[typing.Callable] = None,
         **kwargs,
     ) -> None:
         self._debug = debug
         self.state = State()
         self.router = Router(routes=routes)
         self.app = self.router
-        self.middleware_app = self.app
-        self._register_fun_attr = {}
         self.config = {
             "plugins": {
                 "exceptions": {
                     "middlewares": {
                         "exception": dict(debug=self.debug),
                         "servererror": dict(debug=self.debug),
-                    }
+                    },
                 },
                 "lifespan": {},
             },
         }
+        self.exception_handlers = (
+            {} if exception_handlers is None else dict(exception_handlers)
+        )
+        self.user_middlewares = [] if middlewares is None else list(middlewares)
         for _k, _cfg in kwargs.pop("plugins", {}).items():
             if _k in self.config["plugins"]:
                 self.config["plugins"][_k].update(_cfg)
             else:
                 self.config["plugins"][_k] = _cfg
-        self.__init_plugins__(self.config.get("plugins", {}))
+        self.init_plugins(self.config.get("plugins", {}))
+        self.build_middleware_stack()
 
-    def __init_plugins__(self, plugins_config: dict = {}):
+    def init_plugins(self, plugins_config: dict = {}):
         _all_plugins = {}
         import importlib
         import os
@@ -60,6 +67,37 @@ class Yast(object):
             if plugin_name in _all_plugins:
                 init_fn = _all_plugins[plugin_name]
                 init_fn(self, plugin_cfg)
+
+    def build_middleware_stack(self):
+        app = self.app
+        from yast.plugins import plugin_middlewares as pmw
+
+        key_srv = "yast.plugins.exceptions.servererror"
+        key_exc = "yast.plugins.exceptions.exception"
+        (srv, srv_options) = pmw.middlewares.get(key_srv)
+        (exc, exc_options) = pmw.middlewares.get(key_exc)
+
+        for _type, _handler in (self.exception_handlers or {}).items():
+            if _type in (500, Exception):
+                srv_options["handler"] = _handler
+            else:
+                if "handlers" in srv_options:
+                    exc_options["handlers"][_type] = _handler
+                else:
+                    exc_options["handlers"] = {_type: _handler}
+        middlewares = (
+            [(srv, srv_options)]
+            + self.user_middlewares
+            + [
+                middleware
+                for _k, middleware in pmw.middlewares.items()
+                if _k not in (key_srv, key_exc)
+            ]
+            + [(exc, exc_options)]
+        )
+        for cls, options in reversed(middlewares):
+            app = cls(app, **options)
+        self.middleware_app = app
 
     @property
     def routes(self) -> typing.List[BaseRoute]:
@@ -102,8 +140,8 @@ class Yast(object):
         middleware_class_or_func: typing.Union[type, typing.Callable],
         **kwargs: typing.Any,
     ):
-        self.middleware_app = middleware_class_or_func(self.middleware_app, **kwargs)
-        return self.middleware_app
+        self.user_middlewares.insert(0, (middleware_class_or_func, kwargs))
+        self.build_middleware_stack()
 
     def route(
         self,

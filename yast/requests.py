@@ -60,19 +60,18 @@ class HttpConnection(Mapping):
         if not hasattr(self, "_url"):
             self._url = URL(scope=self._scope)
         return self._url
-    
 
     @property
     def base_url(self) -> "URL":
-        if not hasattr(self, '_base_url'):
+        if not hasattr(self, "_base_url"):
             base_url_scope = dict(self._scope)
-            base_url_scope['path'] = '/'
-            base_url_scope['query_string'] = b''
-            base_url_scope['root_path'] = base_url_scope.get(
-                'app_root_path', base_url_scope.get('root_path', '')
+            base_url_scope["path"] = "/"
+            base_url_scope["query_string"] = b""
+            base_url_scope["root_path"] = base_url_scope.get(
+                "app_root_path", base_url_scope.get("root_path", "")
             )
             self._base_url = URL(scope=base_url_scope)
-        
+
         return self._base_url
 
     @property
@@ -278,7 +277,6 @@ class Request(HttpConnection):
                     raw_headers.append(
                         (name.encode("latin-1"), value.encode("latin-1"))
                     )
-            print("push file", path)
             await self._send(
                 {"type": "http.response.push", "path": path, "headers": raw_headers}
             )

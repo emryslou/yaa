@@ -244,10 +244,10 @@ class Mount(BaseRoute):
                 matched_path = path[: -len(remaining_path)]
                 path_params = dict(scope.get("path_params", {}))
                 path_params.update(matched_params)
-                root_path = scope.get('root_path', '')
+                root_path = scope.get("root_path", "")
                 child_scope = {
                     "path_param": path_params,
-                    'app_root_path': scope.get('app_root_path', root_path),
+                    "app_root_path": scope.get("app_root_path", root_path),
                     "root_path": root_path + matched_path,
                     "path": remaining_path,
                     "endpoint": self.app,
@@ -270,20 +270,19 @@ class Mount(BaseRoute):
             else:
                 remaining_name = name[len(self.name) + 1 :]
 
-            path_kwarg = path_params.get('path')
+            path_kwarg = path_params.get("path")
             path_params["path"] = ""
 
             path_prefix, remaining_params = replace_params(
                 self.path_format, self.param_convertors, path_params
             )
             if path_kwarg is not None:
-                remaining_params['path'] = path_kwarg
+                remaining_params["path"] = path_kwarg
             for route in self.routes or []:
                 try:
                     url = route.url_path_for(remaining_name, **remaining_params)
                     return URLPath(
-                        protocol=url.protocol,
-                        path=path_prefix.rstrip("/") + str(url)
+                        protocol=url.protocol, path=path_prefix.rstrip("/") + str(url)
                     )
                 except NoMatchFound:
                     pass

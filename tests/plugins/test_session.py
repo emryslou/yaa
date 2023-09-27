@@ -18,7 +18,7 @@ async def clear_session(request):
 
 
 def create_app(sess_config: dict = {}):
-    app = Yast(plugins={"session": sess_config})
+    app = Yast(plugins={"session": {"middlewares": {"session": sess_config}}})
     app.add_route("/view_session", view_session)
     app.add_route("/update_session", update_session, methods=["POST"])
     app.add_route("/clear_session", clear_session, methods=["POST"])

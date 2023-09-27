@@ -12,21 +12,15 @@ def plugin_init(app: Yast, config: dict = {}) -> None:
     assert "exception" in config["middlewares"]
     assert "servererror" in config["middlewares"]
 
-    middlewares = load_middlewares(
-        app, __package__, middlewares_config=config["middlewares"]
-    )
-    excmv = middlewares["exception"]
-    srvmv = middlewares["servererror"]
+    load_middlewares(app, __package__, config["middlewares"])
 
     def add_exception_handler(
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
         handler: typing.Callable,
         app: Yast,
     ) -> None:
-        if exc_class_or_status_code in (500, Exception):
-            srvmv.handler = handler
-        else:
-            excmv.add_exception_handler(exc_class_or_status_code, handler)
+        app.exception_handlers[exc_class_or_status_code] = handler
+        app.build_middleware_stack()
 
     def exception_handler(
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]], app: Yast
@@ -37,6 +31,5 @@ def plugin_init(app: Yast, config: dict = {}) -> None:
 
         return decorator
 
-    # app.middleware_app = srvmv
     app.add_exception_handler = functools.partial(add_exception_handler, app=app)
     app.exception_handler = functools.partial(exception_handler, app=app)

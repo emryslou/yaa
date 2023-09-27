@@ -5,10 +5,28 @@ import pytest_benchmark
 
 
 def test_open_file(tmpdir):
-    import os
+    from yast import Yast
+    from yast.middlewares import Middleware
 
-    path = os.path.join(tmpdir, "text.111")
-    with open(path, "w") as f:
-        f.write("<file content>")
+    class MyMiddleware(Middleware):
+        def __init__(self, app):
+            super().__init__(app)
 
-    assert os.path.isfile(path)
+        async def __call__(self, scope, receive, send):
+            await self.app(scope, receive, send)
+
+    def handler_500(req, exc):
+        pass
+
+    def handler_403(req, exc):
+        pass
+
+    app = Yast(
+        exception_handlers={500: handler_500, 403: handler_403},
+        middlewares=[(MyMiddleware, {})],
+        plugins={"session": {}},
+    )
+
+    @app.exception_handler(Exception)
+    def handler_exc(req, exc):
+        pass

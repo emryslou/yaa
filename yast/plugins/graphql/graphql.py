@@ -90,13 +90,10 @@ class GraphQLApp(object):
         background = BackgroundTasks()
         context = {"request": req, "background": background}
         result = await self.execute(req, query, variables, context=context)
-        
+
         res_data = {"data": result.data}
         if result.errors:
-            res_data["errors"] = [
-                format_graphql_error(err) 
-                for err in result.errors
-            ]
+            res_data["errors"] = [format_graphql_error(err) for err in result.errors]
 
         status_code = (
             web_status.HTTP_400_BAD_REQUEST if result.errors else web_status.HTTP_200_OK
