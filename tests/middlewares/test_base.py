@@ -128,7 +128,6 @@ def test_state_data_across_multiple_middlewares():
     assert response.headers["X-State-Show-Me"] == expected_value
 
 
-@pytest.mark.skip("multi-middlewares run order")
 def test_multiple_middlewares_run_order():
     class aMiddleware(BaseHttpMiddleware):
         async def dispatch(self, request: Request, call_next):
@@ -137,6 +136,7 @@ def test_multiple_middlewares_run_order():
             else:
                 request.state.show_me += "," + self.__class__.__name__
             response = await call_next(request)
+            response.headers["X-State-Show-Me"] = request.state.show_me
             return response
 
     class bMiddleware(BaseHttpMiddleware):
@@ -146,12 +146,34 @@ def test_multiple_middlewares_run_order():
             else:
                 request.state.show_me += "," + self.__class__.__name__
             response = await call_next(request)
-            response.headers["X-State-Show-Me"] = request.state.show_me
+
             return response
 
-    app = Yast()
-    app.add_middleware(aMiddleware)
-    app.add_middleware(bMiddleware)
+    class cMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            if not hasattr(request.state, "show_me"):
+                request.state.show_me = self.__class__.__name__
+            else:
+                request.state.show_me += "," + self.__class__.__name__
+            response = await call_next(request)
+
+            return response
+
+    class dMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            if not hasattr(request.state, "show_me"):
+                request.state.show_me = self.__class__.__name__
+            else:
+                request.state.show_me += "," + self.__class__.__name__
+            response = await call_next(request)
+
+            return response
+
+    app = Yast(
+        middlewares=[(aMiddleware, {}), (bMiddleware, {})], plugins={"session": {}}
+    )
+    app.add_middleware(cMiddleware)
+    app.add_middleware(dMiddleware)
 
     @app.route("/")
     def homepage(request: Request):
@@ -160,4 +182,7 @@ def test_multiple_middlewares_run_order():
     client = TestClient(app)
     response = client.get("/")
     assert response.text == "OK"
-    assert response.headers["X-State-Show-Me"] == ""
+    assert (
+        response.headers["X-State-Show-Me"]
+        == "aMiddleware,bMiddleware,cMiddleware,dMiddleware"
+    )

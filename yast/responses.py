@@ -170,7 +170,10 @@ class JSONResponse(Response):
 
 class UJSONResponse(JSONResponse):
     def render(self, content: typing.Any) -> bytes:
-        return json.dumps(
+        assert (
+            ujson is not None
+        ), "`usjon` must be required for `UJSONResponse`, maybe try `pip install ujson`"
+        return ujson.dumps(
             content,
             ensure_ascii=False,
         ).encode("utf-8")

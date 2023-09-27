@@ -102,7 +102,7 @@ class CORSMiddleware(Middleware):
         if self.allow_all_origins:
             return True
 
-        if self.allow_origin_regex is not None and self.allow_origin_regex.match(
+        if self.allow_origin_regex is not None and self.allow_origin_regex.fullmatch(
             origin
         ):
             return True

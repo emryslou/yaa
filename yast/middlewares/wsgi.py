@@ -6,6 +6,8 @@ import typing
 from yast.concurrency import run_in_threadpool
 from yast.types import ASGIApp, Receive, Scope, Send
 
+from .core import Middleware
+
 
 def build_environ(scope: Scope, body: bytes) -> dict:
     environ = {
@@ -48,9 +50,9 @@ def build_environ(scope: Scope, body: bytes) -> dict:
     return environ
 
 
-class WSGIMiddleware(object):
+class WSGIMiddleware(Middleware):
     def __init__(self, app: ASGIApp, workers: int = 10) -> None:
-        self.app = app
+        super().__init__(app)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == "http"

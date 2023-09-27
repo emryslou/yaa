@@ -129,7 +129,7 @@ def test_cors_allow_origin_regex():
                 "middlewares": {
                     "cors": dict(
                         allow_headers=["X-Example", "Content-Type"],
-                        allow_origin_regex="https://*",
+                        allow_origin_regex="https://.*",
                     )
                 }
             }
@@ -233,3 +233,39 @@ def test_cors_vary_header_is_properly_set():
     assert res.status_code == 200
     assert res.text == "HomePage"
     assert res.headers["vary"] == "Accept-Encoding, Origin"
+
+
+def test_cors_allow_origin_regex_fullmatch():
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "cors": dict(
+                        allow_headers=["X-Example", "Content-Type"],
+                        allow_origin_regex="https://.*\.example.org",
+                    ),
+                }
+            }
+        }
+    )
+
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse("Homepage", status_code=200)
+
+    client = TestClient(app)
+    # Test standard response
+    headers = {"Origin": "https://subdomain.example.org"}
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert (
+        response.headers["access-control-allow-origin"]
+        == "https://subdomain.example.org"
+    )
+    # Test diallowed standard response
+    headers = {"Origin": "https://subdomain.example.org.hacker.com"}
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert "access-control-allow-origin" not in response.headers

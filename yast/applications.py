@@ -87,12 +87,12 @@ class Yast(object):
                     exc_options["handlers"] = {_type: _handler}
         middlewares = (
             [(srv, srv_options)]
-            + self.user_middlewares
             + [
                 middleware
                 for _k, middleware in pmw.middlewares.items()
                 if _k not in (key_srv, key_exc)
             ]
+            + self.user_middlewares
             + [(exc, exc_options)]
         )
         for cls, options in reversed(middlewares):
@@ -140,7 +140,7 @@ class Yast(object):
         middleware_class_or_func: typing.Union[type, typing.Callable],
         **kwargs: typing.Any,
     ):
-        self.user_middlewares.insert(0, (middleware_class_or_func, kwargs))
+        self.user_middlewares.append((middleware_class_or_func, kwargs))
         self.build_middleware_stack()
 
     def route(

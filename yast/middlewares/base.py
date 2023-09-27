@@ -14,7 +14,7 @@ DispatchFunction = typing.Callable[
 
 class BaseHttpMiddleware(Middleware):
     def __init__(self, app: ASGIApp, dispatch: DispatchFunction = None) -> None:
-        self.app = app
+        super().__init__(app)
         self.dispatch_func = dispatch if dispatch is not None else self.dispatch
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -29,7 +29,6 @@ class BaseHttpMiddleware(Middleware):
         loop = asyncio.get_event_loop()
         queue = asyncio.Queue()
         scope = req.scope
-
         receive = req.receive
         send = queue.put
 

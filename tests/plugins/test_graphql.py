@@ -143,8 +143,9 @@ def test_graphql_async_cls():
 
 @pytest.mark.skip("batch test skip it")
 def test_context():
-    graphql_app = Yast(middlewares=[(FakeAuthMiddleware, {})])
+    graphql_app = Yast()
     graphql_app.add_route("/", GraphQLApp(schema=schema))
+    graphql_app.add_middleware(FakeAuthMiddleware)
     client = TestClient(graphql_app)
     res = client.post(
         "/", json={"query": "{whoami}"}, headers={"Authorization": "Bearer 123"}
