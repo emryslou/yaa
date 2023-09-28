@@ -1,13 +1,11 @@
 import typing
 
 
-def get_plugin_middlewares(
-    package: str, root_path: str = None
-) -> typing.Dict[str, type]:
+def get_plugin_middlewares(package: str, root_path: str = "") -> typing.Dict[str, type]:
     import importlib
     import os
 
-    if root_path is None:
+    if not root_path:
         root_path = os.path.join(os.path.dirname(__file__), "plugins")
 
     module_name = f"{package}.middlewares"

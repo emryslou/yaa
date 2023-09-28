@@ -18,8 +18,10 @@ try:
     sock.settimeout(1)
     sock.connect((url.hostname, url.port))
     os.environ["YAST_TEST_DB_POSTGRES"] = str(url)
-except Exception as exc:
-    pytest.skip(f"test db cannot connected {exc}", allow_module_level=True)
+except Exception as exc:  # pragma: no cover
+    pytest.skip(
+        f"test db cannot connected {exc}", allow_module_level=True
+    )  # pragma: no cover
 
 
 app = Yast()

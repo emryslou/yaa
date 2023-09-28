@@ -17,9 +17,10 @@ try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(1)
     sock.connect((url.hostname, url.port))
-except Exception as exc:
-    print(f"{exc}")
-    pytest.skip(f"test db cannot connected {exc}", allow_module_level=True)
+except Exception as exc:  # pragma: no cover
+    pytest.skip(
+        f"test db cannot connected {exc}", allow_module_level=True
+    )  # pragma: no cover
 
 
 def test_env():

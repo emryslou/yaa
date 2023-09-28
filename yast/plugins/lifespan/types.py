@@ -15,7 +15,3 @@ class EventType(enum.Enum):
     @property
     def complete(self) -> str:
         return f"{self.lifespan}.complete"
-
-    @staticmethod
-    def get_by_lifespan(lifespan: str) -> "EventType":
-        return EventType(lifespan.replace("lifespan.", ""))

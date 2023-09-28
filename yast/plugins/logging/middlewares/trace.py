@@ -14,7 +14,7 @@ class TraceMiddleware(Middleware):
         super().__init__(app)
         self.debug = debug
         if log_config:
-            pass
+            pass  # pragma: no cover
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         import uuid
@@ -35,7 +35,7 @@ class TraceMiddleware(Middleware):
                 await send(message)
 
         else:
-            sender = send
+            sender = send  # pragma: no cover
 
         if _x_trace_value is None:
             _x_trace_value = str(uuid.uuid4())

@@ -139,7 +139,7 @@ def test_app_plugin_lifespan():
     shutdown_complete = False
 
     def hello(req):
-        return PlainTextResponse("hello")
+        return PlainTextResponse("hello")  # pragma: no cover
 
     async def lifespan(app):
         nonlocal startup_complete, shutdown_complete
@@ -170,7 +170,7 @@ def test_app_params_lifespan():
     shutdown_complete = False
 
     def hello(req):
-        return PlainTextResponse("hello")
+        return PlainTextResponse("hello")  # pragma: no cover
 
     async def lifespan(app):
         nonlocal startup_complete, shutdown_complete

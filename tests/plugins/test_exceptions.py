@@ -58,7 +58,7 @@ def test_websockets_should_raise():
 
     with pytest.raises(WebSocketDisconnect):
         with client.wsconnect("/runtime_error") as _:
-            pass
+            pass  # pragma: no cover
 
     # with pytest.raises(RuntimeError):
     #     client.wsconnect('/runtime_error')

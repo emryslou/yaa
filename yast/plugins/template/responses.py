@@ -8,8 +8,8 @@ from yast.types import Receive, Scope, Send
 
 try:
     import jinja2
-except ImportError:
-    jinja2 = None
+except ImportError:  # pragma: no cover
+    jinja2 = None  # pragma: no cover
 
 
 class TemplateResponse(Response):
