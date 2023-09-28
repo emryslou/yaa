@@ -59,23 +59,25 @@ class ServerErrorMiddleware(Middleware):
             raise exc from None
 
     def format_line(
-        self, position: int, line: str, frame_lineno: int, center_lineno: int
-    ) -> str:
+            self,
+            index: int, line: str, frame_lineno: int,
+            frame_index: int
+        ) -> str:
         values = {
             "line": line.replace(" ", "&nbsp"),
-            "lineno": frame_lineno + (position - center_lineno),
+            "lineno": frame_lineno - frame_index + index,
         }
 
-        if position != center_lineno:
+        if index != frame_index:
             return LINE.format(**values)
         return CENTER_LINE.format(**values)
 
     def generate_frame_html(
-        self, frame: inspect.FrameInfo, center_lineno: int, is_collapsed: bool
-    ) -> str:
+            self, frame: inspect.FrameInfo, is_collapsed: bool
+        ) -> str:
         code_context = "".join(
-            self.format_line(context_position, line, frame.lineno, center_lineno)
-            for context_position, line in enumerate(frame.code_context or [])
+            self.format_line(index, line, frame.lineno, frame.index)
+            for index, line in enumerate(frame.code_context or [])
         )
 
         values = {
@@ -92,14 +94,13 @@ class ServerErrorMiddleware(Middleware):
             exc, capture_locals=True, limit=limit
         )
 
-        center_lineno = int((limit - 1) / 2)
         exc_html = ""
         is_collapsed = False
 
         if exc.__traceback__ is not None:
             frames = inspect.getinnerframes(exc.__traceback__, limit)
             for frame in reversed(frames):
-                exc_html += self.generate_frame_html(frame, center_lineno, is_collapsed)
+                exc_html += self.generate_frame_html(frame, is_collapsed)
                 is_collapsed = True
 
         error = f"{traceback_obj.exc_type.__name__}: {html.escape(str(traceback_obj))}"
