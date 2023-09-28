@@ -176,15 +176,28 @@ def test_phrase():
 
 def test_set_cookie():
     async def app(scope, receive, send):
-        res = Response("Hello, Set Cookie")
-        res.set_cookie("my_cookie", "AAAAA")
+        res = Response("Hello, Set Cookie", media_type="text/plain")
+        res.set_cookie(
+            key="my_cookie",
+            value="AAAAA",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
         await res(scope, receive, send)
 
     client = TestClient(app)
     res = client.get("/")
     assert res.text == "Hello, Set Cookie"
-    assert "my_cookie" in res.cookies
-    assert res.cookies.get("my_cookie") == "AAAAA"
+    assert "set-cookie" in res.headers
+    cookies = res.headers.get("set-cookie")
+    assert cookies.count("my_cookie=AAAAA") == 1
+    assert cookies.count("Domain=localhost") == 1
+    assert cookies.count("HttpOnly;") == 1
 
 
 def test_del_cookie():

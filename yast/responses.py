@@ -25,6 +25,9 @@ except ImportError:  # pragma: nocover
     ujson = None  # type: ignore
 
 
+http.cookies.Morsel._reserved["samesite"] = "SameSite"
+
+
 class Response(object):
     media_type = None
     charset = "utf-8"
@@ -119,6 +122,7 @@ class Response(object):
         domain: str = None,
         secure: bool = False,
         httponly: bool = False,
+        samesite: str = "lax",
     ) -> None:
         cookie = http.cookies.SimpleCookie()
         cookie[key] = value
@@ -134,6 +138,14 @@ class Response(object):
             cookie[key]["secure"] = True
         if httponly:
             cookie[key]["httponly"] = True
+        if samesite is not None:
+            assert samesite.lower() in (
+                "strict",
+                "lax",
+                "none",
+            ), "samesite must be either `strict`, `lax` or `none`"
+            cookie[key]["samesite"] = samesite
+
         cookie_val = cookie.output(header="").strip()
         self.raw_headers.append((b"set-cookie", cookie_val.encode("latin-1")))
 
