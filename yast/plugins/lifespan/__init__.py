@@ -12,7 +12,8 @@ def plugin_init(app: Yast, config: dict = {}) -> None:
     from .routing import Lifespan
 
     handlers = config.get("event_handlers", {})
-    lifespan = Lifespan(**handlers)
+    context = config.get("context", None)
+    lifespan = Lifespan(context=context, **handlers)
 
     def on_event(event_type: EventType, cls) -> None:
         return lifespan.on_event(event_type)

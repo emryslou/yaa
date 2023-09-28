@@ -50,7 +50,9 @@ def requires(
 
                 if not has_required_scope(req, scope_list):
                     if redirect is not None:
-                        return RedirectResponse(url=req.url_for(redirect), status_code=303)
+                        return RedirectResponse(
+                            url=req.url_for(redirect), status_code=303
+                        )
                     # endif
                     raise HttpException(status_code=status_code)
                 # endif

@@ -17,6 +17,7 @@ class Yast(object):
         ] = None,
         on_startup: typing.List[typing.Callable] = None,
         on_shutdown: typing.List[typing.Callable] = None,
+        lifespan: typing.Callable["Yast", typing.AsyncGenerator] = None,
         **kwargs,
     ) -> None:
         self._debug = debug
@@ -32,20 +33,31 @@ class Yast(object):
                     },
                 },
                 "lifespan": {
-                    'event_handlers': {
-                        'startup': [],
-                        'shutdown': [],
-                    }
+                    "event_handlers": {
+                        "startup": [],
+                        "shutdown": [],
+                    },
+                    "context": None,
                 },
             },
         }
 
-        if on_startup is not None:
-            # "event_handlers": {"startup": [run_startup], "shutdown": [run_shutdown]}
-            self.config['plugins']['lifespan']['event_handlers']['startup'] += on_startup
-        if on_shutdown is not None:
-            self.config['plugins']['lifespan']['event_handlers']['shutdown'] += on_shutdown
-        
+        assert lifespan is None or (
+            on_shutdown is None and on_startup is None
+        ), "Use either `lifespan` or `on_startup`/`on_shutdown`, not both"
+        if lifespan is not None:
+            self.config["plugins"]["lifespan"]["context"] = lifespan
+            self.config["plugins"]["lifespan"]["event_handlers"] = {}
+        else:
+            if on_startup is not None:
+                self.config["plugins"]["lifespan"]["event_handlers"][
+                    "startup"
+                ] += on_startup
+            if on_shutdown is not None:
+                self.config["plugins"]["lifespan"]["event_handlers"][
+                    "shutdown"
+                ] += on_shutdown
+
         self.exception_handlers = (
             {} if exception_handlers is None else dict(exception_handlers)
         )

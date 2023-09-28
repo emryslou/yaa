@@ -4,7 +4,7 @@ from yast.routing import Route, Router
 from yast.testclient import TestClient
 
 
-def test_route_lifespan():
+def test_route_lifespan_handlers():
     from yast.responses import PlainTextResponse
 
     startup_complete = False
@@ -38,6 +38,70 @@ def test_route_lifespan():
     assert shutdown_complete
 
 
+def test_route_sync_lifespan():
+    from yast.responses import PlainTextResponse
+
+    startup_complete = False
+    shutdown_complete = False
+
+    def hello(req):
+        return PlainTextResponse("hello")
+
+    def lifespan(app):
+        nonlocal startup_complete, shutdown_complete
+        startup_complete = True
+        yield
+        shutdown_complete = True
+
+    app = Router(
+        routes=[
+            Lifespan(context=lifespan),
+            Route("/", hello),
+        ]
+    )
+
+    assert not startup_complete
+    assert not shutdown_complete
+    with TestClient(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
+
+
+def test_route_async_lifespan():
+    from yast.responses import PlainTextResponse
+
+    startup_complete = False
+    shutdown_complete = False
+
+    def hello(req):
+        return PlainTextResponse("hello")
+
+    async def lifespan(app):
+        nonlocal startup_complete, shutdown_complete
+        startup_complete = True
+        yield
+        shutdown_complete = True
+
+    app = Router(
+        routes=[
+            Lifespan(context=lifespan),
+            Route("/", hello),
+        ]
+    )
+
+    assert not startup_complete
+    assert not shutdown_complete
+    with TestClient(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
+
+
 def test_app():
     startup_complete = False
     shutdown_complete = False
@@ -57,6 +121,64 @@ def test_app():
             },
         }
     )
+
+    assert not startup_complete
+    assert not shutdown_complete
+    with TestClient(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
+
+
+def test_app_plugin_lifespan():
+    from yast.responses import PlainTextResponse
+
+    startup_complete = False
+    shutdown_complete = False
+
+    def hello(req):
+        return PlainTextResponse("hello")
+
+    async def lifespan(app):
+        nonlocal startup_complete, shutdown_complete
+        startup_complete = True
+        yield
+        shutdown_complete = True
+
+    app = Yast(
+        plugins={
+            "lifespan": {"context": lifespan},
+        }
+    )
+
+    assert not startup_complete
+    assert not shutdown_complete
+    with TestClient(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
+
+
+def test_app_params_lifespan():
+    from yast.responses import PlainTextResponse
+
+    startup_complete = False
+    shutdown_complete = False
+
+    def hello(req):
+        return PlainTextResponse("hello")
+
+    async def lifespan(app):
+        nonlocal startup_complete, shutdown_complete
+        startup_complete = True
+        yield
+        shutdown_complete = True
+
+    app = Yast(lifespan=lifespan)
 
     assert not startup_complete
     assert not shutdown_complete
