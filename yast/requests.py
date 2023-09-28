@@ -105,7 +105,11 @@ class HttpConnection(Mapping):
             cookie_headers = self.headers.get("cookie")
             if cookie_headers:
                 cookie = http.cookies.SimpleCookie()
-                cookie.load(cookie_headers)
+                try:
+                    cookie.load(cookie_headers)
+                except http.cookies.CookieError:
+                    pass
+
                 for k, morse in cookie.items():
                     cookies[k] = morse.value
             self._cookies = cookies

@@ -8,8 +8,8 @@ from email.utils import formatdate
 from mimetypes import guess_type
 from urllib.parse import quote, quote_plus
 
-from yast.concurrency import run_until_first_complete
 from yast.background import BackgroundTask
+from yast.concurrency import run_until_first_complete
 from yast.datastructures import URL, MutableHeaders
 from yast.types import Receive, Scope, Send
 
@@ -210,9 +210,9 @@ class StreamingResponse(Response):
     async def listen_for_disconnect(self, receive: Receive) -> None:
         while True:
             message = await receive()
-            if message['type'] == 'http.disconnect':
+            if message["type"] == "http.disconnect":
                 break
-    
+
     async def response(self, send: Send, scope: Scope) -> None:
         await send(
             {
@@ -230,11 +230,10 @@ class StreamingResponse(Response):
                 )
             await send({"type": "http.response.body", "body": b"", "more_body": False})
 
-
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await run_until_first_complete(
-            (self.response, {'send': send, 'scope': scope}),
-            (self.listen_for_disconnect, {'receive': receive})
+            (self.response, {"send": send, "scope": scope}),
+            (self.listen_for_disconnect, {"receive": receive}),
         )
         if self.background is not None:
             await self.background()
