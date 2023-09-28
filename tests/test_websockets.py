@@ -211,3 +211,87 @@ def test_websocket_scope_interface():
     assert session["type"] == "websocket"
     assert dict(session) == {"type": "websocket", "path": "/abc/", "headers": []}
     assert len(session) == 3
+
+
+def test_websocket_iter_text():
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.accept()
+            async for data in websocket.iter_text():
+                await websocket.send_text("Message was: " + data)
+
+        return asgi
+
+    client = TestClient(app)
+    with client.wsconnect("/") as websocket:
+        websocket.send_text("Hello, world!")
+        data = websocket.receive_text()
+        assert data == "Message was: Hello, world!"
+
+
+def test_websocket_iter_bytes():
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.accept()
+            async for data in websocket.iter_bytes():
+                await websocket.send_bytes(b"Message was: " + data)
+
+        return asgi
+
+    client = TestClient(app)
+    with client.wsconnect("/") as websocket:
+        websocket.send_bytes(b"Hello, world!")
+        data = websocket.receive_bytes()
+        assert data == b"Message was: Hello, world!"
+
+
+def test_websocket_iter_json():
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.accept()
+            async for data in websocket.iter_json():
+                await websocket.send_json({"message": data})
+
+        return asgi
+
+    client = TestClient(app)
+    with client.wsconnect("/") as websocket:
+        websocket.send_json({"hello": "world"})
+        data = websocket.receive_json()
+        assert data == {"message": {"hello": "world"}}
+
+
+def test_websocket_concurrency_pattern():
+    import asyncio
+    from yast.concurrency import run_until_first_complete
+
+    def app(scope):
+        async def reader(websocket, queue):
+            async for data in websocket.iter_json():
+                await queue.put(data)
+
+        async def writer(websocket, queue):
+            while True:
+                message = await queue.get()
+                await websocket.send_json(message)
+
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            queue = asyncio.Queue()
+            await websocket.accept()
+            await run_until_first_complete(
+                (reader, {"websocket": websocket, "queue": queue}),
+                (writer, {"websocket": websocket, "queue": queue}),
+            )
+            await websocket.close()
+
+        return asgi
+
+    client = TestClient(app)
+    with client.wsconnect("/") as websocket:
+        websocket.send_json({"hello": "world"})
+        data = websocket.receive_json()
+        assert data == {"hello": "world"}

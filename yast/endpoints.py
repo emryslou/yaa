@@ -1,8 +1,6 @@
 import asyncio
 import typing
 
-import ujson as json
-
 import yast.status as status
 from yast.concurrency import run_in_threadpool
 from yast.exceptions import HttpException
@@ -10,6 +8,11 @@ from yast.requests import Request
 from yast.responses import PlainTextResponse
 from yast.types import Message, Receive, Scope, Send
 from yast.websockets import WebSocket
+
+try:
+    import ujson as json
+except ImportError:  # pragma: no cover
+    import json  # pragma: no cover
 
 
 class _Endpoint(object):
@@ -25,7 +28,7 @@ class _Endpoint(object):
         return self.dispatch().__await__()
 
     async def dispatch(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
 
 class HttpEndPoint(_Endpoint):
@@ -119,7 +122,7 @@ class WebSocketEndpoint(_Endpoint):
                 msg_json = json.loads(message["text"])
             elif "bytes" in message:
                 msg_json = json.loads(message["bytes"].decode("utf-8"))
-        except json.decoder.JSONDecodeError:
+        except json.JSONDecodeError:
             await self.ws.close(code=status.WS_1003_UNSUPPORTED_DATA)
             raise RuntimeError("Malformed JSON data received.")
         else:

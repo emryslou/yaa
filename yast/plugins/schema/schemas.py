@@ -66,6 +66,7 @@ class BaseSchemaGenerator(object):
         if not docstring:
             return {}
 
+        assert yaml is not None, "`pyyaml` must be installed to use OpenAPIResponse"
         docstring = docstring.split("----")[-1]
         parsed = yaml.safe_load(docstring)
 

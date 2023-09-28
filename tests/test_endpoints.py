@@ -71,3 +71,28 @@ def test_websocket_endpoint_on_receive_bytes():
         msg = "Hello, Bytes"
         s.send_bytes(msg.encode("utf-8"))
         s.receive_bytes() == (f"Received msg is {msg}").encode("utf-8")
+
+
+@pytest.mark.timeout(3)
+def test_websocket_endpoint_on_receive_json():
+    class WsApp(WebSocketEndpoint):
+        encoding = "json"
+
+        async def on_receive(self, data) -> None:
+            await self.send(data, send_type="json")
+
+        async def on_disconnect(self, code: int) -> None:
+            pass
+
+    client = TestClient(WsApp)
+    with client.wsconnect("/ws") as s:
+        msg = {"json": {"hello": "json"}}
+        s.send_json(msg)
+        s.receive_json() == msg
+
+        s.send_text('{"json": {"hello": "json"}}')
+        s.receive_json() == msg
+
+    with pytest.raises(RuntimeError) as exc:
+        with client.wsconnect("/ws") as ss:
+            ss.send_text('{"json": {"hello": "json"},}')
