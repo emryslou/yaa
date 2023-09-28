@@ -8,6 +8,7 @@ from email.utils import formatdate
 from mimetypes import guess_type
 from urllib.parse import quote, quote_plus
 
+from yast.concurrency import run_until_first_complete
 from yast.background import BackgroundTask
 from yast.datastructures import URL, MutableHeaders
 from yast.types import Receive, Scope, Send
@@ -199,18 +200,20 @@ class StreamingResponse(Response):
         headers: dict = None,
         media_type: str = None,
         background: BackgroundTask = None,
-        method: str = None,
     ) -> None:
         self.body_iter = content
         self.status_code = status_code
         self.media_type = self.media_type if media_type is None else media_type
         self.background = background
-        self.send_header_only = (
-            method.upper() in ("HEAD") if method is not None else False
-        )
         self.init_headers(headers)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def listen_for_disconnect(self, receive: Receive) -> None:
+        while True:
+            message = await receive()
+            if message['type'] == 'http.disconnect':
+                break
+    
+    async def response(self, send: Send, scope: Scope) -> None:
         await send(
             {
                 "type": "http.response.start",
@@ -218,7 +221,6 @@ class StreamingResponse(Response):
                 "headers": self.get_send_headers(scope),
             }
         )
-
         if scope["method"] not in ("HEAD"):
             async for chunk in self.body_iter:
                 if not isinstance(chunk, bytes):
@@ -227,6 +229,13 @@ class StreamingResponse(Response):
                     {"type": "http.response.body", "body": chunk, "more_body": True}
                 )
             await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await run_until_first_complete(
+            (self.response, {'send': send, 'scope': scope}),
+            (self.listen_for_disconnect, {'receive': receive})
+        )
         if self.background is not None:
             await self.background()
 
