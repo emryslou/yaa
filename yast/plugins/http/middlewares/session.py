@@ -33,8 +33,8 @@ class SessionMiddleware(Middleware):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket"):
             conn = HttpConnection(scope=scope)
-            if self.session_cookie in conn.cookie:
-                data = conn.cookie[self.session_cookie].encode("utf-8")
+            if self.session_cookie in conn.cookies:
+                data = conn.cookies[self.session_cookie].encode("utf-8")
                 try:
                     data = self.signer.unsign(data, max_age=self.max_age)
                     scope["session"] = json.loads(b64decode(data))

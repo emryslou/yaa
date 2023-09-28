@@ -2,10 +2,11 @@ import math
 import typing
 import uuid
 
+
 class Convertor(object):
     plugins = {}
 
-    name = ''
+    name = ""
     regex = ""
 
     def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
@@ -21,7 +22,7 @@ class Convertor(object):
 
 class StringConvertor(Convertor):
     regex = "[^/]+"
-    name = 'str'
+    name = "str"
 
     def convert(self, value: str) -> typing.Any:
         return value
@@ -34,7 +35,7 @@ class StringConvertor(Convertor):
 
 class PathConvertor(Convertor):
     regex = ".*"
-    name = 'path'
+    name = "path"
 
     def convert(self, value: str) -> typing.Any:
         return value
@@ -45,7 +46,7 @@ class PathConvertor(Convertor):
 
 class IntegerConvertor(Convertor):
     regex = "[+]?[0-9]+"
-    name = 'int'
+    name = "int"
 
     def convert(self, value: str) -> int:
         return int(value)
@@ -58,7 +59,7 @@ class IntegerConvertor(Convertor):
 
 class FloatConvertor(Convertor):
     regex = "[0-9]+(.[0-9]+)?"
-    name = 'float'
+    name = "float"
 
     def convert(self, value: str) -> typing.Any:
         return float(value)
@@ -74,12 +75,12 @@ class FloatConvertor(Convertor):
 
 
 class UUIDConvertor(Convertor):
-    regex = '[0-9a-f]{8}' + ('-[0-9a-f]{4}' * 3) + '-[0-9a-f]{12}'
-    name = 'uuid'
+    regex = "[0-9a-f]{8}" + ("-[0-9a-f]{4}" * 3) + "-[0-9a-f]{12}"
+    name = "uuid"
 
     def convert(self, value: str) -> typing.Any:
         return uuid.UUID(value)
-    
+
     def to_string(self, value: typing.Any) -> str:
         return str(value)
 

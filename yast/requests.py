@@ -33,6 +33,21 @@ SERVER_PUSH_HEADERS_TO_COPY = {
 }
 
 
+def cookie_parser(cookie_str: str) -> typing.Dict[str, str]:
+    cookie_dict: typing.Dict[str, str] = {}
+    for chunk in cookie_str.split(";"):
+        if "=" in chunk:
+            key, value = chunk.split("=", 1)
+        else:
+            key, value = "", chunk
+
+        key, value = key.strip(), value.strip()
+        if key or value:
+            cookie_dict[key] = http.cookies._unquote(value)
+
+    return cookie_dict
+
+
 async def empty_receive() -> Message:
     raise RuntimeError("Receive channel has not been made avaible")  # pragma: nocover
 
@@ -99,19 +114,12 @@ class HttpConnection(Mapping):
         return self._scope.get("path_params", {})
 
     @property
-    def cookie(self) -> typing.Dict[str, str]:
+    def cookies(self) -> typing.Dict[str, str]:
         if not hasattr(self, "_cookies"):
-            cookies = {}
+            cookies: typing.Dict[str, str] = {}
             cookie_headers = self.headers.get("cookie")
             if cookie_headers:
-                cookie = http.cookies.SimpleCookie()
-                try:
-                    cookie.load(cookie_headers)
-                except http.cookies.CookieError:
-                    pass
-
-                for k, morse in cookie.items():
-                    cookies[k] = morse.value
+                cookies = cookie_parser(cookie_str=cookie_headers)
             self._cookies = cookies
         return self._cookies
 

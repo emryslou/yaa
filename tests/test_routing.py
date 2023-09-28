@@ -227,7 +227,7 @@ def test_path_params_convert():
     def path_conv(req):
         num = req.path_params["param"]
         return JSONResponse({"path": num})
-    
+
     @app.route("/uuid/{param:uuid}", name="uuid_conv")
     def uuid_conv(req):
         param = req.path_params["param"]
@@ -264,7 +264,10 @@ def test_path_params_convert():
     res = client.get("/uuid/01234567-89ab-cdef-0123-456789abcdef")
     assert res.status_code == 200
     assert res.json() == {"uuid": "01234567-89ab-cdef-0123-456789abcdef"}
-    assert app.url_path_for("uuid_conv", param="fecdba98-7654-3210-fecd-ba9876543210") == "/uuid/fecdba98-7654-3210-fecd-ba9876543210"
+    assert (
+        app.url_path_for("uuid_conv", param="fecdba98-7654-3210-fecd-ba9876543210")
+        == "/uuid/fecdba98-7654-3210-fecd-ba9876543210"
+    )
 
 
 def users_api(request):

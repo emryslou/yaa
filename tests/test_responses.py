@@ -206,7 +206,7 @@ def test_del_cookie():
     async def app(scope, receive, send):
         req = Request(scope, receive)
         res = Response("Hello, Set Cookie")
-        if req.cookie.get("my_cookie"):
+        if req.cookies.get("my_cookie"):
             res.del_cookie("my_cookie")
         else:
             res.set_cookie("my_cookie", "AAAAA")
