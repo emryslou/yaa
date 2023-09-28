@@ -31,9 +31,21 @@ class Yast(object):
                         "servererror": dict(debug=self.debug),
                     },
                 },
-                "lifespan": {},
+                "lifespan": {
+                    'event_handlers': {
+                        'startup': [],
+                        'shutdown': [],
+                    }
+                },
             },
         }
+
+        if on_startup is not None:
+            # "event_handlers": {"startup": [run_startup], "shutdown": [run_shutdown]}
+            self.config['plugins']['lifespan']['event_handlers']['startup'] += on_startup
+        if on_shutdown is not None:
+            self.config['plugins']['lifespan']['event_handlers']['shutdown'] += on_shutdown
+        
         self.exception_handlers = (
             {} if exception_handlers is None else dict(exception_handlers)
         )

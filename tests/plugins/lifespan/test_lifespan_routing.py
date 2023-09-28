@@ -186,3 +186,30 @@ def test_startup_runtime_error():
             pass  # pragma: nocover
 
     assert startup_failed
+
+
+def test_app_params():
+    startup_complete = False
+    shutdown_complete = False
+
+    def run_startup():
+        nonlocal startup_complete
+        startup_complete = True
+
+    def run_shutdown():
+        nonlocal shutdown_complete
+        shutdown_complete = True
+
+    app = Yast(
+        on_shutdown=[run_shutdown],
+        on_startup=[run_startup],
+    )
+
+    assert not startup_complete
+    assert not shutdown_complete
+    with TestClient(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
