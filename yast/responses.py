@@ -6,7 +6,7 @@ import stat
 import typing
 from email.utils import formatdate
 from mimetypes import guess_type
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
 
 from yast.background import BackgroundTask
 from yast.datastructures import URL, MutableHeaders
@@ -245,7 +245,13 @@ class FileResponse(Response):
         self.background = background
         self.init_headers(headers)
         if self.filename is not None:
-            content_disposition = f'attachment; filename="{self.filename}"'
+            content_disposition_name = quote(self.filename)
+            if content_disposition_name != self.filename:
+                content_disposition = (
+                    "attachment; filename*=utf-8''" f"{content_disposition_name}"
+                )
+            else:
+                content_disposition = f'attachment; filename="{self.filename}"'
             self.headers.setdefault("content-disposition", content_disposition)
 
         self.stat_result = stat_result

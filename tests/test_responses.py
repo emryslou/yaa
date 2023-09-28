@@ -284,3 +284,18 @@ def test_json_none_response():
     client = TestClient(app)
     response = client.get("/")
     assert response.json() is None
+
+
+def test_file_response_with_chinese_filename(tmpdir):
+    content = b"file content"
+    filename = "你好.txt"  # probably "Hello.txt" in Chinese
+    path = os.path.join(tmpdir, filename)
+    with open(path, "wb") as f:
+        f.write(content)
+    app = FileResponse(path=path, filename=filename)
+    client = TestClient(app)
+    response = client.get("/")
+    expected_disposition = "attachment; filename*=utf-8''%E4%BD%A0%E5%A5%BD.txt"
+    assert response.status_code == 200
+    assert response.content == content
+    assert response.headers["content-disposition"] == expected_disposition

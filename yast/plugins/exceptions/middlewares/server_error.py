@@ -59,10 +59,8 @@ class ServerErrorMiddleware(Middleware):
             raise exc from None
 
     def format_line(
-            self,
-            index: int, line: str, frame_lineno: int,
-            frame_index: int
-        ) -> str:
+        self, index: int, line: str, frame_lineno: int, frame_index: int
+    ) -> str:
         values = {
             "line": line.replace(" ", "&nbsp"),
             "lineno": frame_lineno - frame_index + index,
@@ -72,9 +70,7 @@ class ServerErrorMiddleware(Middleware):
             return LINE.format(**values)
         return CENTER_LINE.format(**values)
 
-    def generate_frame_html(
-            self, frame: inspect.FrameInfo, is_collapsed: bool
-        ) -> str:
+    def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool) -> str:
         code_context = "".join(
             self.format_line(index, line, frame.lineno, frame.index)
             for index, line in enumerate(frame.code_context or [])
@@ -140,6 +136,9 @@ p {
 .frame-line {
     padding-left: 10px;
 }
+.frame-filename {
+    font-family: monospace;
+}
 .center-line {
     background-color: #038BB8;
     color: #f9f6e1;
@@ -148,12 +147,11 @@ p {
 .lineno {
     margin-right: 5px;
 }
-.frame-filename {
+.frame-title {
     font-weight: unset;
-    padding: 10px 10px 10px 0px;
+    padding: 10px 10px 10px 10px;
     background-color: #E4F4FD;
     margin-right: 10px;
-    font: #394D54;
     color: #191f21;
     font-size: 17px;
     border: 1px solid #c7dce8;
@@ -213,10 +211,11 @@ TEMPLATE = """
 
 FRAME_TEMPLATE = """
 <div>
-    <p class="frame-filename"><span class="debug-filename frame-line">File {frame_filename}</span>,
-    line <i>{frame_lineno}</i>,
-    in <b>{frame_name}</b>
-    <span class="collapse-btn" data-frame-id="{frame_filename}-{frame_lineno}" onclick="collapse(this)">&#8210;</span>
+    <p class="frame-title">
+        File <span class="frame-filename">{frame_filename}</span>,
+        line <i>{frame_lineno}</i>,
+        in <b>{frame_name}</b>
+        <span class="collapse-btn" data-frame-id="{frame_filename}-{frame_lineno}" onclick="collapse(this)">&#8210;</span>
     </p>
     <div id="{frame_filename}-{frame_lineno}" class="source-code {collapsed}">{code_context}</div>
 </div>

@@ -44,10 +44,11 @@ test:
 	python -m coverage run -m pytest $(pytest_params) $(pytest_fn) -s -vv
 
 http:
-	python -m uvicorn demo.main:app --ssl-keyfile demo/key.pem --ssl-certfile demo/cert.pem --port 5505 --lifespan on --reload --http h11
+	python -m uvicorn demo.main:app --port 5505 --lifespan on --reload
 
 http2:
 	python -m hypercorn --keyfile demo/key.pem --certfile demo/cert.pem demo.main:app --bind 0.0.0.0:5505 --reload
+
 dist:
 	python setup.py sdist bdist_wheel
 
