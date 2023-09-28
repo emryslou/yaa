@@ -16,6 +16,8 @@ ALL_METHODS = (
     "PUT",
 )
 
+SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-type"}
+
 
 class CORSMiddleware(Middleware):
     def __init__(
@@ -60,7 +62,7 @@ class CORSMiddleware(Middleware):
                 "Access-Control-Max-Age": str(max_age),
             }
         )
-
+        allow_headers = SAFELISTED_HEADERS | set([h.lower() for h in allow_headers])
         if allow_headers and "*" not in allow_headers:
             preflight_headers["Access-Control-Allow-Headers"] = ", ".join(allow_headers)
         if allow_credentials:
@@ -74,7 +76,7 @@ class CORSMiddleware(Middleware):
 
         self.allow_methods = allow_methods
 
-        self.allow_headers = [h.lower() for h in allow_headers]
+        self.allow_headers = allow_headers
         self.allow_all_headers = "*" in allow_headers
 
         self.simple_headers = simple_headers

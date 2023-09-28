@@ -76,7 +76,10 @@ def test_cors_specific_origin():
     assert "access-control-allow-origin" in res.headers
     assert res.headers["access-control-allow-origin"] == "https://ex.org"
     assert "access-control-allow-headers" in res.headers
-    assert res.headers["access-control-allow-headers"] == "X-Example, Content-Type"
+
+    allow_headers = res.headers["access-control-allow-headers"].split(", ")
+    for tcase in "X-Example, Content-Type".split(", "):
+        assert tcase.lower() in allow_headers
 
     headers = {"Origin": "https://ex.org"}
     res = client.get("/", headers=headers)
@@ -165,7 +168,10 @@ def test_cors_allow_origin_regex():
     assert response.status_code == 200
     assert response.text == "OK"
     assert response.headers["access-control-allow-origin"] == "https://another.com"
-    assert response.headers["access-control-allow-headers"] == "X-Example, Content-Type"
+    assert "access-control-allow-headers" in response.headers
+    allow_headers = response.headers["access-control-allow-headers"].split(", ")
+    for tcase in "X-Example, Content-Type".split(", "):
+        assert tcase.lower() in allow_headers
     # Test disallowed pre-flight response
     headers = {
         "Origin": "http://another.com",
