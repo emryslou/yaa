@@ -75,7 +75,89 @@ def test_force_500_res():
     assert res.text == ""
 
 
-def test_app_plugins():
+def test_plugins_servererror():
     from yast import Yast
 
-    app = Yast()
+    def handle_exc(req, exc):
+        return PlainTextResponse("srv err")
+
+    app = Yast(
+        plugins={
+            "exceptions": {
+                "middlewares": {
+                    "servererror": {
+                        "handler": handle_exc,
+                    },
+                    "exception": {},
+                }
+            }
+        }
+    )
+
+    @app.route("/r_exc")
+    def r_rexc(req):
+        raise Exception()
+
+    client = TestClient(app, raise_server_exceptions=False)
+    res = client.get("/r_exc")
+    assert res.status_code == 200
+    assert res.text == "srv err"
+
+
+def test_plugins_exception():
+    from yast import Yast
+    from yast.exceptions import HttpException
+
+    class MyException(Exception):
+        pass
+
+    def handle_my(req, exc):
+        return PlainTextResponse("my_exc")
+
+    def handle_429(req, exc):
+        return PlainTextResponse("sc:429")
+
+    def handle_419(req, exc):
+        return PlainTextResponse("sc:419")
+
+    app = Yast(
+        plugins={
+            "exceptions": {
+                "middlewares": {
+                    "servererror": {},
+                    "exception": {
+                        "handlers": {
+                            MyException: handle_my,
+                            429: handle_429,
+                            419: handle_419,
+                        },
+                    },
+                }
+            }
+        }
+    )
+
+    @app.route("/r_my")
+    def r_my(req):
+        raise MyException()
+
+    @app.route("/r_429")
+    def r_my(req):
+        raise HttpException(429)
+
+    @app.route("/r_419")
+    def r_my(req):
+        raise HttpException(419)
+
+    client = TestClient(app, raise_server_exceptions=False)
+    res = client.get("/r_my")
+    assert res.status_code == 200
+    assert res.text == "my_exc"
+
+    res = client.get("/r_429")
+    assert res.status_code == 200
+    assert res.text == "sc:429"
+
+    res = client.get("/r_419")
+    assert res.status_code == 200
+    assert res.text == "sc:419"

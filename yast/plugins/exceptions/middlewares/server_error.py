@@ -5,16 +5,17 @@ import traceback
 import typing
 
 from yast.concurrency import run_in_threadpool
+from yast.middlewares import Middleware
 from yast.requests import Request
 from yast.responses import HTMLResponse, PlainTextResponse, Response
 from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
-class ServerErrorMiddleware:
+class ServerErrorMiddleware(Middleware):
     def __init__(
         self, app: ASGIApp, handler: typing.Callable = None, debug: bool = False
     ) -> None:
-        self.app = app
+        super().__init__(app)
         self.handler = handler
         self.debug = debug
 

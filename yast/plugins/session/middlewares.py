@@ -19,8 +19,10 @@ class SessionMiddleware(Middleware):
         max_age: int = 14 * 24 * 60 * 60,  # 14 days, in seconds
         same_site: str = "lax",
         https_only: bool = False,
+        debug: bool = False,
     ) -> None:
         self.app = app
+        self.debug = debug
         self.signer = itsdangerous.TimestampSigner(secret_key)
         self.session_cookie = session_cookie
         self.max_age = max_age

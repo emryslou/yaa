@@ -13,7 +13,7 @@ from yast.plugins.graphql import GraphQLApp
 
 
 class FakeAuthMiddleware(Middleware):
-    def __init__(self, app):
+    def __init__(self, app, debug=False):
         self.app = app
 
     async def __call__(self, scope, receive, send):

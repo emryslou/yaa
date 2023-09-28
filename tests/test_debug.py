@@ -9,7 +9,7 @@ def test_open_file(tmpdir):
     from yast.middlewares import Middleware
 
     class MyMiddleware(Middleware):
-        def __init__(self, app):
+        def __init__(self, app, debug=False):
             super().__init__(app)
 
         async def __call__(self, scope, receive, send):

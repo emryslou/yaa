@@ -18,11 +18,13 @@ class AuthenticationMiddleware(Middleware):
         self,
         app: ASGIApp,
         backend: AuthenticationBackend,
+        debug: bool = False,
         on_error: typing.Callable[
             [HttpConnection, AuthenticationError], Response
         ] = None,
     ) -> None:
         super().__init__(app)
+        self.debug = debug
         self.backend = backend
         self.on_error = on_error if on_error is not None else self.default_on_error
 

@@ -172,15 +172,14 @@ def test_request_disconnect():
         req = Request(scope, recv)
         await req.body()
 
-    async def rev(*args, **kwargs):
+    async def recv(*args, **kwargs):
         return {"type": "http.disconnect"}
 
     scope = {"method": "POST", "path": "/"}
 
     loop = asyncio.get_event_loop()
     with pytest.raises(ClientDisconnect):
-        loop.run_until_complete(app(scope, rev, None))
-        assert True == 1
+        loop.run_until_complete(app(scope, recv, None))
 
 
 def test_request_cookies():

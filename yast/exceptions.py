@@ -4,7 +4,10 @@ import http
 class HttpException(Exception):
     def __init__(self, status_code: int, detail: str = None):
         if detail is None:
-            detail = http.HTTPStatus(status_code).phrase
+            try:
+                detail = http.HTTPStatus(status_code).phrase
+            except ValueError:
+                detail = "unknown http status code"
 
         self.status_code = status_code
         self.detail = detail

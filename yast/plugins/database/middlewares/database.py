@@ -13,9 +13,11 @@ class DatabaseMiddleware(Middleware):
         self,
         app: ASGIApp,
         database_url: typing.Union[str, DatabaseURL],
+        debug: bool = False,
         rollback_on_shutdown: bool = False,
     ) -> None:
         super().__init__(app)
+        self.debug = debug
         self.backend = self.get_backend(database_url)
         self.rollback_on_shutdown = rollback_on_shutdown
         self.session = None

@@ -1,5 +1,6 @@
 import asyncio
 import typing
+import warnings
 
 from yast.concurrency import run_in_threadpool
 from yast.exceptions import HttpException
@@ -32,13 +33,18 @@ class ExceptionMiddleware(Middleware):
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
         handler: typing.Callable,
     ) -> None:
-        if isinstance(exc_class_or_status_code, BaseException):
+        if isinstance(exc_class_or_status_code, (type, Exception)):
             self._exception_handlers[exc_class_or_status_code] = handler
         elif isinstance(exc_class_or_status_code, int):
             self._status_handlers[exc_class_or_status_code] = handler
+        else:
+            warnings.warn("unknown type exc_class or status_code")
+            print(
+                "unknown type exc_class or status_code", type(exc_class_or_status_code)
+            )
 
     def _lookup_exception_handler(
-        self, exc: BaseException
+        self, exc: Exception
     ) -> typing.Optional[typing.Callable]:
         for cls in type(exc).__mro__:
             handler = self._exception_handlers.get(cls)

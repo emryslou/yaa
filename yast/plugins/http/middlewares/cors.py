@@ -21,6 +21,7 @@ class CORSMiddleware(Middleware):
     def __init__(
         self,
         app: ASGIApp,
+        debug: bool = False,
         allow_origins: typing.Sequence[str] = (),
         allow_methods: typing.Sequence[str] = ("GET"),
         allow_headers: typing.Sequence[str] = (),
@@ -29,6 +30,8 @@ class CORSMiddleware(Middleware):
         expose_headers: typing.Sequence[str] = (),
         max_age: int = 600,
     ) -> None:
+        super().__init__(app)
+        self.debug = debug
         if "*" in allow_methods:
             allow_methods = ALL_METHODS
 

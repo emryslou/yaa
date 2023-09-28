@@ -5,8 +5,9 @@ from yast.types import ASGIApp, Receive, Scope, Send
 
 
 class HttpsRedirectMiddleware(Middleware):
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, debug: bool = False) -> None:
         super().__init__(app)
+        self.debug = debug
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket") and scope["scheme"] in ("http", "ws"):

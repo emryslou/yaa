@@ -7,8 +7,11 @@ from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class GZipMiddleware(Middleware):
-    def __init__(self, app: ASGIApp, minimum_size: int = 500) -> None:
+    def __init__(
+        self, app: ASGIApp, debug: bool = False, minimum_size: int = 500
+    ) -> None:
         super().__init__(app)
+        self.debug = debug
         self.minimum_size = minimum_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

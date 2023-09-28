@@ -99,7 +99,9 @@ class Yast(object):
             + [(exc, exc_options)]
         )
         for cls, options in reversed(middlewares):
-            app = cls(app, **options)
+            if "debug" not in options:
+                options["debug"] = self.debug
+            app = cls(app=app, **options)
         self.middleware_app = app
 
     @property

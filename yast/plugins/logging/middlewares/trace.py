@@ -8,8 +8,11 @@ trace_log = logging.getLogger("yast.trace")
 
 
 class TraceMiddleware(Middleware):
-    def __init__(self, app: ASGIApp, log_config: dict = {}) -> None:
+    def __init__(
+        self, app: ASGIApp, log_config: dict = {}, debug: bool = False
+    ) -> None:
         super().__init__(app)
+        self.debug = debug
         if log_config:
             pass
 

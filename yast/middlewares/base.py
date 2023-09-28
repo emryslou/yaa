@@ -13,8 +13,11 @@ DispatchFunction = typing.Callable[
 
 
 class BaseHttpMiddleware(Middleware):
-    def __init__(self, app: ASGIApp, dispatch: DispatchFunction = None) -> None:
+    def __init__(
+        self, app: ASGIApp, debug: bool = False, dispatch: DispatchFunction = None
+    ) -> None:
         super().__init__(app)
+        self.debug = debug
         self.dispatch_func = dispatch if dispatch is not None else self.dispatch
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -62,4 +65,4 @@ class BaseHttpMiddleware(Middleware):
     async def dispatch(
         self, req: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
