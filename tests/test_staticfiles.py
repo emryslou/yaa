@@ -4,7 +4,7 @@ from email.utils import parsedate
 
 import pytest
 
-from yast import TestClient
+from yast import TestClient, Yast
 from yast.staticfiles import StaticFiles
 
 
@@ -173,3 +173,24 @@ def test_staticfiles_html(tmpdir):
     response = client.get("/missing")
     assert response.status_code == 404
     assert response.text == "<h1>Custom not found page</h1>"
+
+def test_staticfiles_head_with_middleware(tmpdir):
+    from yast.requests import Request
+    from yast.routing import Mount
+
+
+    path = os.path.join(tmpdir, "example.txt")
+    with open(path, "w") as file:
+        file.write("x" * 100)
+    routes = [
+        Mount("/static", app=StaticFiles(directory=tmpdir), name="static"),
+    ]
+    app = Yast(routes=routes)
+    @app.middleware("http")
+    async def does_nothing_middleware(request: Request, call_next):
+        response = await call_next(request)
+        return response
+    client = TestClient(app)
+    response = client.head("/static/example.txt", stream=True)
+    assert response.status_code == 200
+    # assert response.headers.get("content-length") == "100"

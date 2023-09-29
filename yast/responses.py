@@ -320,7 +320,7 @@ class FileResponse(Response):
             }
         )
         if scope["method"] in ("HEAD"):
-            await send({"type": "http.response.body"})
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
         else:
             async with aiofiles.open(self.path, mode="rb") as file:
                 more_body = True

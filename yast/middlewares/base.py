@@ -55,7 +55,7 @@ class BaseHttpMiddleware(Middleware):
                     break
 
                 assert message["type"] == "http.response.body"
-                yield message["body"]
+                yield message.get("body", b"")
             task.result()
 
         res = StreamingResponse(status_code=message["status"], content=body_stream())
