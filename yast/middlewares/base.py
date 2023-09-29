@@ -30,7 +30,7 @@ class BaseHttpMiddleware(Middleware):
 
     async def call_next(self, req: Request) -> Response:
         loop = asyncio.get_event_loop()
-        queue: "asyncio.Queue[typing.Optional[Message]]" = asyncio.Queue(maxsize=1)
+        queue: "asyncio.Queue[typing.Optional[Message]]" = asyncio.Queue()
         scope = req.scope
         receive = req.receive
         send = queue.put
