@@ -41,11 +41,11 @@ class Response(object):
         media_type: str = None,
         background: BackgroundTask = None,
     ) -> None:
-        self.body = self.render(content)
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
         self.background = background
+        self.body = self.render(content)
         self.init_headers(headers)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -341,9 +341,15 @@ class FileResponse(Response):
 
 class RedirectResponse(Response):
     def __init__(
-        self, url: typing.Union[str, URL], status_code=307, headers: dict = None
-    ):
-        super().__init__(b"", status_code=status_code, headers=headers)
+        self,
+        url: typing.Union[str, URL],
+        status_code=307,
+        headers: dict = None,
+        background: BackgroundTask = None,
+    ) -> None:
+        super().__init__(
+            b"", status_code=status_code, headers=headers, background=background
+        )
 
         # todo: why: '&' repeat
         self.headers["location"] = quote_plus(str(url), safe=":/%#?&=@[]!$&'()*+,;")
