@@ -5,6 +5,7 @@
 4. app run: trace-id
 5. server-push , app state
 6. [known issue] see skip test case
+7. StaticFiles: os.PathLike for directory
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
