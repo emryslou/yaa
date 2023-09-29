@@ -65,6 +65,11 @@ class Response(object):
             await self.background()
 
     def get_send_headers(self, scope: Scope):
+        import warnings
+
+        warnings.warn(
+            "know issue: `AttributeError: '_MockOriginalResponse' object has no attribute 'close'. Did you mean: 'closed'?` when content-length not eq 0 at request of head method"
+        )
         _headers = []
         for key in self.headers:
             if scope["method"] in ("HEAD"):
