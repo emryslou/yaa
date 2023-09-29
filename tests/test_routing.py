@@ -48,6 +48,13 @@ def func_home(req):
     return Response("func home", media_type="text/plain")
 
 
+# Route with chars that conflict with regex meta chars
+@app.route("/path-with-parentheses({param:int})", name="path-with-parentheses")
+def path_with_parentheses(request):
+    number = request.path_params["param"]
+    return JSONResponse({"int": number})
+
+
 @app.route_ws("/ws")
 async def ws_endpoint(ss):
     await ss.accept()
@@ -89,6 +96,15 @@ def test_router():
     res = client.get("/static")
     assert res.status_code == 200
     assert res.text == "xxxx"
+
+    # Test path with parentheses
+    res = client.get("/path-with-parentheses(7)")
+    assert res.status_code == 200
+    assert res.json() == {"int": 7}
+    assert (
+        app.url_path_for("path-with-parentheses", param=10)
+        == "/path-with-parentheses(10)"
+    )
 
 
 def test_websocket():

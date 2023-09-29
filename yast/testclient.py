@@ -37,7 +37,7 @@ class _MockOriginalResponse(object):
 
     def isclosed(self):
         return self.closed
-    
+
     def close(self):
         self.closed = True
 
