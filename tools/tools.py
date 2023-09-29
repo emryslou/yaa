@@ -148,13 +148,11 @@ class Tools(object):
                 if str(fn).startswith('cmd_')
             ]
 
-def tools_main():
+def main():
     tools = Tools()
 
     @click.command()
     @click.option('-cmd', '--command', prompt='command', help='which command you want to run', default='help', type=click.Choice(tools.cmds()))
-    @click.option('-r', '--recover', prompt='recover', help='', default=False, type=bool)
-    @click.option('-pkg', '--package', prompt='package', help='package',  default='', type=str)
     def _init(command: str, **kwargs):
         method = f'cmd_{command}'
         getattr(tools, method)(**kwargs)
@@ -162,4 +160,4 @@ def tools_main():
     _init()
 
 if __name__ == '__main__':
-    tools_main()
+    main()

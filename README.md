@@ -1,18 +1,13 @@
 # 介绍
 yet another startlette
 
-# 版本 0.2.5
-1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
-2. database support: mysql
-3. applications: auto scan plugins
-4. applications: support subdomain router
-5. formparser: upload file: content-type
-6. base schema: add response; routing mount: add routes; code op
-7. plugin: database: register custome databasebackend
-8. requests: attr: database: removing next, attr: state: add
-9. staticfile: support packages.static
-10. wsgi: script read from scope[root_path]
-11. config bool: 1 => True, 0 => False
+# 版本 0.3.0
+1. asgi: 2.0 -> 3.0
+2. StaticFiles: dir => dir/index.html, not found(html=True): 404.html
+3. Adding a percent sign to redirect with quoted params
+4. app run: trace-id
+5. server-push , app state
+6. [known issue] see skip test case
 
 
 # 功能说明
@@ -37,7 +32,9 @@ psycopg2-binary
 aiomysql
 pymysql
 cryptography
+mypy
 pytest
+pytest-asyncio
 pytest-cov
 pytest-timeout
 pytest-benchmark
