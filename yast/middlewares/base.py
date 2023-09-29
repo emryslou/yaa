@@ -4,11 +4,11 @@ import typing
 from yast.middlewares.core import Middleware
 from yast.requests import Request
 from yast.responses import Response, StreamingResponse
-from yast.types import ASGIApp, ASGIInstance, Receive, Scope, Send
+from yast.types import ASGIApp, Message, Receive, Scope, Send
 
-RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[ASGIInstance]]
+RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
-    [Request, RequestResponseEndpoint], typing.Awaitable[ASGIInstance]
+    [Request, RequestResponseEndpoint], typing.Awaitable[Response]
 ]
 
 
@@ -28,9 +28,9 @@ class BaseHttpMiddleware(Middleware):
             res = await self.dispatch_func(req, self.call_next)
             await res(scope, receive, send)
 
-    async def call_next(self, req: Request) -> ASGIInstance:
+    async def call_next(self, req: Request) -> Response:
         loop = asyncio.get_event_loop()
-        queue = asyncio.Queue()
+        queue: "asyncio.Queue[typing.Optional[Message]]" = asyncio.Queue(maxsize=1)
         scope = req.scope
         receive = req.receive
         send = queue.put

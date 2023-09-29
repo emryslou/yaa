@@ -107,9 +107,6 @@ class StaticFiles(object):
         if scope["method"] not in ("GET", "HEAD"):
             return PlainTextResponse("Method Not Allowed", status_code=405)
 
-        if path.startswith(".."):
-            return PlainTextResponse("Not Found", status_code=404)
-
         if not self.config_checked:
             await self.check_config()
             self.config_checked = True
@@ -141,7 +138,11 @@ class StaticFiles(object):
         self, path: str
     ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         for directory in self.all_directories:
-            full_path = os.path.join(directory, path)
+            full_path = os.path.realpath(os.path.join(directory, path))
+            directory = os.path.realpath(directory)
+            if os.path.commonprefix([full_path, directory]) != directory:
+                continue
+
             try:
                 stat_result = await aio_stat(full_path)
                 return full_path, stat_result

@@ -12,8 +12,8 @@ from .core import Middleware
 def build_environ(scope: Scope, body: bytes) -> dict:
     environ = {
         "REQUEST_METHOD": scope["method"],
-        "SCRIPT_NAME": scope.get("root_path", "").encode('utf8').decode('latin1'),
-        "PATH_INFO": scope.get("path", "").encode('utf8').decode('latin1'),
+        "SCRIPT_NAME": scope.get("root_path", "").encode("utf8").decode("latin1"),
+        "PATH_INFO": scope.get("path", "").encode("utf8").decode("latin1"),
         "QUERY_STRING": scope["query_string"].decode("ascii"),
         "SERVER_PROTOCOL": "HTTP/%s" % scope["http_version"],
         "wsgi.version": (1, 0),
