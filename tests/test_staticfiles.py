@@ -196,3 +196,17 @@ def test_staticfiles_head_with_middleware(tmpdir):
     response = client.head("/static/example.txt", stream=True)
     assert response.status_code == 200
     # assert response.headers.get("content-length") == "100"
+
+
+def test_staticfiles_with_pathlib(tmpdir):
+    import pathlib
+    
+    base_dir = pathlib.Path(tmpdir)
+    path = base_dir / "example.txt"
+    with open(path, "w") as file:
+        file.write("<file content>")
+    app = StaticFiles(directory=base_dir)
+    client = TestClient(app)
+    response = client.get("/example.txt")
+    assert response.status_code == 200
+    assert response.text == "<file content>"

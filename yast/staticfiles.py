@@ -24,6 +24,7 @@ from yast.responses import (
 )
 from yast.types import Receive, Scope, Send
 
+PathLike = typing.Union[str, "os.PathLike[str]"]
 
 class NotModifiedResponse(Response):
     NOT_MODIFIED_HEADERS = (
@@ -50,7 +51,7 @@ class StaticFiles(object):
     def __init__(
         self,
         *,
-        directory: str = None,
+        directory: PathLike = None,
         packages: typing.List[str] = None,
         html: bool = False,
         check_dir: bool = True,
@@ -65,8 +66,8 @@ class StaticFiles(object):
             assert os.path.isdir(directory), f'Directory "{directory}" does not exists'
 
     def get_directories(
-        self, directory: str = None, packages: typing.List[str] = None
-    ) -> typing.List[str]:
+        self, directory: PathLike = None, packages: typing.List[str] = None
+    ) -> typing.List[PathLike]:
         directories = []
 
         if directory is not None:
@@ -76,7 +77,7 @@ class StaticFiles(object):
             import importlib
             import os
 
-            for package in packages:
+            for package in packages or []:
                 # spec = importlib.util.find_spec(package)
                 # assert spec is not None
                 # assert spec.origin is not None
@@ -101,7 +102,7 @@ class StaticFiles(object):
 
     async def get_response(
         self,
-        path: str,
+        path: PathLike,
         scope: Scope,
     ) -> Response:
         if scope["method"] not in ("GET", "HEAD"):
@@ -153,7 +154,7 @@ class StaticFiles(object):
 
     def file_response(
         self,
-        full_path: str,
+        full_path: PathLike,
         stat_result: os.stat_result,
         scope: Scope,
         status_code: int = 200,

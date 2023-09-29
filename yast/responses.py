@@ -2,10 +2,10 @@ import hashlib
 import http.cookies
 import json
 import os
-import stat
+import stat, sys
 import typing
 from email.utils import formatdate
-from mimetypes import guess_type
+from mimetypes import guess_type as mimetypes_guess_type
 from urllib.parse import quote, quote_plus
 
 from yast.background import BackgroundTask
@@ -24,6 +24,15 @@ try:
     import ujson
 except ImportError:  # pragma: nocover
     ujson = None  # type: ignore
+
+
+def guess_type(
+        url: typing.Union[str, "os.PathLike[str]"],
+        strict: bool = True
+    ) -> typing.Tuple[typing.Optional[str], typing.Optional[str]]:
+    if sys.version_info < (3, 8):
+        url = os.fspath(url)
+    return mimetypes_guess_type(url, strict)
 
 
 http.cookies.Morsel._reserved["samesite"] = "SameSite"
@@ -251,7 +260,7 @@ class FileResponse(Response):
 
     def __init__(
         self,
-        path: str,
+        path: typing.Union[str, "os.PathLike[str]"],
         status_code: int = 200,
         headers: dict = None,
         media_type: str = None,
