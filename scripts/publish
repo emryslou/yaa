@@ -1,1 +1,9 @@
 #!/bin/sh -e
+VERSION_FILE="starlette/__init__.py"
+if [ -d 'venv' ] ; then
+    PREFIX="venv/bin/"
+else
+    PREFIX=""
+fi
+${PREFIX}twine upload dist/*
+${PREFIX}mkdocs gh-deploy --force

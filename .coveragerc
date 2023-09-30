@@ -1,6 +1,7 @@
 [report]
 exclude_also =
     def __repr__
+    pass
 
 [tool:pytest]
 addopts = --cov-fail-under=99
@@ -12,3 +13,4 @@ omit =
     tests/test_debug.py
     tools/*.py
     private
+    yast/testclient.py

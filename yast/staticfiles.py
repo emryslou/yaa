@@ -26,6 +26,7 @@ from yast.types import Receive, Scope, Send
 
 PathLike = typing.Union[str, "os.PathLike[str]"]
 
+
 class NotModifiedResponse(Response):
     NOT_MODIFIED_HEADERS = (
         "cache-control",

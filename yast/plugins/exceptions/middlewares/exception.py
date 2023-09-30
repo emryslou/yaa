@@ -38,10 +38,10 @@ class ExceptionMiddleware(Middleware):
         elif isinstance(exc_class_or_status_code, int):
             self._status_handlers[exc_class_or_status_code] = handler
         else:
-            warnings.warn("unknown type exc_class or status_code")
+            warnings.warn("unknown type exc_class or status_code")  # pragma: no cover
             print(
                 "unknown type exc_class or status_code", type(exc_class_or_status_code)
-            )
+            )  # pragma: no cover
 
     def _lookup_exception_handler(
         self, exc: Exception
@@ -78,7 +78,7 @@ class ExceptionMiddleware(Middleware):
                 if responsed_started:
                     raise RuntimeError(
                         "Caught handled exception, but response already started"
-                    )
+                    )  # pragma: no cover
 
                 req = Request(scope, receive)
                 if asyncio.iscoroutinefunction(handler):

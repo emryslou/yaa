@@ -200,7 +200,7 @@ def test_staticfiles_head_with_middleware(tmpdir):
 
 def test_staticfiles_with_pathlib(tmpdir):
     import pathlib
-    
+
     base_dir = pathlib.Path(tmpdir)
     path = base_dir / "example.txt"
     with open(path, "w") as file:

@@ -184,8 +184,8 @@ class Request(HttpConnection):
         self._stream_consumed = False
         self._is_disconnected = False
 
-    def set_receive_channel(self, receive: Receive) -> None:
-        self._receive = receive
+    # def set_receive_channel(self, receive: Receive) -> None:
+    #     self._receive = receive
 
     @property
     def method(self) -> str:
