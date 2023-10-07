@@ -1,4 +1,5 @@
 import enum
+import functools
 import inspect
 import re
 import typing
@@ -94,7 +95,12 @@ class Route(BaseRoute):
         self.endpoint = endpoint
         self.name = get_name(endpoint) if name is None else name
         self.include_in_schema = include_in_schema
-        if inspect.isfunction(endpoint) or inspect.ismethod(endpoint):
+
+        endpoint_handler = endpoint
+        while isinstance(endpoint_handler, functools.partial):
+            endpoint_handler = endpoint_handler.func
+        
+        if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
             self.app = req_res(endpoint)
             if methods is None:
                 methods = ["GET"]
@@ -519,7 +525,7 @@ class ProtocalRouter(object):
 
 
 def req_res(func: typing.Callable):
-    is_coroutine = iscoroutinefunction(func)
+    is_coroutine = inspect.iscoroutinefunction(func)
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         req = Request(scope, receive, send=send)

@@ -441,3 +441,16 @@ def test_url_for_with_double_mount():
     app = Yast(routes=double_mount_routes)
     url = app.url_path_for("mount:static", path="123")
     assert url == "/mount/static/123"
+
+
+def test_partial_async_endpoint():
+    import functools
+    async def _partial_async_endpoint(arg, request):
+        return JSONResponse({"arg": arg})
+
+    partial_async_endpoint = functools.partial(_partial_async_endpoint, "foo")
+    partial_async_app = Router(routes=[Route("/", partial_async_endpoint)])
+
+    response = TestClient(partial_async_app).get("/")
+    assert response.status_code == 200
+    assert response.json() == {"arg": "foo"}
