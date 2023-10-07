@@ -8,6 +8,10 @@ from yast.types import Receive, Scope, Send
 
 try:
     import jinja2
+    if hasattr(jinja2, 'pass_context'):
+        pass_context = jinja2.pass_context
+    else:
+        pass_context = jinja2.contextfunction
 except ImportError:  # pragma: no cover
     jinja2 = None  # pragma: no cover
 
@@ -68,7 +72,7 @@ class Jinja2Template(object):
             directory
         ), f"template directory `{directory}` is not a directory"
 
-        @jinja2.pass_context
+        @pass_context
         def url_for(context: dict, name: str, **path_params: typing.Any) -> str:
             req = context["request"]
             return req.url_for(name, **path_params)
