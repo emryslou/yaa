@@ -238,7 +238,6 @@ def test_add_exception():
 
     @app.exception_handler(Exception)
     async def exception(req, exc: Exception):
-        print("exc")
         if exc.__cause__ is not None:
             print("exc ", exc.__cause__)
         return JSONResponse(content={"error": "Srv Err 2333"})

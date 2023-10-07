@@ -7,7 +7,7 @@ import sys
 import typing
 from email.utils import formatdate
 from mimetypes import guess_type as mimetypes_guess_type
-from urllib.parse import quote, quote_plus
+from urllib.parse import quote
 
 from yast.background import BackgroundTask
 from yast.concurrency import iterate_in_threadpool, run_until_first_complete
@@ -363,5 +363,4 @@ class RedirectResponse(Response):
             b"", status_code=status_code, headers=headers, background=background
         )
 
-        # todo: why: '&' repeat
-        self.headers["location"] = quote_plus(str(url), safe=":/%#?&=@[]!$&'()*+,;")
+        self.headers["location"] = quote(str(url), safe=":/%#?=@[]!$&'()*+,;")

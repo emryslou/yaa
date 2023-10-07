@@ -307,3 +307,17 @@ def test_head_method():
     client = TestClient(app)
     response = client.head("/")
     assert response.text == ""
+
+
+def test_quoting_redirect_response():
+    async def app(scope, receive, send):
+        if scope["path"] == "/I ♥ Yast/":
+            response = Response("hello, world", media_type="text/plain")
+        else:
+            response = RedirectResponse("/I ♥ Yast/")
+        await response(scope, receive, send)
+
+    client = TestClient(app)
+    response = client.get("/redirect")
+    assert response.text == "hello, world"
+    assert response.url == "http://testserver/I%20%E2%99%A5%20Yast/"
