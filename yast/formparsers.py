@@ -92,8 +92,8 @@ class FormParser(object):
                     name = unquote_plus(field_name.decode("utf-8"))
                     value = unquote_plus(field_value.decode("utf-8"))
                     items.append((name, value))
-                elif msg_type == FormMessage.END:
-                    pass
+                # elif msg_type == FormMessage.END:
+                #     pass
 
         return FormData(items=items)
 
@@ -200,8 +200,9 @@ class MultiPartParser(object):
                     else:
                         await _file.seek(0)
                         items.append((field_name, _file))
-                elif msg_type == MultiPartMessage.END:
-                    pass
+                # elif msg_type == MultiPartMessage.END:
+                #     pass
+            #end for
         parser.finalize()
 
         return FormData(items=items)

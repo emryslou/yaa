@@ -22,7 +22,7 @@ class BackgroundTask(object):
 
 class BackgroundTasks(BackgroundTask):
     def __init__(self, tasks: typing.Sequence[BackgroundTask] = []) -> None:
-        self.tasks = list(tasks)
+        self.tasks = list(tasks) if tasks else []
 
     def add_task(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any

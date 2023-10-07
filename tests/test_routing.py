@@ -455,3 +455,16 @@ def test_partial_async_endpoint():
     response = TestClient(partial_async_app).get("/")
     assert response.status_code == 200
     assert response.json() == {"arg": "foo"}
+
+
+def test_duplicated_param_names():
+    with pytest.raises(
+        ValueError,
+        match="Duplicated param name id at path /{id}/{id}",
+    ):
+        Route("/{id}/{id}", users)
+    with pytest.raises(
+        ValueError,
+        match="Duplicated param names id, name at path /{id}/{name}/{id}/{name}",
+    ):
+        Route("/{id}/{name}/{id}/{name}", users)

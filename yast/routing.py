@@ -32,6 +32,7 @@ def compile_path(
 ) -> typing.Tuple[typing.Pattern, str, typing.Dict[str, Convertor]]:
     path_regex = "^"
     path_format = ""
+    duplicated_params = set()
 
     idx = 0
     param_converts = {}
@@ -50,10 +51,17 @@ def compile_path(
         path_format += path[idx : match.start()]
         path_format += "{%s}" % param_name
 
+        if param_name in param_converts:
+            duplicated_params.add(param_name)
+
         param_converts[param_name] = convertor
 
         idx = match.end()
     # endfor
+    if duplicated_params:
+        names = ', '.join(duplicated_params)
+        ending = 's' if len(duplicated_params) > 1 else ''
+        raise ValueError(f'Duplicated param name{ending} {names} at path {path}')
 
     path_regex += re.escape(path[idx:]) + "$"
     path_format += path[idx:]
