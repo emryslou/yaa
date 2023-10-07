@@ -81,7 +81,7 @@ class WebSocketEndpoint(_Endpoint):
                     break
         except Exception as exc:  # pragma: nocover
             close_code = status.WS_1011_INTERNAL_ERROR  # pragma: nocover
-            raise exc from None  # pragma: nocover
+            raise exc  # pragma: nocover
         finally:
             await self.on_disconnect(close_code)
 

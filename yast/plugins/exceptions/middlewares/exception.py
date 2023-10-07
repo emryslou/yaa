@@ -73,7 +73,7 @@ class ExceptionMiddleware(Middleware):
                 if handler is None:
                     handler = self._lookup_exception_handler(exc)
                 if handler is None:
-                    raise exc from None
+                    raise exc
 
                 if responsed_started:
                     raise RuntimeError(
