@@ -33,9 +33,11 @@ def test_cors_allow_all():
     res = client.options("/", headers=headers)
     assert res.status_code == 200
     assert res.text == "OK"
-    assert res.headers["access-control-allow-origin"] == "*"
+    assert res.headers["access-control-allow-origin"] == "https://ex.org"
     assert "access-control-allow-headers" in res.headers
     assert res.headers["access-control-allow-headers"] == "X-Example"
+    assert res.headers["access-control-allow-credentials"] == "true"
+    assert res.headers["vary"] == "Origin"
 
     headers = {
         "Origin": "https://ex.org",
@@ -43,7 +45,73 @@ def test_cors_allow_all():
     res = client.get("/", headers=headers)
     assert res.status_code == 200
     assert res.text == "HOME"
-    assert "access-control-allow-headers" not in res.headers
+    assert res.headers["access-control-allow-origin"] == "*"
+    assert res.headers["access-control-expose-headers"] == "X-Status"
+    assert res.headers["access-control-allow-credentials"] == "true"
+
+    # Test standard credentialed response
+    headers = {"Origin": "https://example.org", "Cookie": "star_cookie=sugar"}
+    res = client.get("/", headers=headers)
+    assert res.status_code == 200
+    assert res.text == "HOME"
+    assert res.headers["access-control-allow-origin"] == "https://example.org"
+    assert res.headers["access-control-expose-headers"] == "X-Status"
+    assert res.headers["access-control-allow-credentials"] == "true"
+
+    # Test non-CORS response
+    res = client.get("/")
+    assert res.status_code == 200
+    assert res.text == "HOME"
+    assert "access-control-allow-origin" not in res.headers
+
+
+def test_cors_allow_all_except_credentials():
+    app = Yast(
+        plugins={
+            "http": {
+                "middlewares": {
+                    "cors": dict(
+                        allow_origins=["*"],
+                        allow_headers=["*"],
+                        allow_methods=["*"],
+                        expose_headers=["X-Status"],
+                    )
+                }
+            }
+        }
+    )
+
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse("Homepage", status_code=200)
+
+    client = TestClient(app)
+    # Test pre-flight response
+    headers = {
+        "Origin": "https://example.org",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Example",
+    }
+    response = client.options("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "OK"
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert response.headers["access-control-allow-headers"] == "X-Example"
+    assert "access-control-allow-credentials" not in response.headers
+    assert "vary" not in response.headers
+    # Test standard response
+    headers = {"Origin": "https://example.org"}
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert response.headers["access-control-expose-headers"] == "X-Status"
+    assert "access-control-allow-credentials" not in response.headers
+    # Test non-CORS response
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert "access-control-allow-origin" not in response.headers
 
 
 def test_cors_specific_origin():
@@ -81,17 +149,21 @@ def test_cors_specific_origin():
     for tcase in "X-Example, Content-Type".split(", "):
         assert tcase in allow_headers
 
+    assert "access-control-allow-credentials" not in res.headers
+
     headers = {"Origin": "https://ex.org"}
     res = client.get("/", headers=headers)
     assert res.status_code == 200
     assert res.text == "HOME"
     assert "access-control-allow-origin" in res.headers
     assert res.headers["access-control-allow-origin"] == "https://ex.org"
+    assert "access-control-allow-credentials" not in res.headers
 
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "HOME"
     assert "access-control-allow-origin" not in res.headers
+    assert "access-control-allow-credentials" not in res.headers
 
 
 def test_cors_disallowed_preflight():
@@ -133,6 +205,7 @@ def test_cors_allow_origin_regex():
                     "cors": dict(
                         allow_headers=["X-Example", "Content-Type"],
                         allow_origin_regex="https://.*",
+                        allow_credentials=True,
                     )
                 }
             }
@@ -150,14 +223,16 @@ def test_cors_allow_origin_regex():
     assert response.status_code == 200
     assert response.text == "Homepage"
     assert response.headers["access-control-allow-origin"] == "https://example.org"
-    # Test diallowed standard response
-    # Note that enforcement is a browser concern. The disallowed-ness is reflected
-    # in the lack of an "access-control-allow-origin" header in the response.
-    headers = {"Origin": "http://example.org"}
+    assert response.headers["access-control-allow-credentials"] == "true"
+
+    # Test standard credentialed response
+    headers = {"Origin": "https://example.org", "Cookie": "star_cookie=sugar"}
     response = client.get("/", headers=headers)
     assert response.status_code == 200
     assert response.text == "Homepage"
-    assert "access-control-allow-origin" not in response.headers
+    assert response.headers["access-control-allow-origin"] == "https://example.org"
+    assert response.headers["access-control-allow-credentials"] == "true"
+
     # Test pre-flight response
     headers = {
         "Origin": "https://another.com",

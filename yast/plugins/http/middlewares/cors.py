@@ -42,8 +42,12 @@ class CORSMiddleware(Middleware):
         if allow_origin_regex is not None:
             compiled_allow_origin_regex = re.compile(allow_origin_regex)
 
+        allow_all_origins = "*" in allow_origins
+        allow_all_headers = "*" in allow_headers
+        preflight_explicit_allow_origin = not allow_all_origins or allow_credentials
+
         simple_headers = {}
-        if "*" in allow_origins:
+        if allow_all_origins:
             simple_headers["Access-Control-Allow-Origin"] = "*"
 
         if allow_credentials:
@@ -52,10 +56,10 @@ class CORSMiddleware(Middleware):
             simple_headers["Access-Control-Expose-Headers"] = ",".join(expose_headers)
 
         preflight_headers = {}
-        if "*" in allow_origins:
-            preflight_headers["Access-Control-Allow-Origin"] = "*"
-        else:
+        if preflight_explicit_allow_origin:
             preflight_headers["Vary"] = "Origin"
+        else:
+            preflight_headers["Access-Control-Allow-Origin"] = "*"
 
         preflight_headers.update(
             {
@@ -64,7 +68,7 @@ class CORSMiddleware(Middleware):
             }
         )
         allow_headers = SAFELISTED_HEADERS | set(allow_headers)
-        if allow_headers and "*" not in allow_headers:
+        if allow_headers and not allow_all_headers:
             preflight_headers["Access-Control-Allow-Headers"] = ", ".join(allow_headers)
         if allow_credentials:
             preflight_headers["Access-Control-Allow-Credentials"] = "true"
@@ -72,16 +76,18 @@ class CORSMiddleware(Middleware):
         self.app = app
 
         self.allow_origins = allow_origins
-        self.allow_all_origins = "*" in allow_origins
+        self.allow_all_origins = allow_all_origins
         self.allow_origin_regex = compiled_allow_origin_regex
 
         self.allow_methods = allow_methods
 
         self.allow_headers = [h.lower() for h in allow_headers]
-        self.allow_all_headers = "*" in allow_headers
+        self.allow_all_headers = allow_all_headers
+
+        self.preflight_headers = preflight_headers
+        self.preflight_explicit_allow_origin = preflight_explicit_allow_origin
 
         self.simple_headers = simple_headers
-        self.preflight_headers = preflight_headers
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
@@ -123,7 +129,7 @@ class CORSMiddleware(Middleware):
         headers = dict(self.preflight_headers)
         failures = []
         if self.is_allowed_origin(origin=req_origin):
-            if not self.allow_all_origins:
+            if self.preflight_explicit_allow_origin:
                 headers["Access-Control-Allow-Origin"] = req_origin
         else:
             failures.append("origin")
