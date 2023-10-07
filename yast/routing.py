@@ -59,9 +59,9 @@ def compile_path(
         idx = match.end()
     # endfor
     if duplicated_params:
-        names = ', '.join(duplicated_params)
-        ending = 's' if len(duplicated_params) > 1 else ''
-        raise ValueError(f'Duplicated param name{ending} {names} at path {path}')
+        names = ", ".join(duplicated_params)
+        ending = "s" if len(duplicated_params) > 1 else ""
+        raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
 
     path_regex += re.escape(path[idx:]) + "$"
     path_format += path[idx:]

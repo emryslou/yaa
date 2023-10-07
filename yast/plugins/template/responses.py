@@ -8,7 +8,8 @@ from yast.types import Receive, Scope, Send
 
 try:
     import jinja2
-    if hasattr(jinja2, 'pass_context'):
+
+    if hasattr(jinja2, "pass_context"):
         pass_context = jinja2.pass_context
     else:
         pass_context = jinja2.contextfunction

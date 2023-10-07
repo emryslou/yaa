@@ -35,7 +35,7 @@ class CommaSeparatedStrings(Sequence):
         return f"{self.__class__.__name__}({list_repr})"
 
     def __str__(self) -> str:
-        return ", ".join([repr(item) for item in self])
+        return ", ".join(repr(item) for item in self)
 
 
 class QueryParams(ImmutableMultiDict):

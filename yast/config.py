@@ -14,7 +14,7 @@ class EnvironError(Exception):
 class Environ(MutableMapping):
     def __init__(self, environ: typing.MutableMapping = os.environ) -> None:
         self._environ = environ
-        self._has_been_read = set()
+        self._has_been_read: typing.Set[typing.Any] = set()
 
     def __getitem__(self, key: typing.Any) -> typing.Any:
         self._has_been_read.add(key)
@@ -51,7 +51,7 @@ class Config(object):
         self, env_file: str = None, environ: typing.Mapping[str, str] = environ
     ) -> None:
         self.environ = environ
-        self.file_values = {}
+        self.file_values: typing.Dict[str, str] = {}
         if env_file is not None:
             self.file_values = self._load_from(env_file)
 
@@ -66,7 +66,7 @@ class Config(object):
         return getattr(self, load_fn)(load_file)
 
     def _load_from_env(self, load_file: str) -> dict:
-        file_values = {}
+        file_values: typing.Dict[str, str] = {}
         with open(load_file) as ifile:
             for line in ifile.readlines():
                 if line.startswith("#"):
