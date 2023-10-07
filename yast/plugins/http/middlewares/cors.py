@@ -10,8 +10,9 @@ from yast.types import ASGIApp, Message, Receive, Scope, Send
 ALL_METHODS = (
     "DELETE",
     "GET",
-    "PATCH",
+    "HEAD",
     "OPTIONS",
+    "PATCH",
     "POST",
     "PUT",
 )
