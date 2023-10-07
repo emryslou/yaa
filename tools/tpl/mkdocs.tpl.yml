@@ -1,17 +1,19 @@
 site_name: Yast
-site_desciption: Yet another startlette as Yast
+site_description: Yet another startlette as Yast
 
 theme:
   name: 'material'
 
 repo_name: eml/yast
 repo_url: https://github.com/emryslou/yast
-edit_url: ''
+edit_uri: ''
 
 nav:
   - 介绍: 'index.md'
   {{__nav_item__}}
 
 markdown_extensions:
-  - markdown.extensions.codehilite:
-      guess_lang: false
+  - mkautodoc
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences

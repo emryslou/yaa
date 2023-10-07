@@ -36,9 +36,14 @@ pytest-benchmark
 flake8
 
 # Documentation
+mkautodoc
 mkdocs
 mkdocs-material
 
 # Developing
 isort
 black
+
+# Packaging
+twine
+wheel

@@ -445,6 +445,7 @@ def test_url_for_with_double_mount():
 
 def test_partial_async_endpoint():
     import functools
+
     async def _partial_async_endpoint(arg, request):
         return JSONResponse({"arg": arg})
 

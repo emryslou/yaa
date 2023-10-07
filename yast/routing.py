@@ -3,7 +3,6 @@ import functools
 import inspect
 import re
 import typing
-from asyncio import iscoroutinefunction
 
 from yast.concurrency import run_in_threadpool
 from yast.convertors import CONVERTOR_TYPES, Convertor
@@ -99,7 +98,7 @@ class Route(BaseRoute):
         endpoint_handler = endpoint
         while isinstance(endpoint_handler, functools.partial):
             endpoint_handler = endpoint_handler.func
-        
+
         if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
             self.app = req_res(endpoint)
             if methods is None:

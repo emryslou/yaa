@@ -30,8 +30,6 @@ def test_session():
     client = TestClient(app)
 
     response = client.get("/view_session")
-
-    response = client.get("/view_session")
     assert response.json() == {"session": {}}
 
 
@@ -66,3 +64,56 @@ def test_secure_session():
     assert response.json() == {"session": {}}
     response = secure_client.get("/view_session")
     assert response.json() == {"session": {}}
+
+
+def test_session_cookie_subpath():
+    import re
+
+    app = create_app({"secret_key": "example", "https_only": True})
+    second_app = create_app({"secret_key": "example", "https_only": True})
+    app.mount("/second_app", second_app)
+    client = TestClient(app, base_url="http://testserver/second_app")
+    response = client.post("second_app/update_session", json={"some": "data"})
+    cookie = response.headers["set-cookie"]
+    cookie_path = re.search(r"; path=(\S+);", cookie).groups()[0]
+    assert cookie_path == "/second_app"
+
+
+def test_session_expired():
+    from yast.requests import Request
+    import time
+
+    app = create_app({"secret_key": "example", "max_age": 1})
+
+    @app.route("/session/set")
+    def sess_set(req: Request):
+        req.session.update({"hello": "abcd"})
+        return JSONResponse(content="session/set")
+
+    @app.route("/session/get")
+    def sess_get(req: Request):
+        # req.session.update({'hello': 'abcd'})
+        return JSONResponse(content=req.session)
+
+    client = TestClient(app)
+    res0 = client.get("/session/set")
+
+    res = client.get(
+        "/session/get",
+        headers={"Cookie": "session=" + res0.cookies.get_dict()["session"]},
+    )
+    assert res.cookies.get_dict() != {}
+
+    time.sleep(0.5)
+    res = client.get(
+        "/session/get",
+        headers={"Cookie": "session=" + res.cookies.get_dict()["session"]},
+    )
+    assert res.cookies.get_dict() != {}
+
+    time.sleep(2)
+    res = client.get(
+        "/session/get",
+        headers={"Cookie": "session=" + res.cookies.get_dict()["session"]},
+    )
+    assert res.cookies.get_dict() == {}

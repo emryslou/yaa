@@ -1,16 +1,15 @@
 site_name: Yast
-site_desciption: Yet another startlette as Yast
+site_description: Yet another startlette as Yast
 
 theme:
   name: 'material'
 
 repo_name: eml/yast
 repo_url: https://github.com/emryslou/yast
-edit_url: ''
+edit_uri: ''
 
 nav:
   - 介绍: 'index.md'
-  - MessageHandler: 'message_handler.md'
   - Responses: 'responses.md'
   - Config: 'config.md'
   - Websockets: 'websockets.md'
@@ -20,6 +19,7 @@ nav:
   - Types: 'types.md'
   - Convertors: 'convertors.md'
   - Staticfiles: 'staticfiles.md'
+  - Utils: 'utils.md'
   - Routing: 'routing.md'
   - Testclient: 'testclient.md'
   - Exceptions: 'exceptions.md'
@@ -29,5 +29,7 @@ nav:
   - Status: 'status.md'
 
 markdown_extensions:
-  - markdown.extensions.codehilite:
-      guess_lang: false
+  - mkautodoc
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences

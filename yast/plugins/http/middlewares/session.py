@@ -2,7 +2,7 @@ from base64 import b64decode, b64encode
 
 import itsdangerous
 import ujson as json
-from itsdangerous.exc import BadTimeSignature, SignatureExpired
+from itsdangerous.exc import BadSignature, BadTimeSignature, SignatureExpired
 
 from yast.datastructures import MutableHeaders
 from yast.middlewares.core import Middleware
@@ -38,26 +38,28 @@ class SessionMiddleware(Middleware):
                 try:
                     data = self.signer.unsign(data, max_age=self.max_age)
                     scope["session"] = json.loads(b64decode(data))
-                except (BadTimeSignature, SignatureExpired):
+                except (BadTimeSignature, SignatureExpired, BadSignature):
                     scope["session"] = {}
             else:
                 scope["session"] = {}
             await self.asgi(scope=scope, receive=receive, send=send)
         else:
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, send)  # pragma: no cover
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         was_empty_session = not scope["session"]
 
         async def sender(message: Message) -> None:
             if message["type"] == "http.response.start":
+                path = scope.get("root_path", "") or "/"
                 if scope["session"]:
                     data = b64encode(json.dumps(scope["session"]).encode())
                     data = self.signer.sign(data)
                     headers = MutableHeaders(scope=message)
-                    header_value = "%s=%s; path=/; Max-Age=%d; %s" % (
+                    header_value = "%s=%s; path=%s; Max-Age=%d; %s" % (
                         self.session_cookie,
                         data.decode("utf-8"),
+                        path,
                         self.max_age,
                         self.security_flags,
                     )
@@ -66,13 +68,13 @@ class SessionMiddleware(Middleware):
                     headers = MutableHeaders(scope=message)
                     header_value = "%s=%s; %s" % (
                         self.session_cookie,
-                        "null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT",
+                        f"null; path={path}; expires=Thu, 01 Jan 1970 00:00:00 GMT",
                         self.security_flags,
                     )
                     headers.append("Set-Cookie", header_value)
                 else:
-                    # todo nothing
                     pass
+
             await send(message)
 
         await self.app(scope, receive, sender)

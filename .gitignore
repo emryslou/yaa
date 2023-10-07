@@ -162,4 +162,4 @@ cython_debug/
 .history
 .vscode
 .temp
-demo/docs/
+demo/docs
