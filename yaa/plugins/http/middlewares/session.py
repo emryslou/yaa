@@ -4,10 +4,10 @@ import itsdangerous
 import ujson as json
 from itsdangerous.exc import BadSignature, BadTimeSignature, SignatureExpired
 
-from yast.datastructures import MutableHeaders
-from yast.middlewares.core import Middleware
-from yast.requests import HttpConnection
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.datastructures import MutableHeaders
+from yaa.middlewares.core import Middleware
+from yaa.requests import HttpConnection
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class SessionMiddleware(Middleware):

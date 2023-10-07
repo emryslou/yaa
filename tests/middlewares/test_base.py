@@ -2,11 +2,11 @@ import typing
 
 import pytest
 
-from yast import TestClient, Yast
-from yast.middlewares import BaseHttpMiddleware
-from yast.requests import Request
-from yast.responses import PlainTextResponse
-from yast.types import ASGIInstance
+from yaa import TestClient, Yaa
+from yaa.middlewares import BaseHttpMiddleware
+from yaa.requests import Request
+from yaa.responses import PlainTextResponse
+from yaa.types import ASGIInstance
 
 
 class VenderMiddleware(BaseHttpMiddleware):
@@ -16,7 +16,7 @@ class VenderMiddleware(BaseHttpMiddleware):
         return res
 
 
-app = Yast()
+app = Yaa()
 app.add_middleware(VenderMiddleware)
 
 
@@ -76,7 +76,7 @@ def test_vendor():
 
 @pytest.mark.timeout(3)
 def test_decorator():
-    app = Yast()
+    app = Yaa()
 
     @app.route("/homepage")
     def _(_):
@@ -114,7 +114,7 @@ def test_state_data_across_multiple_middlewares():
             response.headers["X-State-Show-Me"] = request.state.show_me
             return response
 
-    app = Yast()
+    app = Yaa()
     app.add_middleware(aMiddleware)
     app.add_middleware(bMiddleware)
 
@@ -169,7 +169,7 @@ def test_multiple_middlewares_run_order():
 
             return response
 
-    app = Yast(
+    app = Yaa(
         middlewares=[(aMiddleware, {}), (bMiddleware, {})], plugins={"session": {}}
     )
     app.add_middleware(cMiddleware)

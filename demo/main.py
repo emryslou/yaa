@@ -1,14 +1,14 @@
 import graphene
 
-from yast import Yast
-from yast.responses import Response, FileResponse, RedirectResponse, HTMLResponse
-from yast.requests import Request
-from yast.staticfiles import StaticFiles
-from yast.endpoints import HttpEndPoint, WebSocketEndpoint
-from yast.routing import Route
-from yast.websockets import WebSocket, WebSocketDisconnect
-from yast.middlewares import BaseHttpMiddleware
-from yast.plugins.template import templates
+from yaa import Yaa
+from yaa.responses import Response, FileResponse, RedirectResponse, HTMLResponse
+from yaa.requests import Request
+from yaa.staticfiles import StaticFiles
+from yaa.endpoints import HttpEndPoint, WebSocketEndpoint
+from yaa.routing import Route
+from yaa.websockets import WebSocket, WebSocketDisconnect
+from yaa.middlewares import BaseHttpMiddleware
+from yaa.plugins.template import templates
 
 
 class Query(graphene.ObjectType):
@@ -17,7 +17,7 @@ class Query(graphene.ObjectType):
     def resolve_hello(self, info, name):
         return 'Hello ' + name
 
-app = Yast(
+app = Yaa(
     debug=True,
     plugins = {
         'session': {

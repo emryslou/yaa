@@ -1,10 +1,10 @@
 import asyncio
 import typing
 
-from yast.middlewares.core import Middleware
-from yast.requests import Request
-from yast.responses import Response, StreamingResponse
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.middlewares.core import Middleware
+from yaa.requests import Request
+from yaa.responses import Response, StreamingResponse
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[

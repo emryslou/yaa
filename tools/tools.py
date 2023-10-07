@@ -63,7 +63,7 @@ class Tools(object):
             'nav_item': '',
         }
         nav_items_ = []
-        scan_path = os.path.join(self.proj_dir, 'yast')
+        scan_path = os.path.join(self.proj_dir, 'yaa')
         for inode_name in os.listdir(scan_path):
             if inode_name in ('__pycache__'):
                 continue
@@ -82,17 +82,17 @@ class Tools(object):
 
     def cmd_pkgs(self, **kwargs) -> None:
         pkgs = []
-        scan_path = os.path.join(self.proj_dir, 'yast')
+        scan_path = os.path.join(self.proj_dir, 'yaa')
         for inode_name in os.listdir(scan_path):
             if inode_name in ('__pycache__'):
                 continue
 
             if inode_name.endswith('.py') and inode_name not in ('__init__.py'):
                 file_name = inode_name.replace('.py', '')
-                self.cmd_docs(package=f'yast.{file_name}')
+                self.cmd_docs(package=f'yaa.{file_name}')
 
     def cmd_docs(self, package: str = '', recover: bool=False):
-        pkg = 'yast.staticfiles'
+        pkg = 'yaa.staticfiles'
         import importlib
         importlib.sys.path.append(os.path.join(self.proj_dir))
         try:
@@ -104,7 +104,7 @@ class Tools(object):
     
     def gen_doc_content(self, mod):
         doc_file = mod.__file__.replace(
-                os.path.join(self.proj_dir, 'yast'),
+                os.path.join(self.proj_dir, 'yaa'),
                 'docs'
             ).replace('.py', '.md')
 

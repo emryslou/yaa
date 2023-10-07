@@ -1,9 +1,9 @@
 import gzip
 import io
 
-from yast.datastructures import Headers, MutableHeaders
-from yast.middlewares import Middleware
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.datastructures import Headers, MutableHeaders
+from yaa.middlewares import Middleware
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class GZipMiddleware(Middleware):

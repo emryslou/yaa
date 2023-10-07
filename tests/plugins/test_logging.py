@@ -1,10 +1,10 @@
-from yast import Yast, TestClient
-from yast.requests import Request
-from yast.responses import PlainTextResponse
+from yaa import Yaa, TestClient
+from yaa.requests import Request
+from yaa.responses import PlainTextResponse
 
 
 def test_trace():
-    app = Yast(plugins={"logging": {"middlewares": {"trace": {}}}})
+    app = Yaa(plugins={"logging": {"middlewares": {"trace": {}}}})
 
     @app.route("/")
     async def home(req: Request):

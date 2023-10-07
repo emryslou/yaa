@@ -1,12 +1,12 @@
 import typing
 
-from yast.datastructures import State, URLPath
-from yast.middlewares import BaseHttpMiddleware, Middleware
-from yast.routing import BaseRoute, Router
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.datastructures import State, URLPath
+from yaa.middlewares import BaseHttpMiddleware, Middleware
+from yaa.routing import BaseRoute, Router
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 
-class Yast(object):
+class Yaa(object):
     def __init__(
         self,
         debug: bool = False,
@@ -17,7 +17,7 @@ class Yast(object):
         ] = None,
         on_startup: typing.List[typing.Callable] = None,
         on_shutdown: typing.List[typing.Callable] = None,
-        lifespan: typing.Callable["Yast", typing.AsyncGenerator] = None,
+        lifespan: typing.Callable["Yaa", typing.AsyncGenerator] = None,
         **kwargs,
     ) -> None:
         self._debug = debug
@@ -75,7 +75,7 @@ class Yast(object):
         import importlib
         import os
 
-        module_name = "yast.plugins"
+        module_name = "yaa.plugins"
         module = importlib.import_module(module_name)
         plugin_middlewares = getattr(module, "plugin_middlewares")
         plugin_middlewares.clear()
@@ -97,10 +97,10 @@ class Yast(object):
 
     def build_middleware_stack(self):
         app = self.app
-        from yast.plugins import plugin_middlewares as pmw
+        from yaa.plugins import plugin_middlewares as pmw
 
-        key_srv = "yast.plugins.exceptions.servererror"
-        key_exc = "yast.plugins.exceptions.exception"
+        key_srv = "yaa.plugins.exceptions.servererror"
+        key_exc = "yaa.plugins.exceptions.exception"
         (srv, srv_options) = pmw.middlewares.get(key_srv)
         (exc, exc_options) = pmw.middlewares.get(key_exc)
 

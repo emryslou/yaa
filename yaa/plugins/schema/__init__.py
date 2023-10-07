@@ -1,10 +1,10 @@
 __name__ = "schema"
 import functools
 
-from yast.applications import Yast
+from yaa.applications import Yaa
 
 
-def plugin_init(app: Yast, config: dict = {}):
+def plugin_init(app: Yaa, config: dict = {}):
     schema_generator = config.get("schema_generator", None)
 
     def get_schema(app) -> dict:

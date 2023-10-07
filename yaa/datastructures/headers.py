@@ -1,6 +1,6 @@
 import typing
 
-from yast.types import Scope
+from yaa.types import Scope
 
 
 class Headers(typing.Mapping[str, str]):

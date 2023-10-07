@@ -1,12 +1,12 @@
 import asyncio
 import pytest
 
-from yast.applications import Yast
-from yast.responses import JSONResponse
-from yast.testclient import TestClient
-from yast.websockets import WebSocket, WebSocketDisconnect
+from yaa.applications import Yaa
+from yaa.responses import JSONResponse
+from yaa.testclient import TestClient
+from yaa.websockets import WebSocket, WebSocketDisconnect
 
-mock_service = Yast()
+mock_service = Yaa()
 
 
 @mock_service.route("/")
@@ -14,7 +14,7 @@ def mock_service_endpoint(request):
     return JSONResponse({"mock": "example"})
 
 
-app = Yast()
+app = Yaa()
 
 
 @app.route("/")
@@ -24,7 +24,7 @@ def homepage(request):
     return JSONResponse(response.json())
 
 
-startup_error_app = Yast()
+startup_error_app = Yaa()
 
 
 @startup_error_app.on_event("startup")

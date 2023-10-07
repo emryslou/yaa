@@ -1,10 +1,10 @@
-from yast.applications import Yast
-from yast.responses import PlainTextResponse
-from yast.testclient import TestClient
+from yaa.applications import Yaa
+from yaa.responses import PlainTextResponse
+from yaa.testclient import TestClient
 
 
 def test_httpsredirect():
-    app = Yast(plugins={"http": {"middlewares": {"httpsredirect": {}}}})
+    app = Yaa(plugins={"http": {"middlewares": {"httpsredirect": {}}}})
 
     @app.route("/")
     async def home(_):

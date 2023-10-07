@@ -2,9 +2,9 @@ import sys
 
 import pytest
 
-from yast.middlewares import WSGIMiddleware
-from yast.middlewares.wsgi import build_environ
-from yast.testclient import TestClient
+from yaa.middlewares import WSGIMiddleware
+from yaa.middlewares.wsgi import build_environ
+from yaa.testclient import TestClient
 
 
 def demo(environ, start_response):

@@ -1,4 +1,4 @@
-from yast.datastructures.urls import *
+from yaa.datastructures.urls import *
 
 
 def test_address():

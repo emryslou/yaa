@@ -1,7 +1,7 @@
-from yast.datastructures import URL
-from yast.middlewares.core import Middleware
-from yast.responses import RedirectResponse
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.datastructures import URL
+from yaa.middlewares.core import Middleware
+from yaa.responses import RedirectResponse
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 
 class HttpsRedirectMiddleware(Middleware):

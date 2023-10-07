@@ -1,9 +1,9 @@
 import pytest
 
-from yast.plugins.template.responses import TemplateResponse
-from yast.requests import Request
-from yast.responses import Response
-from yast.testclient import TestClient
+from yaa.plugins.template.responses import TemplateResponse
+from yaa.requests import Request
+from yaa.responses import Response
+from yaa.testclient import TestClient
 
 
 def test_template_response():
@@ -37,14 +37,14 @@ def test_template_require_request():
 
 def test_template_jinja2_response(tmpdir):
     import os
-    from yast.applications import Yast
+    from yaa.applications import Yaa
 
     path = os.path.join(tmpdir, "tpl.example.1.html")
     with open(path, "w") as tpl:
         tpl.write('<html>{{hello}}{{url_for("home")}}</html>')
 
-    app = Yast(plugins={"template": {"template_directory": tmpdir}})
-    from yast.plugins.template import templates
+    app = Yaa(plugins={"template": {"template_directory": tmpdir}})
+    from yaa.plugins.template import templates
 
     @app.route("/")
     def home(req: Request):

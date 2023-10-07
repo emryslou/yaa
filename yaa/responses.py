@@ -9,10 +9,10 @@ from email.utils import formatdate
 from mimetypes import guess_type as mimetypes_guess_type
 from urllib.parse import quote
 
-from yast.background import BackgroundTask
-from yast.concurrency import iterate_in_threadpool, run_until_first_complete
-from yast.datastructures import URL, MutableHeaders
-from yast.types import Receive, Scope, Send
+from yaa.background import BackgroundTask
+from yaa.concurrency import iterate_in_threadpool, run_until_first_complete
+from yaa.datastructures import URL, MutableHeaders
+from yaa.types import Receive, Scope, Send
 
 try:
     import aiofiles

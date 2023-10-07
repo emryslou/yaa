@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from shlex import shlex
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
-from yast.types import Scope
+from yaa.types import Scope
 
 from .types import ImmutableMultiDict, MultiDict
 

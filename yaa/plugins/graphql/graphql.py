@@ -12,17 +12,17 @@ except ImportError:  # pragma: no cover
     format_graphql_error = None  # pragma: no cover
     GraphQLError = None  # pragma: no cover
 
-import yast.status as web_status
-from yast.background import BackgroundTasks
-from yast.concurrency import run_in_threadpool
-from yast.requests import Request
-from yast.responses import (
+import yaa.status as web_status
+from yaa.background import BackgroundTasks
+from yaa.concurrency import run_in_threadpool
+from yaa.requests import Request
+from yaa.responses import (
     HTMLResponse,
     JSONResponse,
     PlainTextResponse,
     Response,
 )
-from yast.types import Receive, Scope, Send
+from yaa.types import Receive, Scope, Send
 
 
 class GraphQLApp(object):

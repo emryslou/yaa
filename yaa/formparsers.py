@@ -9,7 +9,7 @@ except ImportError:  # pragma:nocover
     parse_options_header = None  # pragma:nocover
     multipart = None  # pragma:nocover
 
-from yast.datastructures import FormData, Headers, UploadFile
+from yaa.datastructures import FormData, Headers, UploadFile
 
 
 class FormMessage(enum.Enum):

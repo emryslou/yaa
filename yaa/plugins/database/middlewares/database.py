@@ -1,11 +1,11 @@
 import asyncio
 import typing
 
-from yast.datastructures import DatabaseURL
-from yast.middlewares.core import Middleware
-from yast.plugins.database.drivers.base import DatabaseBackend
-from yast.plugins.lifespan.types import EventType
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.datastructures import DatabaseURL
+from yaa.middlewares.core import Middleware
+from yaa.plugins.database.drivers.base import DatabaseBackend
+from yaa.plugins.lifespan.types import EventType
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class DatabaseMiddleware(Middleware):
@@ -29,7 +29,7 @@ class DatabaseMiddleware(Middleware):
         if isinstance(database_url, str):
             database_url = DatabaseURL(database_url)
 
-        from yast.plugins.database import get_database_backend
+        from yaa.plugins.database import get_database_backend
 
         return get_database_backend(database_url)
 

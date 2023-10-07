@@ -1,10 +1,10 @@
 import pytest
 
-from yast import TestClient
-from yast.exceptions import HttpException
-from yast.plugins.exceptions.middlewares.exception import ExceptionMiddleware
-from yast.responses import PlainTextResponse
-from yast.routing import Route, Router
+from yaa import TestClient
+from yaa.exceptions import HttpException
+from yaa.plugins.exceptions.middlewares.exception import ExceptionMiddleware
+from yaa.responses import PlainTextResponse
+from yaa.routing import Route, Router
 
 
 async def raise_runtime_error(req):
@@ -54,7 +54,7 @@ def test_not_modified():
 
 
 def test_websockets_should_raise():
-    from yast.websockets import WebSocketDisconnect
+    from yaa.websockets import WebSocketDisconnect
 
     with pytest.raises(WebSocketDisconnect):
         with client.wsconnect("/runtime_error") as _:
@@ -76,12 +76,12 @@ def test_force_500_res():
 
 
 def test_plugins_servererror():
-    from yast import Yast
+    from yaa import Yaa
 
     def handle_exc(req, exc):
         return PlainTextResponse("srv err")
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "exceptions": {
                 "middlewares": {
@@ -105,8 +105,8 @@ def test_plugins_servererror():
 
 
 def test_plugins_exception():
-    from yast import Yast
-    from yast.exceptions import HttpException
+    from yaa import Yaa
+    from yaa.exceptions import HttpException
 
     class MyException(Exception):
         pass
@@ -120,7 +120,7 @@ def test_plugins_exception():
     def handle_419(req, exc):
         return PlainTextResponse("sc:419")
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "exceptions": {
                 "middlewares": {

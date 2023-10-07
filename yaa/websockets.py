@@ -2,8 +2,8 @@ import enum
 import json
 import typing
 
-from yast.requests import HttpConnection
-from yast.types import Message, Receive, Scope, Send
+from yaa.requests import HttpConnection
+from yaa.types import Message, Receive, Scope, Send
 
 
 class WebSocketState(enum.Enum):

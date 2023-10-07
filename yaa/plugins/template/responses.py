@@ -1,10 +1,10 @@
 import os
 import typing
 
-from yast.background import BackgroundTask
-from yast.requests import Request
-from yast.responses import Response
-from yast.types import Receive, Scope, Send
+from yaa.background import BackgroundTask
+from yaa.requests import Request
+from yaa.responses import Response
+from yaa.types import Receive, Scope, Send
 
 try:
     import jinja2

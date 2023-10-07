@@ -2,12 +2,12 @@ import typing
 import inspect
 import pytest
 
-from yast.endpoints import HttpEndPoint, WebSocketEndpoint
-from yast.requests import Request
-from yast.responses import PlainTextResponse
-from yast.routing import Route, Router
-from yast.testclient import TestClient
-from yast.websockets import WebSocket
+from yaa.endpoints import HttpEndPoint, WebSocketEndpoint
+from yaa.requests import Request
+from yaa.responses import PlainTextResponse
+from yaa.routing import Route, Router
+from yaa.testclient import TestClient
+from yaa.websockets import WebSocket
 
 
 class HomePage(HttpEndPoint):

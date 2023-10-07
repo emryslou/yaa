@@ -1,12 +1,12 @@
 import os, pytest
 
-import yast.status as http_status
+import yaa.status as http_status
 
-from yast import TestClient, Yast
-from yast.responses import JSONResponse, PlainTextResponse, Response
-from yast.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
-from yast.staticfiles import StaticFiles
-from yast.websockets import WebSocket, WebSocketDisconnect
+from yaa import TestClient, Yaa
+from yaa.responses import JSONResponse, PlainTextResponse, Response
+from yaa.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
+from yaa.staticfiles import StaticFiles
+from yaa.websockets import WebSocket, WebSocketDisconnect
 
 
 def home(_):
@@ -133,8 +133,8 @@ def test_url_for():
 
 
 def test_endpoint():
-    from yast.endpoints import HttpEndPoint
-    from yast.responses import HTMLResponse
+    from yaa.endpoints import HttpEndPoint
+    from yaa.responses import HTMLResponse
 
     class DemoEndpoint(HttpEndPoint):
         def get(self, req):
@@ -151,7 +151,7 @@ def test_endpoint():
 
 @pytest.mark.timeout(3)
 def test_websocket_endpoint():
-    from yast.endpoints import WebSocketEndpoint
+    from yaa.endpoints import WebSocketEndpoint
 
     class WsApp(WebSocketEndpoint):
         encoding = "text"
@@ -168,7 +168,7 @@ def test_websocket_endpoint():
 
 @pytest.mark.timeout(3)
 def test_mixed_app():
-    from yast.routing import Route, WebSocketRoute
+    from yaa.routing import Route, WebSocketRoute
 
     mixed_app = Router(
         [Route("/", endpoint=http_endpoint), WebSocketRoute("/", endpoint=ws_endpoint)]
@@ -414,7 +414,7 @@ echo_url_routes = [
 
 
 def test_url_for_with_root_path():
-    app = Yast(routes=echo_url_routes)
+    app = Yaa(routes=echo_url_routes)
     client = TestClient(app, base_url="https://www.example.org/", root_path="/sub_path")
     response = client.get("/")
     assert response.json() == {
@@ -438,7 +438,7 @@ double_mount_routes = [
 
 
 def test_url_for_with_double_mount():
-    app = Yast(routes=double_mount_routes)
+    app = Yaa(routes=double_mount_routes)
     url = app.url_path_for("mount:static", path="123")
     assert url == "/mount/static/123"
 

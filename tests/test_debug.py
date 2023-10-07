@@ -5,8 +5,8 @@ import pytest_benchmark
 
 
 def test_open_file(tmpdir):
-    from yast import Yast
-    from yast.middlewares import Middleware
+    from yaa import Yaa
+    from yaa.middlewares import Middleware
 
     class MyMiddleware(Middleware):
         def __init__(self, app, debug=False):
@@ -21,7 +21,7 @@ def test_open_file(tmpdir):
     def handler_403(req, exc):
         pass
 
-    app = Yast(
+    app = Yaa(
         exception_handlers={500: handler_500, 403: handler_403},
         middlewares=[(MyMiddleware, {})],
         plugins={"session": {}},

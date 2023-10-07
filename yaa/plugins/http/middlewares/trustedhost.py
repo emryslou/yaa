@@ -1,9 +1,9 @@
 import typing
 
-from yast.datastructures import URL, Headers
-from yast.middlewares.core import Middleware
-from yast.responses import PlainTextResponse, RedirectResponse
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.datastructures import URL, Headers
+from yaa.middlewares.core import Middleware
+from yaa.responses import PlainTextResponse, RedirectResponse
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."
 

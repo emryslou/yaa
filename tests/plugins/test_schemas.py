@@ -1,13 +1,13 @@
-from yast import TestClient
-from yast.applications import Yast
-from yast.endpoints import HttpEndPoint
-from yast.plugins.schema.schemas import OpenAPIResponse, SchemaGenerator
+from yaa import TestClient
+from yaa.applications import Yaa
+from yaa.endpoints import HttpEndPoint
+from yaa.plugins.schema.schemas import OpenAPIResponse, SchemaGenerator
 
 schemas = SchemaGenerator(
     {"openapi": "3.0.0", "info": {"title": "Example API", "version": "1.0"}}
 )
 
-app = Yast(
+app = Yaa(
     plugins={
         "schema": {
             "schema_generator": schemas,
@@ -15,7 +15,7 @@ app = Yast(
     }
 )
 
-sub_app = Yast()
+sub_app = Yaa()
 app.mount("/sub", sub_app)
 
 

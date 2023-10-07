@@ -1,8 +1,8 @@
-from yast.applications import Yast
-from yast.plugins import load_middlewares
+from yaa.applications import Yaa
+from yaa.plugins import load_middlewares
 
 __name__ = "authentication"
 
 
-def plugin_init(app: Yast, config: dict = {}):
+def plugin_init(app: Yaa, config: dict = {}):
     load_middlewares(app, __package__, config.pop("middlewares", {}))

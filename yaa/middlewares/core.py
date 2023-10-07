@@ -1,4 +1,4 @@
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 
 class Middleware(object):

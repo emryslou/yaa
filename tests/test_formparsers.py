@@ -1,10 +1,10 @@
 import os
 
-from yast.datastructures.form import UploadFile
-from yast.formparsers import _user_safe_decode
-from yast.requests import Request
-from yast.responses import JSONResponse
-from yast.testclient import TestClient
+from yaa.datastructures.form import UploadFile
+from yaa.formparsers import _user_safe_decode
+from yaa.requests import Request
+from yaa.responses import JSONResponse
+from yaa.testclient import TestClient
 
 
 class ForceMultipartDict(dict):

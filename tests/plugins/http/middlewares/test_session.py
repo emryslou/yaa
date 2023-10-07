@@ -1,5 +1,5 @@
-from yast import TestClient, Yast
-from yast.responses import JSONResponse
+from yaa import TestClient, Yaa
+from yaa.responses import JSONResponse
 
 
 def view_session(request):
@@ -18,7 +18,7 @@ async def clear_session(request):
 
 
 def create_app(sess_config: dict = {}):
-    app = Yast(plugins={"http": {"middlewares": {"session": sess_config}}})
+    app = Yaa(plugins={"http": {"middlewares": {"session": sess_config}}})
     app.add_route("/view_session", view_session)
     app.add_route("/update_session", update_session, methods=["POST"])
     app.add_route("/clear_session", clear_session, methods=["POST"])
@@ -80,7 +80,7 @@ def test_session_cookie_subpath():
 
 
 def test_session_expired():
-    from yast.requests import Request
+    from yaa.requests import Request
     import time
 
     app = create_app({"secret_key": "example", "max_age": 1})

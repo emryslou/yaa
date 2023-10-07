@@ -1,13 +1,13 @@
 import functools
 import typing
 
-from yast.applications import Yast
-from yast.plugins import load_middlewares
+from yaa.applications import Yaa
+from yaa.plugins import load_middlewares
 
 __name__ = "exceptions"
 
 
-def plugin_init(app: Yast, config: dict = {}) -> None:
+def plugin_init(app: Yaa, config: dict = {}) -> None:
     assert "middlewares" in config
     assert "exception" in config["middlewares"]
     assert "servererror" in config["middlewares"]
@@ -17,13 +17,13 @@ def plugin_init(app: Yast, config: dict = {}) -> None:
     def add_exception_handler(
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
         handler: typing.Callable,
-        app: Yast,
+        app: Yaa,
     ) -> None:
         app.exception_handlers[exc_class_or_status_code] = handler
         app.build_middleware_stack()
 
     def exception_handler(
-        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]], app: Yast
+        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]], app: Yaa
     ) -> typing.Callable:
         def decorator(func):
             app.add_exception_handler(exc_class_or_status_code, func)

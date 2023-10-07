@@ -2,10 +2,10 @@ import functools
 import re
 import typing
 
-from yast.datastructures import Headers, MutableHeaders
-from yast.middlewares.core import Middleware
-from yast.responses import PlainTextResponse, Response
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.datastructures import Headers, MutableHeaders
+from yaa.middlewares.core import Middleware
+from yaa.responses import PlainTextResponse, Response
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
 ALL_METHODS = (
     "DELETE",

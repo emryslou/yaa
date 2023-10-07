@@ -4,14 +4,14 @@ import inspect
 import re
 import typing
 
-from yast.concurrency import run_in_threadpool
-from yast.convertors import CONVERTOR_TYPES, Convertor
-from yast.datastructures import URL, Headers, URLPath
-from yast.exceptions import HttpException
-from yast.requests import Request
-from yast.responses import PlainTextResponse, RedirectResponse
-from yast.types import ASGIApp, Receive, Scope, Send
-from yast.websockets import WebSocket, WebSocketClose
+from yaa.concurrency import run_in_threadpool
+from yaa.convertors import CONVERTOR_TYPES, Convertor
+from yaa.datastructures import URL, Headers, URLPath
+from yaa.exceptions import HttpException
+from yaa.requests import Request
+from yaa.responses import PlainTextResponse, RedirectResponse
+from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.websockets import WebSocket, WebSocketClose
 
 
 class NoMatchFound(Exception):

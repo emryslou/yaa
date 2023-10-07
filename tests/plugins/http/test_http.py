@@ -1,5 +1,5 @@
-from yast.applications import Yast
+from yaa.applications import Yaa
 
 
 def test_init(capsys):
-    Yast(plugins={"http": {"middlewares": {"cors": {}, "httpsredirect": {}}}})
+    Yaa(plugins={"http": {"middlewares": {"cors": {}, "httpsredirect": {}}}})

@@ -1,9 +1,9 @@
-from yast import Yast, TestClient
-from yast.responses import PlainTextResponse
+from yaa import Yaa, TestClient
+from yaa.responses import PlainTextResponse
 
 
 def test_cors_allow_all():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -66,7 +66,7 @@ def test_cors_allow_all():
 
 
 def test_cors_allow_all_except_credentials():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -115,7 +115,7 @@ def test_cors_allow_all_except_credentials():
 
 
 def test_cors_specific_origin():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -167,7 +167,7 @@ def test_cors_specific_origin():
 
 
 def test_cors_disallowed_preflight():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -198,7 +198,7 @@ def test_cors_disallowed_preflight():
 
 
 def test_cors_allow_origin_regex():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -260,7 +260,7 @@ def test_cors_allow_origin_regex():
 
 
 def test_cors_credentialed_requests_return_specific_origin():
-    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
+    app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(_):
@@ -275,7 +275,7 @@ def test_cors_credentialed_requests_return_specific_origin():
 
 
 def test_cors_vary_header_defaults_to_orgin():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {"cors": dict(allow_origins=["https://example.org"])}
@@ -296,7 +296,7 @@ def test_cors_vary_header_defaults_to_orgin():
 
 
 def test_cors_vary_header_is_not_set_for_non_credentialed_request():
-    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
+    app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(_):
@@ -311,7 +311,7 @@ def test_cors_vary_header_is_not_set_for_non_credentialed_request():
 
 
 def test_cors_vary_header_is_properly_set_for_credentialed_request():
-    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
+    app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(request):
@@ -328,7 +328,7 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request():
 
 
 def test_cors_vary_header_is_properly_set_for_credentialed_request():
-    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
+    app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(request):
@@ -345,7 +345,7 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request():
 
 
 def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {"cors": dict(allow_origins=["https://example.org"])}
@@ -366,7 +366,7 @@ def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard():
 
 
 def test_cors_allow_origin_regex_fullmatch():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -402,7 +402,7 @@ def test_cors_allow_origin_regex_fullmatch():
 
 
 def test_cors_preflight_allow_all_methods():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -431,7 +431,7 @@ def test_cors_preflight_allow_all_methods():
 
 
 def test_cors_allow_all_methods():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {

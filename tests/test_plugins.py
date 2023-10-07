@@ -1,5 +1,5 @@
-from yast import Yast
+from yaa import Yaa
 
 
 def test_plugin_init():
-    Yast(plugins={"database": {}})
+    Yaa(plugins={"database": {}})

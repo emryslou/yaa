@@ -2,9 +2,9 @@ import asyncio
 
 import pytest
 
-from yast import TestClient
-from yast.requests import ClientDisconnect, Request
-from yast.responses import JSONResponse
+from yaa import TestClient
+from yaa.requests import ClientDisconnect, Request
+from yaa.responses import JSONResponse
 
 
 class ForceMultipartDict(dict):
@@ -274,7 +274,7 @@ def test_request_state():
 
 
 def test_state():
-    from yast.requests import State
+    from yaa.requests import State
 
     s = State({"aa": "cc"})
 

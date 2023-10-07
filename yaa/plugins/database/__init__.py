@@ -17,9 +17,9 @@ __name__ = "database"
 import importlib
 import warnings
 
-from yast.applications import Yast
-from yast.datastructures import DatabaseURL
-from yast.plugins import load_middlewares
+from yaa.applications import Yaa
+from yaa.datastructures import DatabaseURL
+from yaa.plugins import load_middlewares
 
 from .drivers.base import (
     DatabaseBackend,
@@ -58,7 +58,7 @@ def register_db_type(
 _buildin_db_types = {"mysql": ["pymysql"], "postgres": ["psycopg2"]}
 
 
-def plugin_init(app: Yast, config: dict = {}):
+def plugin_init(app: Yaa, config: dict = {}):
     for enbale_config in config.get("enable_db_types", []):
         assert "db_type" in enbale_config
         if (

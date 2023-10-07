@@ -2,12 +2,12 @@ import os
 
 import pytest
 
-from yast import TestClient, Yast
-from yast.datastructures import URL
-from yast.plugins.database.decorators import transaction
-from yast.plugins.database.middlewares import DatabaseMiddleware
-from yast.requests import Request
-from yast.responses import JSONResponse
+from yaa import TestClient, Yaa
+from yaa.datastructures import URL
+from yaa.plugins.database.decorators import transaction
+from yaa.plugins.database.middlewares import DatabaseMiddleware
+from yaa.requests import Request
+from yaa.responses import JSONResponse
 
 try:
     url = URL("postgresql://postgres:password@localhost:5432/postgres")
@@ -24,7 +24,7 @@ except Exception as exc:  # pragma: no cover
     )  # pragma: no cover
 
 
-app = Yast()
+app = Yaa()
 
 
 def test_env():
@@ -45,7 +45,7 @@ notes = sqlalchemy.Table(
 )
 
 
-app = Yast(
+app = Yaa(
     plugins={
         "database": {
             "enable_db_types": [{"db_type": "postgres"}],
@@ -110,7 +110,7 @@ async def note_field(req: Request):
     note_id = req.path_params["note_id"]
     query = sqlalchemy.select([notes.c.text]).where(notes.c.id == note_id)
     db = req.database
-    from yast.plugins.database.drivers.base import DatabaseSession
+    from yaa.plugins.database.drivers.base import DatabaseSession
 
     assert isinstance(db, DatabaseSession)
     reuslt = await db.fetchfield(query)
@@ -194,8 +194,8 @@ def test_database_executemany():
 def test_get_database_backend_rterr():
     import pytest
 
-    from yast.datastructures import DatabaseURL
-    from yast.plugins.database import get_database_backend
+    from yaa.datastructures import DatabaseURL
+    from yaa.plugins.database import get_database_backend
 
     with pytest.raises(RuntimeError):
         get_database_backend(DatabaseURL("unknown://testserver"))

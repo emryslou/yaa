@@ -1,9 +1,9 @@
 import typing
 
-from yast.middlewares.core import Middleware
-from yast.requests import HttpConnection
-from yast.responses import PlainTextResponse, Response
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.middlewares.core import Middleware
+from yaa.requests import HttpConnection
+from yaa.responses import PlainTextResponse, Response
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 from .base import (
     AuthCredentials,
@@ -40,7 +40,7 @@ class AuthenticationMiddleware(Middleware):
             auth_result = await self.backend.authenticate(conn)
         except AuthenticationError as exc:
             if scope["type"] == "websocket":
-                from yast.websockets import WebSocketClose
+                from yaa.websockets import WebSocketClose
 
                 ws_close = WebSocketClose()
                 await ws_close(receive, send)

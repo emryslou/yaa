@@ -3,10 +3,10 @@ import os
 
 import pytest
 
-from yast import status
-from yast.background import BackgroundTask
-from yast.requests import Request
-from yast.responses import (
+from yaa import status
+from yaa.background import BackgroundTask
+from yaa.requests import Request
+from yaa.responses import (
     FileResponse,
     JSONResponse,
     RedirectResponse,
@@ -14,7 +14,7 @@ from yast.responses import (
     StreamingResponse,
     UJSONResponse,
 )
-from yast.testclient import TestClient
+from yaa.testclient import TestClient
 
 
 def test_text_response():
@@ -311,13 +311,13 @@ def test_head_method():
 
 def test_quoting_redirect_response():
     async def app(scope, receive, send):
-        if scope["path"] == "/I ♥ Yast/":
+        if scope["path"] == "/I ♥ Yaa/":
             response = Response("hello, world", media_type="text/plain")
         else:
-            response = RedirectResponse("/I ♥ Yast/")
+            response = RedirectResponse("/I ♥ Yaa/")
         await response(scope, receive, send)
 
     client = TestClient(app)
     response = client.get("/redirect")
     assert response.text == "hello, world"
-    assert response.url == "http://testserver/I%20%E2%99%A5%20Yast/"
+    assert response.url == "http://testserver/I%20%E2%99%A5%20Yaa/"

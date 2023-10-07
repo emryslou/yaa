@@ -3,8 +3,8 @@ import io
 import sys
 import typing
 
-from yast.concurrency import run_in_threadpool
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.concurrency import run_in_threadpool
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 from .core import Middleware
 

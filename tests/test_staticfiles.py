@@ -4,8 +4,8 @@ from email.utils import parsedate
 
 import pytest
 
-from yast import TestClient, Yast
-from yast.staticfiles import StaticFiles
+from yaa import TestClient, Yaa
+from yaa.staticfiles import StaticFiles
 
 
 def test_staticfiles(tmpdir):
@@ -49,7 +49,7 @@ def test_staticfiles_config_check_occurs_only_once(tmpdir):
 
 
 def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
-    from yast.applications import Yast
+    from yaa.applications import Yaa
 
     directory = os.path.join(tmpdir, "foo")
     os.mkdir(directory)
@@ -58,7 +58,7 @@ def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
     with open(path, "w") as file:
         file.write("outside root dir")
 
-    app = Yast()
+    app = Yaa()
     app.add_route("/", StaticFiles(directory=tmpdir))
     #    app = StaticFiles(directory=directory)
     client = TestClient(app)
@@ -176,8 +176,8 @@ def test_staticfiles_html(tmpdir):
 
 
 def test_staticfiles_head_with_middleware(tmpdir):
-    from yast.requests import Request
-    from yast.routing import Mount
+    from yaa.requests import Request
+    from yaa.routing import Mount
 
     path = os.path.join(tmpdir, "example.txt")
     with open(path, "w") as file:
@@ -185,7 +185,7 @@ def test_staticfiles_head_with_middleware(tmpdir):
     routes = [
         Mount("/static", app=StaticFiles(directory=tmpdir), name="static"),
     ]
-    app = Yast(routes=routes)
+    app = Yaa(routes=routes)
 
     @app.middleware("http")
     async def does_nothing_middleware(request: Request, call_next):

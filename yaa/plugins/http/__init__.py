@@ -1,9 +1,9 @@
 __name__ = "http"
 
 
-from yast.applications import Yast
-from yast.plugins import load_middlewares
+from yaa.applications import Yaa
+from yaa.plugins import load_middlewares
 
 
-def plugin_init(app: Yast, config: dict = {}) -> None:
+def plugin_init(app: Yaa, config: dict = {}) -> None:
     load_middlewares(app, __package__, config.get("middlewares", {}))

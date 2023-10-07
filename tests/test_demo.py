@@ -1,5 +1,5 @@
-from yast import TestClient, Yast
-from yast.responses import HTMLResponse
+from yaa import TestClient, Yaa
+from yaa.responses import HTMLResponse
 
 
 async def app(scope, recv, send):

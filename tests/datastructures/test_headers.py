@@ -1,4 +1,4 @@
-from yast.datastructures.headers import *
+from yaa.datastructures.headers import *
 
 
 def test_headers():

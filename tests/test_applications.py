@@ -1,15 +1,15 @@
 import os
 
-from yast.applications import Yast
-from yast.datastructures import Headers
-from yast.requests import Request
-from yast.responses import JSONResponse, PlainTextResponse
-from yast.routing import Router
-from yast.staticfiles import StaticFiles
-from yast.testclient import TestClient
+from yaa.applications import Yaa
+from yaa.datastructures import Headers
+from yaa.requests import Request
+from yaa.responses import JSONResponse, PlainTextResponse
+from yaa.routing import Router
+from yaa.staticfiles import StaticFiles
+from yaa.testclient import TestClient
 
 
-app = Yast()
+app = Yaa()
 client = TestClient(app)
 
 
@@ -109,7 +109,7 @@ def test_app_error():
 
 
 def test_app_add_middleware():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {"middlewares": {"trustedhost": dict(allowed_hosts=["testserver"])}}
         }
@@ -127,10 +127,10 @@ def test_app_add_middleware():
 
 
 def test_add_route():
-    from yast import TestClient
-    from yast.responses import PlainTextResponse
+    from yaa import TestClient
+    from yaa.responses import PlainTextResponse
 
-    app = Yast()
+    app = Yaa()
 
     async def homepage(_):
         return PlainTextResponse("homepage")
@@ -148,10 +148,10 @@ def test_add_route():
 
 
 def test_add_ws():
-    from yast import TestClient
-    from yast.responses import PlainTextResponse
+    from yaa import TestClient
+    from yaa.responses import PlainTextResponse
 
-    app = Yast()
+    app = Yaa()
 
     async def ws_endpoint(ss):
         await ss.accept()
@@ -167,10 +167,10 @@ def test_add_ws():
 
 
 def test_exception_handler():
-    from yast import TestClient
-    from yast.responses import PlainTextResponse
+    from yaa import TestClient
+    from yaa.responses import PlainTextResponse
 
-    app = Yast()
+    app = Yaa()
 
     @app.exception_handler(500)
     async def err_500(req, _):
@@ -203,7 +203,7 @@ def test_exception_handler():
 
 
 def test_subdomain():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -234,7 +234,7 @@ def test_subdomain():
 
 
 def test_add_exception():
-    app = Yast()
+    app = Yaa()
 
     @app.exception_handler(Exception)
     async def exception(req, exc: Exception):

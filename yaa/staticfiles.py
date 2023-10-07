@@ -15,14 +15,14 @@ from email.utils import parsedate
 
 from aiofiles.os import stat as aio_stat
 
-from yast.datastructures import Headers
-from yast.responses import (
+from yaa.datastructures import Headers
+from yaa.responses import (
     FileResponse,
     PlainTextResponse,
     RedirectResponse,
     Response,
 )
-from yast.types import Receive, Scope, Send
+from yaa.types import Receive, Scope, Send
 
 PathLike = typing.Union[str, "os.PathLike[str]"]
 
@@ -122,7 +122,7 @@ class StaticFiles(object):
             full_path, stat_result = await self.lookup_path(index_path)
             if stat_result is not None and stat.S_ISREG(stat_result.st_mode):
                 if not scope["path"].endswith("/"):
-                    from yast.datastructures import URL
+                    from yaa.datastructures import URL
 
                     url = URL(scope=scope)
                     url = url.replace(path=url.path + "/")

@@ -19,15 +19,15 @@ def get_packages(packages):
     ]
 
 setup(
-    name="yast",
-    version=get_version('yast'),
-    description=get_description('yast'),
-    url='https://github.com/emryslou/yast',
+    name="yaa",
+    version=get_version('yaa'),
+    description=get_description('yaa'),
+    url='https://github.com/emryslou/yaa',
     author='emrys.lou',
     author_email='1065873330@qq.com',
-    packages=get_packages('yast'),
+    packages=get_packages('yaa'),
     package_dir={
-        "yast": "yast",
+        "yaa": "yaa",
     },
     extras_requires = {
         'standard': [

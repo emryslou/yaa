@@ -1,14 +1,14 @@
 import functools
 import typing
 
-from yast.applications import Yast
+from yaa.applications import Yaa
 
 from .types import EventType
 
 __name__ = "lifespan"
 
 
-def plugin_init(app: Yast, config: dict = {}) -> None:
+def plugin_init(app: Yaa, config: dict = {}) -> None:
     from .routing import Lifespan
 
     handlers = config.get("event_handlers", {})

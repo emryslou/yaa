@@ -1,8 +1,8 @@
 import pytest
 
-from yast import TestClient
-from yast.plugins.exceptions.middlewares.server_error import ServerErrorMiddleware
-from yast.responses import JSONResponse
+from yaa import TestClient
+from yaa.plugins.exceptions.middlewares.server_error import ServerErrorMiddleware
+from yaa.responses import JSONResponse
 
 
 def test_handler():
@@ -60,7 +60,7 @@ def test_debug_not_http():
     """
     DebugMiddleware should just pass through any non-http messages as-is.
     """
-    from yast.concurrency import run_in_threadpool, asyncio
+    from yaa.concurrency import run_in_threadpool, asyncio
 
     async def app(scope, receive, send):
         raise RuntimeError("Something went wrong")
@@ -70,7 +70,7 @@ def test_debug_not_http():
 
 
 def test_repr():
-    from yast.exceptions import HttpException
+    from yaa.exceptions import HttpException
 
     assert repr(HttpException(404)) == (
         "HttpException(status_code=404, detail='Not Found')"

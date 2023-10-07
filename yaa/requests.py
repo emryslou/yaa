@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
 
-from yast.datastructures import (
+from yaa.datastructures import (
     URL,
     Address,
     FormData,
@@ -15,8 +15,8 @@ from yast.datastructures import (
     QueryParams,
     State,
 )
-from yast.formparsers import FormParser, MultiPartParser
-from yast.types import Message, Receive, Scope, Send
+from yaa.formparsers import FormParser, MultiPartParser
+from yaa.types import Message, Receive, Scope, Send
 
 try:
     from multipart.multipart import parse_options_header

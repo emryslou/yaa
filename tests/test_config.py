@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from yast.config import Config
+from yaa.config import Config
 
 
 def test_config(tmpdir):
@@ -53,7 +53,7 @@ def test_config(tmpdir):
     secrect = config.get("PASSWD")
     assert secrect == "abcd123"
 
-    from yast.datastructures import Secret
+    from yaa.datastructures import Secret
 
     secrect = config.get("PASSWD", cast=Secret)
     assert repr(secrect) == "Secret('********')"
@@ -71,7 +71,7 @@ def test_no_env_file(tmpdir):
 
 
 def test_environ():
-    from yast.config import Environ, EnvironError
+    from yaa.config import Environ, EnvironError
 
     environ = Environ()
     environ["DEBUG"] = "True"

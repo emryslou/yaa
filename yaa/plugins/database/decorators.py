@@ -1,8 +1,8 @@
 import functools
 import typing
 
-from yast.requests import Request
-from yast.responses import Response
+from yaa.requests import Request
+from yaa.responses import Response
 
 
 def transaction(func: typing.Callable) -> typing.Callable:

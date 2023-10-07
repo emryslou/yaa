@@ -1,13 +1,13 @@
 import asyncio
 import typing
 
-import yast.status as status
-from yast.concurrency import run_in_threadpool
-from yast.exceptions import HttpException
-from yast.requests import Request
-from yast.responses import PlainTextResponse
-from yast.types import Message, Receive, Scope, Send
-from yast.websockets import WebSocket
+import yaa.status as status
+from yaa.concurrency import run_in_threadpool
+from yaa.exceptions import HttpException
+from yaa.requests import Request
+from yaa.responses import PlainTextResponse
+from yaa.types import Message, Receive, Scope, Send
+from yaa.websockets import WebSocket
 
 try:
     import ujson as json

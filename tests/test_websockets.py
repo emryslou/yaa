@@ -1,8 +1,8 @@
 import pytest
 
-import yast.status as status
-from yast import TestClient
-from yast.websockets import WebSocket, WebSocketDisconnect
+import yaa.status as status
+from yaa import TestClient
+from yaa.websockets import WebSocket, WebSocketDisconnect
 
 
 class test_websocket_url:
@@ -266,7 +266,7 @@ def test_websocket_iter_json():
 
 def test_websocket_concurrency_pattern():
     import asyncio
-    from yast.concurrency import run_until_first_complete
+    from yaa.concurrency import run_until_first_complete
 
     def app(scope):
         async def reader(websocket, queue):

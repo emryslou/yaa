@@ -1,6 +1,6 @@
 import pytest
 
-from yast.datastructures.form import *
+from yaa.datastructures.form import *
 
 
 def test_formdata():

@@ -4,11 +4,11 @@ import inspect
 import traceback
 import typing
 
-from yast.concurrency import run_in_threadpool
-from yast.middlewares import Middleware
-from yast.requests import Request
-from yast.responses import HTMLResponse, PlainTextResponse, Response
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.concurrency import run_in_threadpool
+from yaa.middlewares import Middleware
+from yaa.requests import Request
+from yaa.responses import HTMLResponse, PlainTextResponse, Response
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class ServerErrorMiddleware(Middleware):

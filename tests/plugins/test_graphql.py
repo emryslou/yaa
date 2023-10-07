@@ -6,10 +6,10 @@ try:
 except ImportError:  # pragma: nocover
     pass  # pragma: nocover
 
-from yast import TestClient, Yast
-from yast.datastructures import Headers
-from yast.middlewares import Middleware
-from yast.plugins.graphql import GraphQLApp
+from yaa import TestClient, Yaa
+from yaa.datastructures import Headers
+from yaa.middlewares import Middleware
+from yaa.plugins.graphql import GraphQLApp
 
 
 class FakeAuthMiddleware(Middleware):
@@ -66,26 +66,26 @@ def test_json():
 
 
 def test_post_invalid_media_type():
-    import yast.status
+    import yaa.status
 
     res = client.post("/", data="{hello}", headers={"Content-Type": "error"})
-    assert res.status_code == yast.status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+    assert res.status_code == yaa.status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
     assert res.text == "Unsupported Media Type"
 
 
 def test_no_query():
-    import yast.status
+    import yaa.status
 
     res = client.get("/")
-    assert res.status_code == yast.status.HTTP_400_BAD_REQUEST
+    assert res.status_code == yaa.status.HTTP_400_BAD_REQUEST
     assert res.text == "No Graphql query found in the request"
 
 
 def test_invalid_field():
-    import yast.status
+    import yaa.status
 
     res = client.post("/", json={"query": "{err}"})
-    assert res.status_code == yast.status.HTTP_400_BAD_REQUEST
+    assert res.status_code == yaa.status.HTTP_400_BAD_REQUEST
     assert res.json() == {
         "data": None,
         "errors": [
@@ -104,9 +104,9 @@ def test_graphiql_get():
 
 
 def test_add_graphql_route():
-    from yast import Yast
+    from yaa import Yaa
 
-    app = Yast()
+    app = Yaa()
     app.add_route("/", GraphQLApp(schema=schema))
     client = TestClient(app)
     response = client.get("/?query={ hello }")
@@ -126,7 +126,7 @@ async_schema = graphene.Schema(query=AsyncQuery)
 
 @pytest.mark.timeout(20)
 def test_graphql_async():
-    app = Yast()
+    app = Yaa()
     app.add_route("/", GraphQLApp(schema=async_schema, executor=AsyncioExecutor()))
     client = TestClient(app)
     response = client.get("/?query={ hello }")
@@ -142,7 +142,7 @@ def test_graphql_async_cls():
 
 
 def test_context():
-    graphql_app = Yast()
+    graphql_app = Yaa()
     graphql_app.add_route("/", GraphQLApp(schema=schema))
     graphql_app.add_middleware(FakeAuthMiddleware)
     client = TestClient(graphql_app)
@@ -154,7 +154,7 @@ def test_context():
 
 
 def test_app_plugin():
-    app = Yast(
+    app = Yaa(
         plugins={
             "graphql": {
                 "routes": [

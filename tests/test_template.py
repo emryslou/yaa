@@ -1,8 +1,8 @@
 import os
 
-from yast import TestClient, Yast
-from yast.responses import HTMLResponse
-from yast.plugins.template import templates
+from yaa import TestClient, Yaa
+from yaa.responses import HTMLResponse
+from yaa.plugins.template import templates
 
 
 def test_templates(tmpdir):
@@ -10,7 +10,7 @@ def test_templates(tmpdir):
     with open(path, "w") as f:
         f.write("<h1>Hello</h1>" "<a href=\"{{url_for('homepage')}}\">Template</a>")
 
-    app = Yast(plugins={"template": {"template_directory": tmpdir}})
+    app = Yaa(plugins={"template": {"template_directory": tmpdir}})
 
     @app.route("/")
     async def homepage(req):

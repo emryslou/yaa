@@ -2,15 +2,15 @@ import os
 
 import pytest
 
-from yast import TestClient, Yast
-from yast.datastructures import URL
-from yast.plugins.database.decorators import transaction
-from yast.plugins.database.middlewares import DatabaseMiddleware
-from yast.requests import Request
-from yast.responses import JSONResponse
+from yaa import TestClient, Yaa
+from yaa.datastructures import URL
+from yaa.plugins.database.decorators import transaction
+from yaa.plugins.database.middlewares import DatabaseMiddleware
+from yaa.requests import Request
+from yaa.responses import JSONResponse
 
 try:
-    url = URL("mysql+pymysql://root:password@localhost:3306/test_yast")
+    url = URL("mysql+pymysql://root:password@localhost:3306/test_yaa")
     os.environ["YAST_TEST_DB_MYSQL"] = str(url)
     import socket
 
@@ -41,7 +41,7 @@ notes = sqlalchemy.Table(
 )
 
 
-app = Yast(
+app = Yaa(
     plugins={
         "database": {
             "enable_db_types": [{"db_type": "mysql"}],
@@ -57,7 +57,7 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True, scope="module")
 def create_test_base():
-    from yast.datastructures import DatabaseURL
+    from yaa.datastructures import DatabaseURL
 
     url = DatabaseURL(DATABASE_URL)
     database = url.database
@@ -119,7 +119,7 @@ async def note_field(req: Request):
     note_id = req.path_params["note_id"]
     query = sqlalchemy.select([notes.c.text]).where(notes.c.id == note_id)
     db = req.database
-    from yast.plugins.database.drivers.base import DatabaseSession
+    from yaa.plugins.database.drivers.base import DatabaseSession
 
     assert isinstance(db, DatabaseSession)
     reuslt = await db.fetchfield(query)

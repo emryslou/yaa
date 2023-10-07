@@ -1,10 +1,10 @@
 import logging
 
-from yast.datastructures import MutableHeaders
-from yast.middlewares.core import Middleware
-from yast.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.datastructures import MutableHeaders
+from yaa.middlewares.core import Middleware
+from yaa.types import ASGIApp, Message, Receive, Scope, Send
 
-trace_log = logging.getLogger("yast.trace")
+trace_log = logging.getLogger("yaa.trace")
 
 
 class TraceMiddleware(Middleware):

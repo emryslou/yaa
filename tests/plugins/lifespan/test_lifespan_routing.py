@@ -1,11 +1,11 @@
-from yast.applications import Yast
-from yast.plugins.lifespan.routing import Lifespan
-from yast.routing import Route, Router
-from yast.testclient import TestClient
+from yaa.applications import Yaa
+from yaa.plugins.lifespan.routing import Lifespan
+from yaa.routing import Route, Router
+from yaa.testclient import TestClient
 
 
 def test_route_lifespan_handlers():
-    from yast.responses import PlainTextResponse
+    from yaa.responses import PlainTextResponse
 
     startup_complete = False
     shutdown_complete = False
@@ -39,7 +39,7 @@ def test_route_lifespan_handlers():
 
 
 def test_route_sync_lifespan():
-    from yast.responses import PlainTextResponse
+    from yaa.responses import PlainTextResponse
 
     startup_complete = False
     shutdown_complete = False
@@ -71,7 +71,7 @@ def test_route_sync_lifespan():
 
 
 def test_route_async_lifespan():
-    from yast.responses import PlainTextResponse
+    from yaa.responses import PlainTextResponse
 
     startup_complete = False
     shutdown_complete = False
@@ -114,7 +114,7 @@ def test_app():
         nonlocal shutdown_complete
         shutdown_complete = True
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "lifespan": {
                 "event_handlers": {"startup": [run_startup], "shutdown": [run_shutdown]}
@@ -133,7 +133,7 @@ def test_app():
 
 
 def test_app_plugin_lifespan():
-    from yast.responses import PlainTextResponse
+    from yaa.responses import PlainTextResponse
 
     startup_complete = False
     shutdown_complete = False
@@ -147,7 +147,7 @@ def test_app_plugin_lifespan():
         yield
         shutdown_complete = True
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "lifespan": {"context": lifespan},
         }
@@ -164,7 +164,7 @@ def test_app_plugin_lifespan():
 
 
 def test_app_params_lifespan():
-    from yast.responses import PlainTextResponse
+    from yaa.responses import PlainTextResponse
 
     startup_complete = False
     shutdown_complete = False
@@ -178,7 +178,7 @@ def test_app_params_lifespan():
         yield
         shutdown_complete = True
 
-    app = Yast(lifespan=lifespan)
+    app = Yaa(lifespan=lifespan)
 
     assert not startup_complete
     assert not shutdown_complete
@@ -198,7 +198,7 @@ def test_app_on_event_shutdown():
         nonlocal startup_complete
         startup_complete = True
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "lifespan": {
                 "event_handlers": {
@@ -231,7 +231,7 @@ def test_app_on_event_startup():
         nonlocal shutdown_complete
         shutdown_complete = True
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "lifespan": {"event_handlers": {"shutdown": [run_shutdown]}},
         }
@@ -264,7 +264,7 @@ def test_app_add_event_handler():
         nonlocal shutdown_complete
         shutdown_complete = True
 
-    app = Yast(
+    app = Yaa(
         plugins={
             "lifespan": {},
         }
@@ -322,7 +322,7 @@ def test_app_params():
         nonlocal shutdown_complete
         shutdown_complete = True
 
-    app = Yast(
+    app = Yaa(
         on_shutdown=[run_shutdown],
         on_startup=[run_startup],
     )

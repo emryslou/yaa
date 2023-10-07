@@ -6,9 +6,9 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None  # pragma: no cover
 
-from yast.requests import Request
-from yast.responses import Response
-from yast.routing import BaseRoute, Mount, Route
+from yaa.requests import Request
+from yaa.responses import Response
+from yaa.routing import BaseRoute, Mount, Route
 
 
 class EndPointInfo(typing.NamedTuple):

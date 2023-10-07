@@ -2,12 +2,12 @@ import asyncio
 import typing
 import warnings
 
-from yast.concurrency import run_in_threadpool
-from yast.exceptions import HttpException
-from yast.middlewares.core import Middleware
-from yast.requests import Request
-from yast.responses import PlainTextResponse, Response
-from yast.types import ASGIApp, Receive, Scope, Send
+from yaa.concurrency import run_in_threadpool
+from yaa.exceptions import HttpException
+from yaa.middlewares.core import Middleware
+from yaa.requests import Request
+from yaa.responses import PlainTextResponse, Response
+from yaa.types import ASGIApp, Receive, Scope, Send
 
 
 class ExceptionMiddleware(Middleware):

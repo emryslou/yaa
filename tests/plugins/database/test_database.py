@@ -1,12 +1,12 @@
 import pytest
 
-from yast.applications import Yast
+from yaa.applications import Yaa
 
 
 def test_enbale_db_type_mysql():
-    from yast.plugins.database import get_database_backend, plugin_init, DatabaseURL
+    from yaa.plugins.database import get_database_backend, plugin_init, DatabaseURL
 
-    Yast(plugins={"database": {"enable_db_types": [{"db_type": "mysql"}]}})
+    Yaa(plugins={"database": {"enable_db_types": [{"db_type": "mysql"}]}})
 
     get_database_backend(DatabaseURL("mysql+pymysql://localhost:3306"))
     # todo: need install extra package
@@ -17,25 +17,25 @@ def test_enbale_db_type_mysql():
 
 
 def test_enbale_db_type_postgres():
-    from yast.plugins.database import get_database_backend, plugin_init, DatabaseURL
+    from yaa.plugins.database import get_database_backend, plugin_init, DatabaseURL
 
-    Yast(plugins={"database": {"enable_db_types": [{"db_type": "postgres"}]}})
+    Yaa(plugins={"database": {"enable_db_types": [{"db_type": "postgres"}]}})
 
     get_database_backend(DatabaseURL("postgresql://localhost:5432"))
 
 
 def test_enbale_db_type_failure_db_type(capsys):
-    from yast.plugins.database import get_database_backend, plugin_init, DatabaseURL
+    from yaa.plugins.database import get_database_backend, plugin_init, DatabaseURL
 
-    Yast(plugins={"database": {"enable_db_types": [{"db_type": "AAAA"}]}})
+    Yaa(plugins={"database": {"enable_db_types": [{"db_type": "AAAA"}]}})
     capout = capsys.readouterr()
     assert "db `AAAA` enabled failed" in capout.err
 
 
 def test_enbale_db_type_failure_requires(capsys):
-    from yast.plugins.database import get_database_backend, plugin_init, DatabaseURL
+    from yaa.plugins.database import get_database_backend, plugin_init, DatabaseURL
 
-    Yast(
+    Yaa(
         plugins={
             "database": {
                 "enable_db_types": [{"db_type": "mysql", "requires": ["CCCC"]}]
@@ -49,7 +49,7 @@ def test_enbale_db_type_failure_requires(capsys):
 
 def test_enbale_db_type_custome(capsys, tmpdir):
     import os
-    from yast.plugins.database import (
+    from yaa.plugins.database import (
         get_database_backend,
         plugin_init,
         DatabaseURL,
@@ -58,7 +58,7 @@ def test_enbale_db_type_custome(capsys, tmpdir):
 
     backend_path = os.path.join(tmpdir, "mydata.py")
     mydata = (
-        "from yast.plugins.database import DatabaseBackend, DatabaseURL\n"
+        "from yaa.plugins.database import DatabaseBackend, DatabaseURL\n"
         "class MydataBackend(DatabaseBackend):\n"
         "    name = 'mydata'\n"
         "    def __init__(self, database_url: DatabaseURL) -> None:\n"
@@ -71,7 +71,7 @@ def test_enbale_db_type_custome(capsys, tmpdir):
     with open(backend_path, "w") as bfile:
         bfile.write(mydata)
 
-    Yast(
+    Yaa(
         plugins={
             "database": {
                 "enable_db_types": [

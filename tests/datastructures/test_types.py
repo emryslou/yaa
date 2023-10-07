@@ -1,4 +1,4 @@
-from yast.datastructures.types import *
+from yaa.datastructures.types import *
 
 
 def test_multidict():

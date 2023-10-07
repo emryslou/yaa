@@ -8,7 +8,7 @@ from sqlalchemy.dialects.mysql import pymysql
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql import ClauseElement
 
-from yast.datastructures import DatabaseURL
+from yaa.datastructures import DatabaseURL
 
 from .base import DatabaseBackend, DatabaseSession, DatabaseTransaction
 

@@ -6,8 +6,8 @@ from sqlalchemy.dialects.postgresql import psycopg2
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql import ClauseElement
 
-from yast.datastructures import DatabaseURL
-from yast.plugins.database.drivers.base import (
+from yaa.datastructures import DatabaseURL
+from yaa.plugins.database.drivers.base import (
     DatabaseBackend,
     DatabaseSession,
     DatabaseTransaction,

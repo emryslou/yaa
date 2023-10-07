@@ -3,9 +3,9 @@ import inspect
 import traceback
 import typing
 
-from yast.applications import Yast
-from yast.routing import BaseRoute, Match
-from yast.types import Receive, Scope, Send
+from yaa.applications import Yaa
+from yaa.routing import BaseRoute, Match
+from yaa.types import Receive, Scope, Send
 
 from .types import EventType
 
@@ -50,7 +50,7 @@ class Lifespan(BaseRoute):
         else:
             await send({"type": EventType.SHUTDOWN.complete})
 
-    async def default_context(self, app: Yast) -> typing.AsyncGenerator:
+    async def default_context(self, app: Yaa) -> typing.AsyncGenerator:
         await self.handler(EventType.STARTUP)
         yield
         await self.handler(EventType.SHUTDOWN)

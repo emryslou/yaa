@@ -1,7 +1,7 @@
-from yast.applications import Yast
-from yast.responses import PlainTextResponse
+from yaa.applications import Yaa
+from yaa.responses import PlainTextResponse
 
-app = Yast()
+app = Yaa()
 
 @app.route('/')
 def home(req):

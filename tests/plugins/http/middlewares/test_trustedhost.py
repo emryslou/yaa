@@ -1,13 +1,13 @@
 import pytest
 
-from yast.applications import Yast
-from yast.responses import PlainTextResponse
-from yast.testclient import TestClient
+from yaa.applications import Yaa
+from yaa.responses import PlainTextResponse
+from yaa.testclient import TestClient
 
 
 @pytest.mark.timeout(30)
 def test_trustedhost():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {"trustedhost": dict(allowed_hosts=["aa.com", "bb.com"])}
@@ -36,7 +36,7 @@ def test_trustedhost():
 
 
 def test_wildcard():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {
@@ -75,7 +75,7 @@ def test_wildcard():
 
 
 def test_www_redirect():
-    app = Yast(
+    app = Yaa(
         plugins={
             "http": {
                 "middlewares": {"trustedhost": dict(allowed_hosts=["www.example.com"])}
@@ -94,9 +94,9 @@ def test_www_redirect():
 
 
 def test_default_allowed_hosts():
-    app = Yast(plugins={"http": {"middlewares": {"trustedhost": {}}}})
+    app = Yaa(plugins={"http": {"middlewares": {"trustedhost": {}}}})
 
-    from yast.plugins.http.middlewares import TrustedHostMiddleware
+    from yaa.plugins.http.middlewares import TrustedHostMiddleware
 
     middleware = TrustedHostMiddleware(app)
     assert middleware.allowed_hosts == ["*"]

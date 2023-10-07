@@ -1,6 +1,6 @@
 import warnings
 
-from yast.applications import Yast
+from yaa.applications import Yaa
 
 
 class _plugin_middlewares(object):
@@ -17,8 +17,8 @@ class _plugin_middlewares(object):
 plugin_middlewares = _plugin_middlewares()
 
 
-def load_middlewares(app: Yast, package: str, middlewares_config: dict = {}):
-    from yast.utils import get_plugin_middlewares
+def load_middlewares(app: Yaa, package: str, middlewares_config: dict = {}):
+    from yaa.utils import get_plugin_middlewares
 
     klass = {}
     middlewares = get_plugin_middlewares(package)

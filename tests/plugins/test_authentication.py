@@ -3,19 +3,19 @@ import binascii
 
 import pytest
 
-from yast.applications import Yast
-from yast.plugins.authentication.base import SimpleUser, requires
-from yast.plugins.authentication.middlewares import (
+from yaa.applications import Yaa
+from yaa.plugins.authentication.base import SimpleUser, requires
+from yaa.plugins.authentication.middlewares import (
     AuthCredentials,
     AuthenticationMiddleware,
     AuthenticationBackend,
     AuthenticationError,
 )
-from yast.endpoints import HttpEndPoint
-from yast.requests import Request
-from yast.responses import JSONResponse
-from yast.testclient import TestClient
-from yast.websockets import WebSocketDisconnect
+from yaa.endpoints import HttpEndPoint
+from yaa.requests import Request
+from yaa.responses import JSONResponse
+from yaa.testclient import TestClient
+from yaa.websockets import WebSocketDisconnect
 
 
 class BasicAuth(AuthenticationBackend):
@@ -34,7 +34,7 @@ class BasicAuth(AuthenticationBackend):
         return AuthCredentials(["authenticated"]), SimpleUser(username)
 
 
-app = Yast(
+app = Yaa(
     plugins={
         "authentication": {"middlewares": {"authentication": dict(backend=BasicAuth())}}
     }
@@ -311,7 +311,7 @@ def on_auth_error(request: Request, exc: Exception):
     return JSONResponse({"error": str(exc)}, status_code=401)
 
 
-other_app = Yast(
+other_app = Yaa(
     plugins={
         "authentication": {
             "middlewares": {

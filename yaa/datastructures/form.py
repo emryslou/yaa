@@ -1,7 +1,7 @@
 import tempfile
 import typing
 
-from yast.concurrency import run_in_threadpool
+from yaa.concurrency import run_in_threadpool
 
 from .types import ImmutableMultiDict
 

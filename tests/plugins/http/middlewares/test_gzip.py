@@ -1,10 +1,10 @@
-from yast.applications import Yast
-from yast.responses import PlainTextResponse, StreamingResponse
-from yast.testclient import TestClient
+from yaa.applications import Yaa
+from yaa.responses import PlainTextResponse, StreamingResponse
+from yaa.testclient import TestClient
 
 
 def test_gzip_responses():
-    app = Yast(plugins={"http": {"middlewares": {"gzip": {}}}})
+    app = Yaa(plugins={"http": {"middlewares": {"gzip": {}}}})
 
     @app.route("/")
     def homepage(request):
@@ -19,7 +19,7 @@ def test_gzip_responses():
 
 
 def test_gzip_not_in_accept_encoding():
-    app = Yast(plugins={"http": {"middlewares": {"gzip": {}}}})
+    app = Yaa(plugins={"http": {"middlewares": {"gzip": {}}}})
 
     @app.route("/")
     def homepage(request):
@@ -34,7 +34,7 @@ def test_gzip_not_in_accept_encoding():
 
 
 def test_gzip_ignored_for_small_responses():
-    app = Yast(plugins={"http": {"middlewares": {"gzip": {}}}})
+    app = Yaa(plugins={"http": {"middlewares": {"gzip": {}}}})
 
     @app.route("/")
     def homepage(request):
@@ -49,7 +49,7 @@ def test_gzip_ignored_for_small_responses():
 
 
 def test_gzip_streaming_response():
-    app = Yast(plugins={"http": {"middlewares": {"gzip": {}}}})
+    app = Yaa(plugins={"http": {"middlewares": {"gzip": {}}}})
 
     @app.route("/")
     def homepage(request):

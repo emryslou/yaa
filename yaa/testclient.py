@@ -11,9 +11,9 @@ from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
 
-from yast.plugins.lifespan.types import EventType as LifespanET
-from yast.types import Receive, Scope, Send
-from yast.websockets import WebSocketDisconnect
+from yaa.plugins.lifespan.types import EventType as LifespanET
+from yaa.types import Receive, Scope, Send
+from yaa.websockets import WebSocketDisconnect
 
 ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
 ASGI2App = typing.Callable[[Scope], ASGIInstance]

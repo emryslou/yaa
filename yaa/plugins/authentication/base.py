@@ -3,9 +3,9 @@ import functools
 import inspect
 import typing
 
-from yast.exceptions import HttpException
-from yast.requests import HttpConnection, Request
-from yast.responses import RedirectResponse, Response
+from yaa.exceptions import HttpException
+from yaa.requests import HttpConnection, Request
+from yaa.responses import RedirectResponse, Response
 
 
 def has_required_scope(conn: HttpConnection, scopes: typing.Sequence[str]) -> bool:
@@ -65,7 +65,7 @@ def requires(
 
             return wrapper
         elif _type == "websocket":
-            from yast.websockets import WebSocket
+            from yaa.websockets import WebSocket
 
             @functools.wraps(func)
             async def ws_wrapper(*args, **kwargs) -> Response:

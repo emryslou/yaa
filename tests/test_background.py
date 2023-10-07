@@ -2,10 +2,10 @@ import asyncio
 
 import pytest
 
-from yast import TestClient
-from yast.background import BackgroundTask, BackgroundTasks
-from yast.requests import Request
-from yast.responses import Response
+from yaa import TestClient
+from yaa.background import BackgroundTask, BackgroundTasks
+from yaa.requests import Request
+from yaa.responses import Response
 
 
 @pytest.mark.timeout(3)
