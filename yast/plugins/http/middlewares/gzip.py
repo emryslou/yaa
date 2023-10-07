@@ -8,8 +8,11 @@ from yast.types import ASGIApp, Message, Receive, Scope, Send
 
 class GZipMiddleware(Middleware):
     def __init__(
-        self, app: ASGIApp, debug: bool = False,
-        minimum_size: int = 500, compresslevel: int = 9
+        self,
+        app: ASGIApp,
+        debug: bool = False,
+        minimum_size: int = 500,
+        compresslevel: int = 9,
     ) -> None:
         super().__init__(app)
         self.debug = debug
@@ -21,20 +24,22 @@ class GZipMiddleware(Middleware):
             headers = Headers(scope=scope)
             if "gzip" in headers.get("Accept-Encoding", ""):
                 res = GZipResponder(self.app, self.minimum_size, self.compresslevel)
-                res(scope, receive, send)
+                await res(scope, receive, send)
                 return
         await self.app(scope, receive, send)
 
 
 class GZipResponder(object):
-    def __init__(self, app: ASGIApp, minimum_size: int, compresslevel: int=9) -> None:
+    def __init__(self, app: ASGIApp, minimum_size: int, compresslevel: int = 9) -> None:
         self.inner = app
         self.minimum_size = minimum_size
         self.send = unattached_send
         self.init_message = {}
         self.started = False
         self.gzip_buffer = io.BytesIO()
-        self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer, compresslevel=compresslevel)
+        self.gzip_file = gzip.GzipFile(
+            mode="wb", fileobj=self.gzip_buffer, compresslevel=compresslevel
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         self.send = send

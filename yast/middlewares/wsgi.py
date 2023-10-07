@@ -51,7 +51,7 @@ def build_environ(scope: Scope, body: bytes) -> dict:
 
 
 class WSGIMiddleware(Middleware):
-    def __init__(self, app: ASGIApp, workers: int = 10) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

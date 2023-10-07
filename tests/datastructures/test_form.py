@@ -29,13 +29,13 @@ def test_formdata():
     assert FormData({"a": "123", "b": "789"}) != {"a": "123", "b": "789"}
 
 
-class TestUploadFile(UploadFile):
+class _TestUploadFile(UploadFile):
     spool_max_size = 1024
 
 
 @pytest.mark.asyncio
 async def test_upload_file():
-    big_file = TestUploadFile("big-file")
+    big_file = _TestUploadFile("big-file")
     await big_file.write(b"big-data" * 512)
     await big_file.write(b"big-data")
     await big_file.seek(0)

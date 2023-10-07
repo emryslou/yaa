@@ -59,6 +59,7 @@ def compile_path(
         idx = match.end()
     # endfor
     if duplicated_params:
+        duplicated_params = sorted(duplicated_params)
         names = ", ".join(duplicated_params)
         ending = "s" if len(duplicated_params) > 1 else ""
         raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
