@@ -397,7 +397,7 @@ class TestClient(requests.Session):
         else:
             raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
-    def __enter__(self) -> requests.Session:
+    def __enter__(self) -> "TestClient":
         loop = asyncio.get_event_loop()
         self.send_queue = asyncio.Queue()
         self.receive_queue = asyncio.Queue()

@@ -104,7 +104,7 @@ class ServerErrorMiddleware(Middleware):
         return TEMPLATE.format(styles=STYLES, js=JS, error=error, exc_html=exc_html)
 
     def generate_plain_text(self, exc: Exception) -> str:
-        return "".join(traceback.format_tb(exc.__traceback__))
+        return "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
     def debug_response(self, request: Request, exc: Exception) -> Response:
         accept = request.headers.get("accept", "")

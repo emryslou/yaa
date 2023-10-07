@@ -104,7 +104,7 @@ class Route(BaseRoute):
         if methods is None:
             self.methods = None
         else:
-            self.methods = set(method.upper() for method in methods)
+            self.methods = {method.upper() for method in methods}
             if "GET" in self.methods:
                 self.methods.add("HEAD")
 
@@ -500,7 +500,7 @@ class Router(object):
                         await res(scope=scope, receive=receive, send=send)
                         return
 
-        if self._lifespan is not None and scope["type"] == "lifespan":
+        if scope["type"] == "lifespan" and self._lifespan is not None:
             await self._lifespan(scope, receive=receive, send=send)
             return
 

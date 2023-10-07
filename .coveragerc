@@ -11,6 +11,8 @@ addopts = --cov-fail-under=99
 omit = 
     conftest.py
     tests/test_debug.py
+    tests/test_benchmark.py
     tools/*.py
     private
     yast/testclient.py
+

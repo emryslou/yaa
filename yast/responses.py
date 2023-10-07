@@ -10,7 +10,7 @@ from mimetypes import guess_type as mimetypes_guess_type
 from urllib.parse import quote, quote_plus
 
 from yast.background import BackgroundTask
-from yast.concurrency import run_until_first_complete
+from yast.concurrency import iterate_in_threadpool, run_until_first_complete
 from yast.datastructures import URL, MutableHeaders
 from yast.types import Receive, Scope, Send
 
@@ -215,7 +215,10 @@ class StreamingResponse(Response):
         media_type: str = None,
         background: BackgroundTask = None,
     ) -> None:
-        self.body_iter = content
+        if isinstance(content, typing.AsyncIterable):
+            self.body_iter = content
+        else:
+            self.body_iter = iterate_in_threadpool(content)
         self.status_code = status_code
         self.media_type = self.media_type if media_type is None else media_type
         self.background = background

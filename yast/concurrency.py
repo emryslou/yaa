@@ -1,6 +1,8 @@
 import asyncio
 import functools
 import typing
+from asyncio import create_task
+from typing import Any, AsyncGenerator, Iterator
 
 try:
     import contextvars
@@ -9,7 +11,7 @@ except ImportError:  # pragma: no cover
 
 
 async def run_until_first_complete(*args: typing.Tuple[typing.Callable, dict]) -> None:
-    tasks = [handler(**kwargs) for handler, kwargs in args]
+    tasks = [create_task(handler(**kwargs)) for handler, kwargs in args]
 
     (done, pending) = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
@@ -30,3 +32,22 @@ async def run_in_threadpool(
         func = functools.partial(func, **kwargs)
 
     return await _loop.run_in_executor(None, func, *args)
+
+
+class _StopIteration(Exception):
+    pass
+
+
+def _next(iterator: Iterator) -> Any:
+    try:
+        return next(iterator)
+    except StopIteration:
+        raise _StopIteration
+
+
+async def iterate_in_threadpool(iterator: Iterator) -> AsyncGenerator:
+    while True:
+        try:
+            yield await run_in_threadpool(_next, iterator)
+        except _StopIteration:
+            break
