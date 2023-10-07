@@ -231,3 +231,22 @@ def test_subdomain():
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Subdomain:abc"
+
+
+def test_add_exception():
+    app = Yast()
+
+    @app.exception_handler(Exception)
+    async def exception(req, exc: Exception):
+        print("exc")
+        if exc.__cause__ is not None:
+            print("exc ", exc.__cause__)
+        return JSONResponse(content={"error": "Srv Err 2333"})
+
+    @app.route("/")
+    async def _(_):
+        raise Exception("///")
+
+    client = TestClient(app, raise_server_exceptions=False)
+    res = client.get("/")
+    assert res.json() == {"error": "Srv Err 2333"}

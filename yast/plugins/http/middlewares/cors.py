@@ -160,13 +160,18 @@ class CORSMiddleware(Middleware):
             return
         message.setdefault("headers", [])
         headers = MutableHeaders(raw=message["headers"])
+        headers.update(self.simple_headers)
         origin = request_headers["Origin"]
         has_cookie = "cookie" in request_headers
 
         if self.allow_all_origins and has_cookie:
-            self.simple_headers["Access-Control-Allow-Origin"] = origin
+            self.allow_explicit_origin(headers, origin)
         elif not self.allow_all_origins and self.is_allowed_origin(origin):
-            headers["Access-Control-Allow-Origin"] = origin
-            headers.add_vary_header("Origin")
-        headers.update(self.simple_headers)
+            self.allow_explicit_origin(headers, origin)
+
         await send(message)
+
+    @staticmethod
+    def allow_explicit_origin(headers: MutableHeaders, origin: str) -> None:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers.add_vary_header("Origin")

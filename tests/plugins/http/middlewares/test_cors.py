@@ -220,14 +220,8 @@ def test_cors_vary_header_defaults_to_orgin():
     assert res.headers["vary"] == "Origin"
 
 
-def test_cors_vary_header_is_properly_set():
-    app = Yast(
-        plugins={
-            "http": {
-                "middlewares": {"cors": dict(allow_origins=["https://example.org"])}
-            }
-        }
-    )
+def test_cors_vary_header_is_not_set_for_non_credentialed_request():
+    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(_):
@@ -238,7 +232,50 @@ def test_cors_vary_header_is_properly_set():
     res = client.get("/", headers=headers)
     assert res.status_code == 200
     assert res.text == "HomePage"
-    assert res.headers["vary"] == "Accept-Encoding, Origin"
+    assert res.headers["vary"] == "Accept-Encoding"
+
+
+def test_cors_vary_header_is_properly_set_for_credentialed_request():
+    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse(
+            "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
+        )
+    client = TestClient(app)
+    response = client.get(
+        "/", headers={"Cookie": "foo=bar", "Origin": "https://someplace.org"}
+    )
+    assert response.status_code == 200
+    assert response.headers["vary"] == "Accept-Encoding, Origin"
+
+
+def test_cors_vary_header_is_properly_set_for_credentialed_request():
+    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse(
+            "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
+        )
+    client = TestClient(app)
+    response = client.get(
+        "/", headers={"Cookie": "foo=bar", "Origin": "https://someplace.org"}
+    )
+    assert response.status_code == 200
+    assert response.headers["vary"] == "Accept-Encoding, Origin"
+
+def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard():
+    app = Yast(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["https://example.org"])}}})
+    @app.route("/")
+    def homepage(request):
+        return PlainTextResponse(
+            "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
+        )
+    client = TestClient(app)
+    response = client.get("/", headers={"Origin": "https://example.org"})
+    assert response.status_code == 200
+    assert response.headers["vary"] == "Accept-Encoding, Origin"
+
 
 
 def test_cors_allow_origin_regex_fullmatch():
