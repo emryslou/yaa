@@ -196,6 +196,14 @@ def test_cors_disallowed_preflight():
     assert res.status_code == 400
     assert res.text == "Disallowed CORS origin,method,headers"
 
+    headers = {
+        "Origin": "https://ex.org",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Nope-1, X-Nope-2",
+    }
+    response = client.options("/", headers=headers)
+    assert response.text == "Disallowed CORS headers"
+
 
 def test_cors_allow_origin_regex():
     app = Yaa(

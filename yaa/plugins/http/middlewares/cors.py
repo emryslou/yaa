@@ -143,6 +143,7 @@ class CORSMiddleware(Middleware):
             for header in [h.lower() for h in req_headers.split(",")]:
                 if header.strip() not in self.allow_headers:
                     failures.append("headers")
+                    break
 
         if failures:
             failure_text = "Disallowed CORS " + ",".join(failures)
