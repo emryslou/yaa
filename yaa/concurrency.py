@@ -1,4 +1,4 @@
-import asyncio
+import anyio, asyncio
 import functools
 import typing
 from asyncio import create_task
@@ -11,12 +11,12 @@ except ImportError:  # pragma: no cover
 
 
 async def run_until_first_complete(*args: typing.Tuple[typing.Callable, dict]) -> None:
-    tasks = [create_task(handler(**kwargs)) for handler, kwargs in args]
-
-    (done, pending) = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-
-    [task.cancel() for task in pending]
-    [task.result() for task in done]
+    async with anyio.create_task_group() as tg:
+        async def run(func: typing.Callable[[], typing.Coroutine]) -> None:
+            await func()
+            tg.cancel_scope.cancel()
+        for func, kwargs in args:
+            tg.start_soon(run, functools.partial(func, **kwargs))
 
 
 async def run_in_threadpool(
@@ -31,7 +31,7 @@ async def run_in_threadpool(
     elif kwargs:  # pragma: no cover
         func = functools.partial(func, **kwargs)
 
-    return await _loop.run_in_executor(None, func, *args)
+    return await anyio.to_thread.run_sync(func, *args)
 
 
 class _StopIteration(Exception):
@@ -48,6 +48,6 @@ def _next(iterator: Iterator) -> Any:
 async def iterate_in_threadpool(iterator: Iterator) -> AsyncGenerator:
     while True:
         try:
-            yield await run_in_threadpool(_next, iterator)
+            yield await anyio.to_thread.run_sync(_next, iterator)
         except _StopIteration:
             break
