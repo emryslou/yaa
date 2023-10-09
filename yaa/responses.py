@@ -1,3 +1,4 @@
+import functools
 import hashlib
 import http.cookies
 import json
@@ -9,17 +10,17 @@ from email.utils import formatdate
 from mimetypes import guess_type as mimetypes_guess_type
 from urllib.parse import quote
 
+import anyio
+
 from yaa.background import BackgroundTask
-from yaa.concurrency import iterate_in_threadpool, run_until_first_complete
+from yaa.concurrency import iterate_in_threadpool
 from yaa.datastructures import URL, MutableHeaders
 from yaa.types import Receive, Scope, Send
 
 try:
     import aiofiles
-    from aiofiles.os import stat as aio_stat
 except ImportError:  # pragma: nocover
     aiofiles = None  # type: ignore
-    aio_stat = None  # type: ignore
 
 try:
     import ujson
@@ -248,10 +249,15 @@ class StreamingResponse(Response):
             await send({"type": "http.response.body", "body": b"", "more_body": False})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await run_until_first_complete(
-            (self.response, {"send": send, "scope": scope}),
-            (self.listen_for_disconnect, {"receive": receive}),
-        )
+        async with anyio.create_task_group() as tg:
+
+            async def wrap(func: typing.Callable[[], typing.Coroutine]) -> None:
+                await func()
+                tg.cancel_scope.cancel()
+
+            tg.start_soon(wrap, functools.partial(self.response, send, scope))
+            await wrap(functools.partial(self.listen_for_disconnect, receive))
+
         if self.background is not None:
             await self.background()
 
@@ -315,7 +321,7 @@ class FileResponse(Response):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.stat_result is None:
             try:
-                stat_result = await aio_stat(self.path)
+                stat_result = await anyio.to_thread.run_sync(os.stat, self.path)
                 self.set_stat_headers(stat_result)
             except FileNotFoundError:
                 raise RuntimeError(f"File at path {self.path} does not exists.")
@@ -334,7 +340,7 @@ class FileResponse(Response):
         if scope["method"] in ("HEAD"):
             await send({"type": "http.response.body", "body": b"", "more_body": False})
         else:
-            async with aiofiles.open(self.path, mode="rb") as file:
+            async with await anyio.open_file(self.path, mode="rb") as file:
                 more_body = True
                 while more_body:
                     chunk = await file.read(self.chunk_size)
