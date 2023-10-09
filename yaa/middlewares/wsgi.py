@@ -1,9 +1,10 @@
-import asyncio
 import io
+import math
 import sys
 import typing
 
-from yaa.concurrency import run_in_threadpool
+import anyio
+
 from yaa.types import ASGIApp, Receive, Scope, Send
 
 from .core import Middleware
@@ -64,12 +65,11 @@ class WSGIResponser(object):
         self.app = app
         self.status = None
         self.response_headers = None
-        self.send_event = asyncio.Event()
-        self.send_queue = []
-        self.loop = asyncio.get_event_loop()
+        self.stream_send, self.stream_receive = anyio.create_memory_object_stream(
+            math.inf
+        )
         self.response_started = False
         self.exc_info = None
-        self._running = True
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         body = b""
@@ -80,38 +80,18 @@ class WSGIResponser(object):
             more_body = message.get("more_body", False)
 
         environ = build_environ(scope, body)
-        sender = None
-        try:
-            wsgi = run_in_threadpool(self.wsgi, environ, self.start_response)
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(self.sender, send)
+            async with self.stream_send:
+                await anyio.to_thread.run_sync(self.wsgi, environ, self.start_response)
 
-            sender = self.loop.create_task(self.sender(send))
-            await asyncio.wait_for(wsgi, None)
-
-            self.send_queue.append(None)
-            self.send_event.set()
-            await asyncio.wait_for(sender, None)
-
-            if self.exc_info is not None:
-                raise self.exc_info[0].with_traceback(
-                    self.exc_info[1], self.exc_info[2]
-                )
-        finally:
-            if not sender.done():
-                sender.cancel()
+        if self.exc_info is not None:
+            raise self.exc_info[0].with_traceback(self.exc_info[1], self.exc_info[2])
 
     async def sender(self, send: Send) -> None:
-        while True:
-            try:
-                if self.send_queue:
-                    message = self.send_queue.pop(0)
-                    if message is None:
-                        return
-                    await send(message)
-                else:
-                    await self.send_event.wait()
-                    self.send_event.clear()
-            except asyncio.CancelledError as exc:
-                raise exc  # pragma: nocover
+        async with self.stream_receive:
+            async for message in self.stream_receive:
+                await send(message)
 
     def start_response(
         self,
@@ -129,25 +109,26 @@ class WSGIResponser(object):
                 for name, value in response_headers
             ]
 
-            self.send_queue.append(
+            anyio.from_thread.run(
+                self.stream_send.send,
                 {
                     "type": "http.response.start",
                     "status": status_code,
                     "headers": headers,
-                }
+                },
             )
-            self.loop.call_soon_threadsafe(self.send_event.set)
 
     def wsgi(self, environ: dict, start_response: typing.Callable) -> None:
         for chunk in self.app(environ, start_response):
-            self.send_queue.append(
+            anyio.from_thread.run(
+                self.stream_send.send,
                 {
                     "type": "http.response.body",
                     "body": chunk,
                     "more_body": True,
-                }
+                },
             )
-            self.loop.call_soon_threadsafe(self.send_event.set)
 
-        self.send_queue.append({"type": "http.response.body", "body": b""})
-        self.loop.call_soon_threadsafe(self.send_event.set)
+        anyio.from_thread.run(
+            self.stream_send.send, {"type": "http.response.body", "body": b""}
+        )
