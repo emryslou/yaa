@@ -60,13 +60,14 @@ def test_debug_not_http():
     """
     DebugMiddleware should just pass through any non-http messages as-is.
     """
-    from yaa.concurrency import run_in_threadpool, asyncio
+    from yaa.concurrency import run_in_threadpool
+    import anyio
 
     async def app(scope, receive, send):
         raise RuntimeError("Something went wrong")
 
     with pytest.raises(RuntimeError):
-        asyncio.run(ServerErrorMiddleware(app)({"type": "websocket"}, None, None))
+        anyio.run(ServerErrorMiddleware(app), {"type": "websocket"}, None, None)
 
 
 def test_repr():

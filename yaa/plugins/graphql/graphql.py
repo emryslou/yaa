@@ -1,5 +1,3 @@
-import typing
-
 import ujson as json
 
 try:

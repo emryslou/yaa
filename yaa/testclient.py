@@ -6,7 +6,6 @@ import io
 import json
 import math
 import queue
-import threading
 import types
 import typing
 from concurrent.futures import Future
@@ -16,7 +15,6 @@ import anyio
 import requests
 from anyio.streams.stapled import StapledObjectStream
 
-from yaa.plugins.lifespan.types import EventType as LifespanET
 from yaa.types import Receive, Scope, Send
 from yaa.websockets import WebSocketDisconnect
 
