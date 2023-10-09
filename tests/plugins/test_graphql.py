@@ -127,7 +127,7 @@ async_schema = graphene.Schema(query=AsyncQuery)
 @pytest.mark.timeout(20)
 def test_graphql_async():
     app = Yaa()
-    app.add_route("/", GraphQLApp(schema=async_schema, executor=AsyncioExecutor()))
+    app.add_route("/", GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor))
     client = TestClient(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200

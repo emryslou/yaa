@@ -44,6 +44,7 @@ def test_use_testclient_in_endpoint():
     assert response.json() == {"mock": "example"}
 
 
+@pytest.mark.timeout(3)
 def testclient_as_contextmanager():
     with TestClient(app):
         pass

@@ -29,25 +29,17 @@ class GraphQLApp(object):
     def __init__(
         self,
         schema: "graphene.Schema",
-        executor: typing.Any = None,
         executor_class: type = None,
     ) -> None:
         assert graphene is not None, "python `graphene` package must be installed"
 
         self.schema = schema
-        self.executor = executor
-        if executor is None:
-            self.executor_class = executor_class
-            self.is_async = executor_class is not None and issubclass(
-                executor_class, AsyncioExecutor
-            )
-        else:
-            self.executor_class = None
-            self.is_async = isinstance(executor, AsyncioExecutor)
+        self.executor_class = executor_class
+        self.is_async = executor_class is not None and issubclass(
+            executor_class, AsyncioExecutor
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self.executor is None and self.executor_class is not None:
-            self.executor = self.executor_class()
         req = Request(scope=scope, receive=receive)
         res = await self.handler(req)
         await res(scope, receive, send)
@@ -118,7 +110,7 @@ class GraphQLApp(object):
                 query,
                 variable=variable,
                 operation_name=operation_name,
-                executor=self.executor,
+                executor=self.executor_class(),
                 return_promise=True,
                 context_value=context,
             )

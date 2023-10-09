@@ -159,16 +159,16 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
         request_complete = False
         response_started = False
-        response_complete = False
-        raw_kwargs = {"body": io.BytesIO()}
+        response_complete: anyio.Event
+        raw_kwargs: dict = {"body": io.BytesIO()}
         template = None
         context = None
 
         async def receive():
-            nonlocal request_complete, response_complete
+            nonlocal request_complete
             if request_complete:
-                while not response_complete:
-                    await asyncio.sleep(0.0001)
+                if not response_complete.is_set():
+                    await response_complete.wait()
                 return {"type": "http.disconnect"}
 
             body = request.body
@@ -195,7 +195,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             return {"type": "http.request", "body": body_bytes}
 
         async def send(message):
-            nonlocal raw_kwargs, response_started, response_complete
+            nonlocal raw_kwargs, response_started
             nonlocal template, context
             if message["type"] == "http.response.start":
                 assert (
@@ -217,7 +217,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                     response_started
                 ), 'Received "http.response.body" without "http.response.start".'
                 assert (
-                    not response_complete
+                    not response_complete.is_set()
                 ), 'Received "http.response.body" after response completed'
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
@@ -226,19 +226,22 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
                 if not more_body:
                     raw_kwargs["body"].seek(0)
-                    response_complete = True
+                    response_complete.set()
             elif message["type"] == "http.response.template":
                 template = message["template"]
                 context = message["context"]
 
         try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            #     loop = asyncio.get_event_loop()
+            # except RuntimeError:
+            #     loop = asyncio.new_event_loop()
+            #     asyncio.set_event_loop(loop)
 
-        try:
-            loop.run_until_complete(self.app(scope, receive, send))
+            # try:
+            #     loop.run_until_complete(self.app(scope, receive, send))
+            with anyio.start_blocking_portal(**self.async_backend) as portal:
+                response_complete = portal.call(anyio.Event)
+                portal.call(self.app, scope, receive, send)
         except BaseException as exc:
             if self.raise_server_exceptions:
                 raise exc
@@ -382,6 +385,8 @@ class TestClient(requests.Session):
         "backend_options": {},
     }
 
+    task: Future[None]
+
     def __init__(
         self,
         app: typing.Union[ASGI2App, ASGI3App],
@@ -434,34 +439,67 @@ class TestClient(requests.Session):
             raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
     def __enter__(self) -> "TestClient":
-        loop = asyncio.get_event_loop()
-        self.send_queue = asyncio.Queue()
-        self.receive_queue = asyncio.Queue()
+        # loop = asyncio.get_event_loop()
+        # self.send_queue = asyncio.Queue()
+        # self.receive_queue = asyncio.Queue()
 
-        self.task = loop.create_task(self.lifespan())
-        loop.run_until_complete(self.wait_et("startup"))
+        # self.task = loop.create_task(self.lifespan())
+        # loop.run_until_complete(self.wait_et("startup"))
+        self.exit_stack = contextlib.ExitStack()
+        self.portal = self.exit_stack.enter_context(
+            anyio.start_blocking_portal(**self.async_backend)
+        )
+        self.stream_send = StapledObjectStream(
+            *anyio.create_memory_object_stream(math.inf)
+        )
+        self.stream_receive = StapledObjectStream(
+            *anyio.create_memory_object_stream(math.inf)
+        )
+
+        try:
+            self.task = self.portal.start_task_soon(self.lifespan)
+            self.portal.call(self.wait_startup)
+        except Exception:
+            self.exit_stack.close()
+            raise
         return self
 
     def __exit__(self, *args: typing.Any) -> None:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.wait_et("shutdown"))
+        # loop = asyncio.get_event_loop()
+        # loop.run_until_complete(self.wait_et("shutdown"))
+        try:
+            self.portal.call(self.wait_shutdown)
+        finally:
+            self.exit_stack.close()
 
     async def lifespan(self) -> None:
         try:
             await self.app(
-                {"type": "lifespan"}, self.receive_queue.get, self.send_queue.put
+                {"type": "lifespan"},
+                self.stream_receive.receive,  # self.receive_queue.get,
+                self.stream_send.send,  # self.send_queue.put
             )
         finally:
-            await self.send_queue.put(None)
+            await self.stream_send.send(None)
 
-    async def wait_et(self, event_type: str) -> None:
-        event_type = LifespanET(event_type)
-        await self.receive_queue.put({"type": event_type.lifespan})
-        message = await self.send_queue.get()
-        if event_type == LifespanET.STARTUP:
-            if message["type"] == f"{event_type.lifespan}.failed":
-                message = await self.send_queue.get()
-                if message is None:
-                    self.task.result()
-        elif event_type == LifespanET.SHUTDOWN:
-            await self.task
+    async def wait_startup(self) -> None:
+        await self.stream_receive.send({"type": "lifespan.startup"})
+        message = await self.stream_send.receive()
+        if message is None:
+            self.task.result()
+        assert message["type"] in (
+            "lifespan.startup.complete",
+            "lifespan.startup.failed",
+        )
+        if message["type"] == "lifespan.startup.failed":
+            message = await self.stream_send.receive()
+            if message is None:
+                self.task.result()
+
+    async def wait_shutdown(self) -> None:
+        async with self.stream_send:
+            await self.stream_receive.send({"type": "lifespan.shutdown"})
+            message = await self.stream_send.receive()
+            if message is None:
+                self.task.result()
+            assert message["type"] == "lifespan.shutdown.complete"
