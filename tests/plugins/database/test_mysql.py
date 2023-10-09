@@ -129,7 +129,7 @@ async def note_field(req: Request):
 
 
 @pytest.mark.timeout(40)
-def test_database():
+def test_database(no_trio_support):
     with TestClient(app) as client:
         data = {"text": "add", "complete": True}
         res = client.post("/notes", json=data)

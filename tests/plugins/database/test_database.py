@@ -24,7 +24,7 @@ def test_enbale_db_type_postgres():
     get_database_backend(DatabaseURL("postgresql://localhost:5432"))
 
 
-def test_enbale_db_type_failure_db_type(capsys):
+def test_enbale_db_type_failure_db_type(capsys, no_trio_support):
     from yaa.plugins.database import get_database_backend, plugin_init, DatabaseURL
 
     Yaa(plugins={"database": {"enable_db_types": [{"db_type": "AAAA"}]}})
@@ -32,7 +32,7 @@ def test_enbale_db_type_failure_db_type(capsys):
     assert "db `AAAA` enabled failed" in capout.err
 
 
-def test_enbale_db_type_failure_requires(capsys):
+def test_enbale_db_type_failure_requires(capsys, no_trio_support):
     from yaa.plugins.database import get_database_backend, plugin_init, DatabaseURL
 
     Yaa(
