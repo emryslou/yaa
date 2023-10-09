@@ -1,8 +1,10 @@
-import anyio, asyncio
+import asyncio
 import functools
 import typing
 from asyncio import create_task
 from typing import Any, AsyncGenerator, Iterator
+
+import anyio
 
 try:
     import contextvars
@@ -12,9 +14,11 @@ except ImportError:  # pragma: no cover
 
 async def run_until_first_complete(*args: typing.Tuple[typing.Callable, dict]) -> None:
     async with anyio.create_task_group() as tg:
+
         async def run(func: typing.Callable[[], typing.Coroutine]) -> None:
             await func()
             tg.cancel_scope.cancel()
+
         for func, kwargs in args:
             tg.start_soon(run, functools.partial(func, **kwargs))
 
@@ -22,7 +26,6 @@ async def run_until_first_complete(*args: typing.Tuple[typing.Callable, dict]) -
 async def run_in_threadpool(
     func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
 ) -> typing.Any:
-    _loop = asyncio.get_event_loop()
     if contextvars is not None:
         _child = functools.partial(func, *args, **kwargs)
         context = contextvars.copy_context()
