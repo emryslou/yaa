@@ -3,17 +3,15 @@ module: StaticFiles
 title: StaticFiles
 description:
     静态文件处理模块，例如: js, html, css, 图片等
-    test assddf
 author: emryslou@gmail.com
 """
-
 
 import os
 import stat
 import typing
 from email.utils import parsedate
 
-from aiofiles.os import stat as aio_stat
+import anyio
 
 from yaa.datastructures import Headers
 from yaa.responses import (
@@ -146,7 +144,7 @@ class StaticFiles(object):
                 continue
 
             try:
-                stat_result = await aio_stat(full_path)
+                stat_result = await anyio.to_thread.run_sync(os.stat, full_path)
                 return full_path, stat_result
             except FileNotFoundError:
                 pass
@@ -197,7 +195,7 @@ class StaticFiles(object):
             return
 
         try:
-            stat_result = await aio_stat(self.directory)
+            stat_result = await anyio.to_thread.run_sync(os.stat, self.directory)
         except FileNotFoundError:
             raise RuntimeWarning(
                 f"StaticFile directory `{self.directory}` does not exists"
