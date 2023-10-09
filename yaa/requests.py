@@ -1,4 +1,3 @@
-import asyncio
 import http.cookies
 import json
 import typing
@@ -6,6 +5,8 @@ import warnings
 from collections.abc import Mapping
 from typing import Iterator
 from urllib.parse import unquote
+
+import anyio
 
 from yaa.datastructures import (
     URL,
@@ -270,10 +271,10 @@ class Request(HttpConnection):
 
     async def is_disconnected(self) -> bool:
         if not self._is_disconnected:
-            try:
-                message = await asyncio.wait_for(self._receive(), timeout=0.00000001)
-            except asyncio.TimeoutError:
-                message = {}
+            message: Message = {}
+            with anyio.CancelScope() as cs:
+                cs.cancel()
+                message = await self._receive()
 
             # todo: may raise KeyError
             if message.get("type") == "http.disconnect":
