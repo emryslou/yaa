@@ -1,15 +1,20 @@
 import asyncio
+import contextlib
 import http
 import inspect
 import io
 import json
+import math
 import queue
 import threading
 import types
 import typing
+from concurrent.futures import Future
 from urllib.parse import unquote, urljoin, urlsplit
 
+import anyio
 import requests
+from anyio.streams.stapled import StapledObjectStream
 
 from yaa.plugins.lifespan.types import EventType as LifespanET
 from yaa.types import Receive, Scope, Send
@@ -81,10 +86,12 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
     def __init__(
         self,
         app: ASGI3App,
+        async_backend: dict,
         raise_server_exceptions=True,
         root_path: str = "",
     ) -> None:
         self.app = app
+        self.async_backend = async_backend
         self.root_path = root_path
         self.raise_server_exceptions = raise_server_exceptions
 
@@ -133,7 +140,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 "server": [host, port],
                 "subprotocols": subprotocols,
             }
-            session = WebSocketTestSession(self.app, scope)
+            session = WebSocketTestSession(self.app, scope, self.async_backend)
             raise _Upgrade(session)
 
         scope = {
@@ -258,47 +265,63 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
 
 class WebSocketTestSession(object):
-    def __init__(self, app: ASGI3App, scope: Scope):
+    def __init__(self, app: ASGI3App, scope: Scope, async_backend: dict = {}) -> None:
         self.app = app
         self.scope = scope
+        self.async_backend = async_backend
         self.accepted_subprotocol = None
-        # self._loop = asyncio.new_event_loop()
         self._receive_queue = queue.Queue()
         self._send_queue = queue.Queue()
-        self._thread = threading.Thread(target=self._run)
-        self.send({"type": "websocket.connect"})
-        self._thread.start()
+        # self._thread = threading.Thread(target=self._run)
+        # self.send({"type": "websocket.connect"})
+        # self._thread.start()
 
-        message = self.receive()
-        self._raise_on_close(message)
-        self.accepted_subprotocol = message.get("subprotocol", None)
+        # message = self.receive()
+        # self._raise_on_close(message)
+        # self.accepted_subprotocol = message.get("subprotocol", None)
 
     def __enter__(self) -> "WebSocketTestSession":
+        self.exit_stack = contextlib.ExitStack()
+        self.portal = self.exit_stack.enter_context(
+            anyio.start_blocking_portal(**self.async_backend)
+        )
+        try:
+            self.portal.start_task_soon(self._run)
+            self.send({"type": "websocket.connect"})
+
+            message = self.receive()
+            self._raise_on_close(message)
+        except Exception:
+            self.exit_stack.close()
+            raise
+
+        self.accepted_subprotocol = message.get("subprotocol", None)
         return self
 
     def __exit__(self, *args):
-        self.close(1000)
-        self._thread.join()
+        try:
+            self.close(1000)
+        finally:
+            self.exit_stack.close()
+        # self._thread.join()
         while not self._send_queue.empty():
             message = self.receive()
             if isinstance(message, BaseException):
                 raise message  # pragma: nocover
 
-    def _run(self):
-        loop = asyncio.new_event_loop()
+    async def _run(self):
+        # loop = asyncio.new_event_loop()
         scope = self.scope
         receive = self._asgi_receive
         send = self._asgi_send
         try:
-            loop.run_until_complete(self.app(scope, receive, send))
+            await self.app(scope, receive, send)
         except BaseException as exc:
             self.__sput(exc)
-        finally:
-            loop.close()
 
     async def _asgi_receive(self):
         while self._receive_queue.empty():
-            await asyncio.sleep(0)
+            await anyio.sleep(0)
         return self._receive_queue.get()
 
     async def _asgi_send(self, message):
@@ -354,6 +377,11 @@ class WebSocketTestSession(object):
 class TestClient(requests.Session):
     __test__ = False
 
+    async_backend: dict = {
+        "backend": "asyncio",
+        "backend_options": {},
+    }
+
     def __init__(
         self,
         app: typing.Union[ASGI2App, ASGI3App],
@@ -369,7 +397,12 @@ class TestClient(requests.Session):
             app = typing.cast(ASGI2App, app)
             asgi_app = _WrapASGI2(app)
 
-        adapter = _ASGIAdapter(asgi_app, raise_server_exceptions, root_path=root_path)
+        adapter = _ASGIAdapter(
+            asgi_app,
+            async_backend=self.async_backend,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+        )
         self.mount("http://", adapter)
         self.mount("https://", adapter)
         self.mount("ws://", adapter)

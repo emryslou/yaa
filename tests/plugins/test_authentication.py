@@ -267,17 +267,22 @@ def test_websocket_authentication_required():
                 pass
 
         with pytest.raises(WebSocketDisconnect):
-            client.wsconnect("/ws", headers={"Authorization": "basic foobar"})
+            headers = {"Authorization": "basic foobar"}
+            with client.wsconnect("/ws", headers=headers):
+                pass
 
         with client.wsconnect("/ws", auth=("eml", "example")) as websocket:
             data = websocket.receive_json()
             assert data == {"authenticated": True, "user": "eml"}
 
         with pytest.raises(WebSocketDisconnect):
-            client.wsconnect("/ws/decorated")
+            with client.wsconnect("/ws/decorated"):
+                pass
 
         with pytest.raises(WebSocketDisconnect):
-            client.wsconnect("/ws/decorated", headers={"Authorization": "basic foobar"})
+            headers = {"Authorization": "basic foobar"}
+            with client.wsconnect("/ws/decorated", headers=headers):
+                pass
 
         with client.wsconnect("/ws/decorated", auth=("eml", "example")) as websocket:
             data = websocket.receive_json()

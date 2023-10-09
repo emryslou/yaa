@@ -100,7 +100,7 @@ def test_websocket_blocking_receive():
             await websocket.accept()
             async with anyio.create_task_group() as tg:
                 tg.start_soon(respond, websocket)
-                #asyncio.ensure_future(respond(websocket))
+                # asyncio.ensure_future(respond(websocket))
                 try:
                     # this will block as the client does not send us data
                     # it should not prevent `respond` from executing though

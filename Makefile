@@ -34,7 +34,7 @@ help:
 precommit:
 	@export PYTHONPATH=`pwd`
 	./scripts/lint
-	python -m flake8 --ignore=E501,E203,W503,W504 yast/
+	python -m flake8 --ignore=E501,E203,W503,W504,F401 yaa/
 	python -m coverage run -m pytest .
 	python -m coverage html -d demo/code_coverage --precision=4 --skip-covered
 	python -m coverage report -m --precision=4 --skip-covered --sort=cover

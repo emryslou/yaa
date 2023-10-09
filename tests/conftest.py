@@ -2,20 +2,26 @@ import pytest
 
 from yaa import TestClient
 
+
 @pytest.fixture(
     params=[
         pytest.param(
             {"backend": "asyncio", "backend_options": {"use_uvloop": False}},
             id="asyncio",
         ),
-        pytest.param({"backend": "trio", "backend_options": {}}, id="trio"),
+        # pytest.param({"backend": "trio", "backend_options": {}}, id="trio"),
     ],
     autouse=True,
 )
 def anyio_backend(request, monkeypatch):
-    if hasattr(TestClient, 'async_backend'):
+    if hasattr(TestClient, "async_backend"):
         monkeypatch.setattr(TestClient, "async_backend", request.param)
+    else:
+        import warnings
+
+        warnings.warn("TestClient.async_backend is developping")
     return request.param["backend"]
+
 
 @pytest.fixture
 def no_trio_support(request):

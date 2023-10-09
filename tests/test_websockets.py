@@ -150,7 +150,8 @@ def test_rejected_connection():
 
     client = TestClient(app)
     with pytest.raises(WebSocketDisconnect) as exc:
-        client.wsconnect("/")
+        with client.wsconnect("/"):
+            pass
     assert exc.value.code == status.WS_1008_POLICY_VIOLATION
 
 
@@ -172,7 +173,8 @@ def test_websocket_exception():
 
     client = TestClient(app)
     with pytest.raises(AssertionError):
-        client.wsconnect("/123?a=abc")
+        with client.wsconnect("/123?a=abc"):
+            pass
 
 
 def test_duplicate_close():
