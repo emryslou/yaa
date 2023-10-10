@@ -58,6 +58,9 @@ async def empty_send(message: Message) -> None:
 
 
 class HttpConnection(Mapping):
+    __eq__ = object.__eq__
+    __hash__ = object.__hash__
+    
     def __init__(self, scope: Scope, *args, **kwargs) -> None:
         self._scope = scope
         self._scope.setdefault("state", {})
