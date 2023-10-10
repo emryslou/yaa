@@ -6,11 +6,9 @@ from yaa.requests import Request
 from yaa.responses import JSONResponse, PlainTextResponse
 from yaa.routing import Router
 from yaa.staticfiles import StaticFiles
-from yaa.testclient import TestClient
 
 
 app = Yaa()
-client = TestClient(app)
 
 
 @app.exception_handler(Exception)
@@ -38,9 +36,9 @@ def _add_router(app):
         )
 
 
-def test_func_route():
+def test_func_route(client_factory):
     _add_router(app)
-
+    client = client_factory(app)
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Hello, func_homepage"
@@ -58,32 +56,34 @@ def test_func_route():
     assert res.json() == {"func": "func_kwargs", "arg1": "aaa"}
 
 
-def test_ws_route():
+def test_ws_route(client_factory):
     @app.ws_route("/ws")
     async def ws_endpoint(session):
         await session.accept()
         await session.send_text("Hello, Ws")
         await session.close()
 
+    client = client_factory(app)
     with client.wsconnect("/ws") as s:
         text = s.receive_text()
         assert text == "Hello, Ws"
 
 
-def test_400():
+def test_400(client_factory):
     _add_router(app)
+    client = client_factory(app)
     res = client.get("/404")
     assert res.status_code == 404
 
 
-def test_app_mount(tmpdir):
+def test_app_mount(tmpdir, client_factory):
     path = os.path.join(tmpdir, "example.txt")
 
     with open(path, "w") as f:
         f.write("<file content>")
 
     app.mount("/static", StaticFiles(directory=tmpdir))
-
+    client = client_factory(app)
     res = client.get("/static/example.txt")
     assert res.status_code == 200
     assert res.text == "<file content>"
@@ -92,8 +92,8 @@ def test_app_mount(tmpdir):
     assert res.status_code == 404
 
 
-def test_app_error():
-    client = TestClient(app, raise_server_exceptions=False)
+def test_app_error(client_factory):
+    client = client_factory(app, raise_server_exceptions=False)
 
     @app.route("/err_500")
     def _tmp(request: Request):
@@ -108,26 +108,25 @@ def test_app_error():
     assert res.text == "Method Not Allowed"
 
 
-def test_app_add_middleware():
+def test_app_add_middleware(client_factory):
     app = Yaa(
         plugins={
             "http": {"middlewares": {"trustedhost": dict(allowed_hosts=["testserver"])}}
         }
     )
     _add_router(app)
-    client = TestClient(app, base_url="http://error")
+    client = client_factory(app, base_url="http://error")
     res = client.get("/")
     assert res.status_code == 400
     assert res.text == "Invalid host header"
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Hello, func_homepage"
 
 
-def test_add_route():
-    from yaa import TestClient
+def test_add_route(client_factory):
     from yaa.responses import PlainTextResponse
 
     app = Yaa()
@@ -136,7 +135,7 @@ def test_add_route():
         return PlainTextResponse("homepage")
 
     app.add_route("/homepage", homepage)
-    client = TestClient(app)
+    client = client_factory(app)
 
     res = client.get("/homepage")
     assert res.status_code == 200
@@ -147,8 +146,7 @@ def test_add_route():
     # assert res.text == ""
 
 
-def test_add_ws():
-    from yaa import TestClient
+def test_add_ws(client_factory):
     from yaa.responses import PlainTextResponse
 
     app = Yaa()
@@ -159,15 +157,14 @@ def test_add_ws():
         await ss.close()
 
     app.add_route_ws("/homepage", ws_endpoint)
-    client = TestClient(app)
+    client = client_factory(app)
 
     with client.wsconnect("/homepage") as ss:
         text = ss.receive_text()
         assert text == "Hello Ws"
 
 
-def test_exception_handler():
-    from yaa import TestClient
+def test_exception_handler(client_factory):
     from yaa.responses import PlainTextResponse
 
     app = Yaa()
@@ -188,7 +185,7 @@ def test_exception_handler():
     def _405(_):
         return PlainTextResponse("405")
 
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/500")
     assert res.status_code == 500
     assert res.text == "Err 500"
@@ -202,7 +199,7 @@ def test_exception_handler():
     assert res.text == "Err 405"
 
 
-def test_subdomain():
+def test_subdomain(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -222,18 +219,18 @@ def test_subdomain():
 
     _add_router(app)
 
-    client = TestClient(app, base_url="http://what.example.org")
+    client = client_factory(app, base_url="http://what.example.org")
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Subdomain:what"
 
-    client = TestClient(app, base_url="http://abc.example.org")
+    client = client_factory(app, base_url="http://abc.example.org")
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Subdomain:abc"
 
 
-def test_add_exception():
+def test_add_exception(client_factory):
     app = Yaa()
 
     @app.exception_handler(Exception)
@@ -246,6 +243,6 @@ def test_add_exception():
     async def _(_):
         raise Exception("///")
 
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/")
     assert res.json() == {"error": "Srv Err 2333"}
