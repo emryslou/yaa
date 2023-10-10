@@ -32,31 +32,31 @@ def startup():
     raise RuntimeError()
 
 
-def test_use_testclient_in_endpoint():
+def test_use_testclient_in_endpoint(client_factory):
     """
     We should be able to use the test client within applications.
 
     This is useful if we need to mock out other services,
     during tests or in development.
     """
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/")
     assert response.json() == {"mock": "example"}
 
 
 @pytest.mark.timeout(3)
-def testclient_as_contextmanager():
-    with TestClient(app):
+def testclient_as_contextmanager(client_factory):
+    with client_factory(app):
         pass
 
 
-def test_error_on_startup():
+def test_error_on_startup(client_factory):
     with pytest.raises(RuntimeError):
-        with TestClient(startup_error_app):
+        with client_factory(startup_error_app):
             pass  # pragma: no cover
 
 
-def test_testclient_asgi2():
+def test_testclient_asgi2(client_factory):
     def app(scope):
         async def inner(receive, send):
             await send(
@@ -70,12 +70,12 @@ def test_testclient_asgi2():
 
         return inner
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/")
     assert response.text == "Hello, world!"
 
 
-def test_testclient_asgi3():
+def test_testclient_asgi3(client_factory):
     async def app(scope, receive, send):
         await send(
             {
@@ -86,12 +86,12 @@ def test_testclient_asgi3():
         )
         await send({"type": "http.response.body", "body": b"Hello, world!"})
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/")
     assert response.text == "Hello, world!"
 
 
-def test_websocket_blocking_receive():
+def test_websocket_blocking_receive(client_factory):
     def app(scope):
         async def respond(websocket):
             await websocket.send_json({"message": "test"})
@@ -111,7 +111,7 @@ def test_websocket_blocking_receive():
 
         return asgi
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as websocket:
         data = websocket.receive_json()
         assert data == {"message": "test"}

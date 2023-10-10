@@ -381,7 +381,7 @@ class TestClient(requests.Session):
 
     async_backend: dict = {
         "backend": "asyncio",
-        "backend_options": {},
+        "backend_options": {"use_uvloop": True},
     }
 
     task: Future[None]
@@ -392,6 +392,8 @@ class TestClient(requests.Session):
         base_url: str = "http://testserver",
         raise_server_exceptions=True,
         root_path: str = "",
+        backend: str = 'asyncio',
+        backend_options: dict = {},
     ) -> None:
         super().__init__()
         if _is_asgi3(app):
@@ -400,7 +402,9 @@ class TestClient(requests.Session):
         else:
             app = typing.cast(ASGI2App, app)
             asgi_app = _WrapASGI2(app)
-
+        self.async_backend['backend'] = backend
+        self.async_backend['backend_options'] = backend_options
+        
         adapter = _ASGIAdapter(
             asgi_app,
             async_backend=self.async_backend,
@@ -438,12 +442,6 @@ class TestClient(requests.Session):
             raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
     def __enter__(self) -> "TestClient":
-        # loop = asyncio.get_event_loop()
-        # self.send_queue = asyncio.Queue()
-        # self.receive_queue = asyncio.Queue()
-
-        # self.task = loop.create_task(self.lifespan())
-        # loop.run_until_complete(self.wait_et("startup"))
         self.exit_stack = contextlib.ExitStack()
         self.portal = self.exit_stack.enter_context(
             anyio.start_blocking_portal(**self.async_backend)
