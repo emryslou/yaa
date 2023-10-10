@@ -14,7 +14,7 @@ from .types import EventType
 _T = typing.TypeVar("_T")
 
 
-class _AsyncLiftContextManage(typing.AsyncContextManager[_T]):
+class _AsyncLiftContextManager(typing.AsyncContextManager[_T]):
     def __init__(self, cm: typing.ContextManager[_T]):
         self._cm = cm
 
@@ -29,20 +29,20 @@ def _wrap_gen_lifespan_context(lifespan_context):
     cmgr = contextlib.contextmanager(lifespan_context)
 
     @functools.wraps(cmgr)
-    def wrapper(app) -> _AsyncLiftContextManage:
-        return _AsyncLiftContextManage(cmgr(app))
+    def wrapper(app) -> _AsyncLiftContextManager:
+        return _AsyncLiftContextManager(cmgr(app))
 
     return wrapper
 
 
-class _DefaultLifespan(object):
+class _DefaultLifespan:
     def __init__(self, router: "Router"):
         self._router = router
 
     async def __aenter__(self) -> _T:
         await self._router.handler(EventType.STARTUP)
 
-    async def __aexit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(self, *exc_info: object):
         await self._router.handler(EventType.SHUTDOWN)
 
     def __call__(self: _T, app: object) -> _T:
@@ -82,6 +82,7 @@ class Lifespan(BaseRoute):
         started = False
         app = scope.get("app")
         try:
+            await receive()
             async with self.context(app):
                 await send({"type": EventType.STARTUP.complete})
                 started = True
