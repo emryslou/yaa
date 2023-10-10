@@ -34,6 +34,7 @@ class MysqlBackend(DatabaseBackend):
             user=db.username or getpass.getuser(),
             password=db.password or "",
             db=db.database,
+            autocommit=True,
         )
 
     async def shutdown(self) -> None:

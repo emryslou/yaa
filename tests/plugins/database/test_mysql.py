@@ -46,7 +46,10 @@ app = Yaa(
         "database": {
             "enable_db_types": [{"db_type": "mysql"}],
             "middlewares": {
-                "database": dict(database_url=DATABASE_URL, rollback_on_shutdown=True)
+                "database": dict(
+                    database_url=DATABASE_URL,
+                    rollback_on_shutdown=True,  # todo: if False, isolated_during_test_case and executemany will be fail
+                )
             },
         }
     }
@@ -174,12 +177,12 @@ def test_database_isolated_during_test_cases(client_factory):
         assert response.json() == [{"text": "just one note", "complete": True}]
     with client_factory(app) as client:
         response = client.post(
-            "/notes", json={"text": "just one note", "complete": True}
+            "/notes", json={"text": "just two note", "complete": True}
         )
         assert response.status_code == 200
         response = client.get("/notes")
         assert response.status_code == 200
-        assert response.json() == [{"text": "just one note", "complete": True}]
+        assert response.json() == [{"text": "just two note", "complete": True}]
 
 
 def test_database_executemany(client_factory):

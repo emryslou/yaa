@@ -92,7 +92,7 @@ class DatabaseLifespan(object):
                     await handler()
                 else:
                     handler()
-            except Exception as exc:
+            except Exception as exc:  # pragram: on cover
                 warnings.warn(
                     "database init error, may lead to unusabe, err:" + str(exc)
-                )
+                )  # pragram: on cover
