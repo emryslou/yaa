@@ -8,14 +8,14 @@ from yaa import TestClient, Yaa
 from yaa.staticfiles import StaticFiles
 
 
-def test_staticfiles(tmpdir):
+def test_staticfiles(tmpdir, client_factory):
     path = os.path.join(tmpdir, "example.txt")
     with open(path, "w") as file:
         file.write("<file content>")
 
     app = StaticFiles(directory=tmpdir)
 
-    client = TestClient(app)
+    client = client_factory(app)
 
     res = client.get("/example.txt")
     assert res.status_code == 200
@@ -38,9 +38,9 @@ def test_staticfiles(tmpdir):
     assert res.text == "<file content>"
 
 
-def test_staticfiles_config_check_occurs_only_once(tmpdir):
+def test_staticfiles_config_check_occurs_only_once(tmpdir, client_factory):
     app = StaticFiles(directory=tmpdir)
-    client = TestClient(app)
+    client = client_factory(app)
     assert not app.config_checked
     response = client.get("/")
     assert app.config_checked
@@ -48,7 +48,7 @@ def test_staticfiles_config_check_occurs_only_once(tmpdir):
     assert app.config_checked
 
 
-def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
+def test_staticfiles_prevents_breaking_out_of_directory(tmpdir, client_factory):
     from yaa.applications import Yaa
 
     directory = os.path.join(tmpdir, "foo")
@@ -61,7 +61,7 @@ def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
     app = Yaa()
     app.add_route("/", StaticFiles(directory=tmpdir))
     #    app = StaticFiles(directory=directory)
-    client = TestClient(app)
+    client = client_factory(app)
     # We can't test this with 'requests', so we call the app directly here.
     response = client.get("/../example.txt")
     assert response.status_code == 404
@@ -78,25 +78,25 @@ def test_check_dir(tmpdir):
     StaticFiles(directory=os.path.join(tmpdir, "not_found"), check_dir=False)
 
 
-def test_never_read_file_for_head_method(tmpdir):
+def test_never_read_file_for_head_method(tmpdir, client_factory):
     path = os.path.join(tmpdir, "ex.txt")
     with open(path, "w") as file:
         file.write("<file content>")
 
     app = StaticFiles(directory=tmpdir)
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.head("/ex.txt")
     assert res.status_code == 200
     assert res.content == b""
 
 
-def test_304_with_etag_match(tmpdir):
+def test_304_with_etag_match(tmpdir, client_factory):
     path = os.path.join(tmpdir, "ex1.txt")
     with open(path, "w") as f:
         f.write("<file content>")
 
     app = StaticFiles(directory=tmpdir)
-    client = TestClient(app)
+    client = client_factory(app)
 
     res_1st = client.get("/ex1.txt")
     assert res_1st.status_code == 200
@@ -108,7 +108,7 @@ def test_304_with_etag_match(tmpdir):
     assert res_2nd.content == b""
 
 
-def test_304_with_last_modified(tmpdir):
+def test_304_with_last_modified(tmpdir, client_factory):
     import time
 
     path = os.path.join(tmpdir, "ex1.txt")
@@ -123,7 +123,7 @@ def test_304_with_last_modified(tmpdir):
     os.utime(path, (file_last_modified_time, file_last_modified_time))
 
     app = StaticFiles(directory=tmpdir)
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get(
         "/ex1.txt", headers={"If-Modified-Since": "Tue,11 Oct 2013 15:30:19 GMT"}
     )
@@ -139,15 +139,15 @@ def test_304_with_last_modified(tmpdir):
     assert res.content == b"<file content>"
 
 
-def test_staticfiles_with_package():
+def test_staticfiles_with_package(client_factory):
     app = StaticFiles(packages=["tests"])
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/example.txt")
     assert response.status_code == 200
     assert response.text == "123\n"
 
 
-def test_staticfiles_html(tmpdir):
+def test_staticfiles_html(tmpdir, client_factory):
     path = os.path.join(tmpdir, "404.html")
     with open(path, "w") as file:
         file.write("<h1>Custom not found page</h1>")
@@ -157,7 +157,7 @@ def test_staticfiles_html(tmpdir):
     with open(path, "w") as file:
         file.write("<h1>Hello</h1>")
     app = StaticFiles(directory=tmpdir, html=True)
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/dir/")
     assert response.url == "http://testserver/dir/"
     assert response.status_code == 200
@@ -175,7 +175,7 @@ def test_staticfiles_html(tmpdir):
     assert response.text == "<h1>Custom not found page</h1>"
 
 
-def test_staticfiles_head_with_middleware(tmpdir):
+def test_staticfiles_head_with_middleware(tmpdir, client_factory):
     from yaa.requests import Request
     from yaa.routing import Mount
 
@@ -192,13 +192,13 @@ def test_staticfiles_head_with_middleware(tmpdir):
         response = await call_next(request)
         return response
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.head("/static/example.txt", stream=True)
     assert response.status_code == 200
     # assert response.headers.get("content-length") == "100"
 
 
-def test_staticfiles_with_pathlib(tmpdir):
+def test_staticfiles_with_pathlib(tmpdir, client_factory):
     import pathlib
 
     base_dir = pathlib.Path(tmpdir)
@@ -206,13 +206,15 @@ def test_staticfiles_with_pathlib(tmpdir):
     with open(path, "w") as file:
         file.write("<file content>")
     app = StaticFiles(directory=base_dir)
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/example.txt")
     assert response.status_code == 200
     assert response.text == "<file content>"
 
 
-def test_staticfiles_cache_invalidation_for_deleted_file_html_mode(tmpdir):
+def test_staticfiles_cache_invalidation_for_deleted_file_html_mode(
+    tmpdir, client_factory
+):
     import time
 
     path_404 = os.path.join(tmpdir, "404.html")
@@ -227,7 +229,7 @@ def test_staticfiles_cache_invalidation_for_deleted_file_html_mode(tmpdir):
     os.utime(path_404, (common_modified_time, common_modified_time))
     os.utime(path_some, (common_modified_time, common_modified_time))
     app = StaticFiles(directory=tmpdir, html=True)
-    client = TestClient(app)
+    client = client_factory(app)
     resp_exists = client.get("/some.html")
     assert resp_exists.status_code == 200
     assert resp_exists.text == "<p>some file</p>"

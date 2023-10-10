@@ -392,7 +392,7 @@ class TestClient(requests.Session):
         base_url: str = "http://testserver",
         raise_server_exceptions=True,
         root_path: str = "",
-        backend: str = 'asyncio',
+        backend: str = "asyncio",
         backend_options: dict = {},
     ) -> None:
         super().__init__()
@@ -402,9 +402,9 @@ class TestClient(requests.Session):
         else:
             app = typing.cast(ASGI2App, app)
             asgi_app = _WrapASGI2(app)
-        self.async_backend['backend'] = backend
-        self.async_backend['backend_options'] = backend_options
-        
+        self.async_backend["backend"] = backend
+        self.async_backend["backend_options"] = backend_options
+
         adapter = _ASGIAdapter(
             asgi_app,
             async_backend=self.async_backend,

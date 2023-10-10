@@ -25,10 +25,10 @@ app = Router(
         Route("/{username}", endpoint=HomePage),
     ]
 )
-client = TestClient(app)
 
 
-def test_http_endpoint_route():
+def test_http_endpoint_route(client_factory):
+    client = client_factory(app)
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Hello, all of you"
@@ -42,7 +42,7 @@ def test_http_endpoint_route():
     # assert res.text == 'Method Not Allowed'
 
 
-def test_websocket_endpoint_on_connect():
+def test_websocket_endpoint_on_connect(client_factory):
     class WsApp(WebSocketEndpoint):
         async def on_connect(self, **kwargs: typing.Any) -> None:
             assert self.ws["subprotocols"] == ["soap", "wamp"]
@@ -50,13 +50,13 @@ def test_websocket_endpoint_on_connect():
 
     assert inspect.isawaitable(WebSocketEndpoint({"type": "websocket"}, None, None))
 
-    client = TestClient(WsApp)
+    client = client_factory(WsApp)
     with client.wsconnect("/ws", subprotocols=["soap", "wamp"]) as s:
         s.accepted_subprotocol == "wamp"
 
 
 @pytest.mark.timeout(3)
-def test_websocket_endpoint_on_receive_bytes():
+def test_websocket_endpoint_on_receive_bytes(client_factory):
     class WsApp(WebSocketEndpoint):
         encoding = "bytes"
 
@@ -66,7 +66,7 @@ def test_websocket_endpoint_on_receive_bytes():
         async def on_disconnect(self, code: int) -> None:
             pass
 
-    client = TestClient(WsApp)
+    client = client_factory(WsApp)
     with client.wsconnect("/ws") as s:
         msg = "Hello, Bytes"
         s.send_bytes(msg.encode("utf-8"))
@@ -74,7 +74,7 @@ def test_websocket_endpoint_on_receive_bytes():
 
 
 @pytest.mark.timeout(3)
-def test_websocket_endpoint_on_receive_json():
+def test_websocket_endpoint_on_receive_json(client_factory):
     class WsApp(WebSocketEndpoint):
         encoding = "json"
 
@@ -84,7 +84,7 @@ def test_websocket_endpoint_on_receive_json():
         async def on_disconnect(self, code: int) -> None:
             pass
 
-    client = TestClient(WsApp)
+    client = client_factory(WsApp)
     with client.wsconnect("/ws") as s:
         msg = {"json": {"hello": "json"}}
         s.send_json(msg)

@@ -69,10 +69,8 @@ async def ws_endpoint_room(ss):
     await ss.close()
 
 
-client = TestClient(app)
-
-
-def test_router():
+def test_router(client_factory):
+    client = client_factory(app)
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Hello Home"
@@ -107,7 +105,8 @@ def test_router():
     )
 
 
-def test_websocket():
+def test_websocket(client_factory):
+    client = client_factory(app)
     with client.wsconnect("/ws") as ss:
         text = ss.receive_text()
         assert text == "Hello, Ws"
@@ -116,7 +115,7 @@ def test_websocket():
         assert text == "Hello, Ws at abcd"
 
 
-def test_url_for():
+def test_url_for(client_factory):
     assert app.url_path_for("home") == "/"
     assert app.url_path_for("users", username="eml") == "/users/eml"
     assert app.url_path_for("users") == "/users"
@@ -132,7 +131,7 @@ def test_url_for():
     )
 
 
-def test_endpoint():
+def test_endpoint(client_factory):
     from yaa.endpoints import HttpEndPoint
     from yaa.responses import HTMLResponse
 
@@ -141,7 +140,7 @@ def test_endpoint():
             return HTMLResponse(self.__class__.__name__ + " OK")
 
     app.add_route("/demo", DemoEndpoint)
-
+    client = client_factory(app)
     res = client.get("/demo")
     assert res.status_code == 200
     assert res.text == "DemoEndpoint OK"
@@ -150,7 +149,7 @@ def test_endpoint():
 
 
 @pytest.mark.timeout(3)
-def test_websocket_endpoint():
+def test_websocket_endpoint(client_factory):
     from yaa.endpoints import WebSocketEndpoint
 
     class WsApp(WebSocketEndpoint):
@@ -160,6 +159,7 @@ def test_websocket_endpoint():
             await self.send(data + self.__class__.__name__, "text")
 
     app.add_route_ws("/ws_app", WsApp)
+    client = client_factory(app)
     with client.wsconnect("/ws_app") as ss:
         ss.send_text("hello")
         text = ss.receive_text()
@@ -167,14 +167,14 @@ def test_websocket_endpoint():
 
 
 @pytest.mark.timeout(3)
-def test_mixed_app():
+def test_mixed_app(client_factory):
     from yaa.routing import Route, WebSocketRoute
 
     mixed_app = Router(
         [Route("/", endpoint=http_endpoint), WebSocketRoute("/", endpoint=ws_endpoint)]
     )
 
-    client = TestClient(mixed_app)
+    client = client_factory(mixed_app)
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Hello, Http"
@@ -184,7 +184,7 @@ def test_mixed_app():
         assert text == "Hello, Ws"
 
 
-def test_url_for():
+def test_url_for(client_factory):
     assert (
         app.url_path_for("home").make_absolute_url(base_url="https://example.org")
         == "https://example.org/"
@@ -204,9 +204,9 @@ def test_url_for():
     )
 
 
-def test_mount_urls():
+def test_mount_urls(client_factory):
     mounted = Router([Mount("/users", PlainTextResponse("OK"), name="users")])
-    client = TestClient(mounted)
+    client = client_factory(mounted)
     assert client.get("/users").status_code == 200
     assert client.get("/users").url == "http://testserver/users/"
     assert client.get("/users/").status_code == 200
@@ -214,7 +214,7 @@ def test_mount_urls():
     assert client.get("/usersa").status_code == 404
 
 
-def test_reverse_mount_urls():
+def test_reverse_mount_urls(client_factory):
     mounted = Router([Mount("/users", PlainTextResponse("OK"), name="users")])
     assert mounted.url_path_for("users", path="/a") == "/users/a"
     users = Router([Route("/{username}", PlainTextResponse("OK"), name="user")])
@@ -228,7 +228,7 @@ def test_reverse_mount_urls():
     )
 
 
-def test_path_params_convert():
+def test_path_params_convert(client_factory):
     @app.route("/int/{param:int}", name="int_conv")
     def int_conv(req):
         num = req.path_params["param"]
@@ -249,6 +249,7 @@ def test_path_params_convert():
         param = req.path_params["param"]
         return JSONResponse({"uuid": str(param)})
 
+    client = client_factory(app)
     res = client.get("/int/12")
     assert res.status_code == 200
     assert res.json() == {"int": 12}
@@ -310,14 +311,14 @@ mixed_hosts_app = Router(
 )
 
 
-def test_host_routing():
-    client = TestClient(mixed_hosts_app, base_url="https://api.example.org/")
+def test_host_routing(client_factory):
+    client = client_factory(mixed_hosts_app, base_url="https://api.example.org/")
     response = client.get("/users")
     assert response.status_code == 200
     assert response.json() == {"users": [{"username": "eml"}]}
     response = client.get("/")
     assert response.status_code == 404
-    client = TestClient(mixed_hosts_app, base_url="https://www.example.org/")
+    client = client_factory(mixed_hosts_app, base_url="https://www.example.org/")
     response = client.get("/users")
     assert response.status_code == 200
     assert response.text == "All Users"
@@ -325,7 +326,7 @@ def test_host_routing():
     assert response.status_code == 200
 
 
-def test_host_reverse_urls():
+def test_host_reverse_urls(client_factory):
     assert (
         mixed_hosts_app.url_path_for("home").make_absolute_url("https://whatever")
         == "https://www.example.org/"
@@ -351,14 +352,14 @@ subdomain_app = Router(
 )
 
 
-def test_subdomain_routing():
-    client = TestClient(subdomain_app, base_url="https://foo.example.org/")
+def test_subdomain_routing(client_factory):
+    client = client_factory(subdomain_app, base_url="https://foo.example.org/")
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"subdomain": "foo"}
 
 
-def test_subdomain_reverse_urls():
+def test_subdomain_reverse_urls(client_factory):
     assert (
         subdomain_app.url_path_for(
             "subdomains", subdomain="foo", path="/homepage"
@@ -367,19 +368,19 @@ def test_subdomain_reverse_urls():
     )
 
 
-def test_mount_routes():
+def test_mount_routes(client_factory):
     def aa(req):
         return PlainTextResponse("aa")
 
     app = Router([Mount("/mount", routes=[Route("/aa", endpoint=aa)])])
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/mount/aa")
     assert res.status_code == 200
     assert res.text == "aa"
 
     app = Router([Mount("/mount", app=Router([Route("/aa", endpoint=aa)]))])
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/mount/aa")
     assert res.status_code == 200
     assert res.text == "aa"
@@ -388,9 +389,9 @@ def test_mount_routes():
         app = Router([Mount("/mount")])
 
 
-def test_mount_at_root():
+def test_mount_at_root(client_factory):
     mounted = Router([Mount("/", PlainTextResponse("OK"), name="users")])
-    client = TestClient(mounted)
+    client = client_factory(mounted)
     assert client.get("/").status_code == 200
 
 
@@ -413,9 +414,11 @@ echo_url_routes = [
 ]
 
 
-def test_url_for_with_root_path():
+def test_url_for_with_root_path(client_factory):
     app = Yaa(routes=echo_url_routes)
-    client = TestClient(app, base_url="https://www.example.org/", root_path="/sub_path")
+    client = client_factory(
+        app, base_url="https://www.example.org/", root_path="/sub_path"
+    )
     response = client.get("/")
     assert response.json() == {
         "index": "https://www.example.org/sub_path/",
@@ -437,13 +440,13 @@ double_mount_routes = [
 ]
 
 
-def test_url_for_with_double_mount():
+def test_url_for_with_double_mount(client_factory):
     app = Yaa(routes=double_mount_routes)
     url = app.url_path_for("mount:static", path="123")
     assert url == "/mount/static/123"
 
 
-def test_partial_async_endpoint():
+def test_partial_async_endpoint(client_factory):
     import functools
 
     async def _partial_async_endpoint(arg, request):
@@ -452,12 +455,12 @@ def test_partial_async_endpoint():
     partial_async_endpoint = functools.partial(_partial_async_endpoint, "foo")
     partial_async_app = Router(routes=[Route("/", partial_async_endpoint)])
 
-    response = TestClient(partial_async_app).get("/")
+    response = client_factory(partial_async_app).get("/")
     assert response.status_code == 200
     assert response.json() == {"arg": "foo"}
 
 
-def test_duplicated_param_names():
+def test_duplicated_param_names(client_factory):
     with pytest.raises(
         ValueError,
         match="Duplicated param name id at path /{id}/{id}",

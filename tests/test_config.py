@@ -70,7 +70,7 @@ def test_no_env_file(tmpdir):
     assert config.file_values == {}
 
 
-def test_environ():
+def test_environ(client_factory):
     from yaa.config import Environ, EnvironError
 
     environ = Environ()

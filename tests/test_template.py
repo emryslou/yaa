@@ -5,7 +5,7 @@ from yaa.responses import HTMLResponse
 from yaa.plugins.template import templates
 
 
-def test_templates(tmpdir):
+def test_templates(tmpdir, client_factory):
     path = os.path.join(tmpdir, "index.html")
     with open(path, "w") as f:
         f.write("<h1>Hello</h1>" "<a href=\"{{url_for('homepage')}}\">Template</a>")
@@ -16,6 +16,6 @@ def test_templates(tmpdir):
     async def homepage(req):
         return templates.response("index.html", request=req)
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.text == '<h1>Hello</h1><a href="http://testserver/">Template</a>'

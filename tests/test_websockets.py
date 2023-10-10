@@ -5,40 +5,40 @@ from yaa import TestClient
 from yaa.websockets import WebSocket, WebSocketDisconnect
 
 
-class test_websocket_url:
+def test_websocket_url(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
         await session.send_json({"url": str(session.url)})
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/aaa?b=ccc") as ss:
         data = ss.receive_json()
         assert data == {"url": "ws://testserver/aaa?b=ccc"}
 
 
-class test_websocket_query_params:
+def test_websocket_query_params(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
         await session.send_json({"params": dict(session.query_params)})
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/aaa?b=ccc&d=22&ff=sss") as ss:
         data = ss.receive_json()
         assert data == {"params": {"b": "ccc", "d": "22", "ff": "sss"}}
 
 
-class test_websocket_headers:
+def test_websocket_headers(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
         await session.send_json({"headers": dict(session.headers)})
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/aaa?b=ccc&d=22&ff=sss") as ss:
         data = ss.receive_json()
         expected_headers = {
@@ -53,21 +53,21 @@ class test_websocket_headers:
         assert data == {"headers": expected_headers}
 
 
-class test_websocket_headers:
+def test_websocket_headers(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
         await session.send_json({"port": session.url.port})
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("ws://www.example.com:123/a?cc=cc") as ss:
         data = ss.receive_json()
 
         assert data == {"port": 123}
 
 
-def test_websocket_send_and_receive_text():
+def test_websocket_send_and_receive_text(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
@@ -75,14 +75,14 @@ def test_websocket_send_and_receive_text():
         await session.send_text("Message was: " + data)
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as session:
         session.send_text("Hello, world!")
         data = session.receive_text()
         assert data == "Message was: Hello, world!"
 
 
-def test_websocket_send_and_receive_bytes():
+def test_websocket_send_and_receive_bytes(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
@@ -90,14 +90,14 @@ def test_websocket_send_and_receive_bytes():
         await session.send_bytes(b"Message was: " + data)
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as session:
         session.send_bytes(b"Hello, bytes!")
         data = session.receive_bytes()
         assert data == b"Message was: Hello, bytes!"
 
 
-def test_websocket_send_and_receive_json():
+def test_websocket_send_and_receive_json(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
@@ -105,14 +105,14 @@ def test_websocket_send_and_receive_json():
         await session.send_bytes({"json": data})
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as session:
         session.send_json({"hello": "json"})
         data = session.receive_bytes()
         assert data == {"json": {"hello": "json"}}
 
 
-def test_client_close():
+def test_client_close(client_factory):
     close_code = None
 
     async def app(scope, receive, send):
@@ -124,73 +124,73 @@ def test_client_close():
         except WebSocketDisconnect as exc:
             close_code = exc.code
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as session:
         session.close(code=status.WS_1001_GOING_AWAY)
     assert close_code == status.WS_1001_GOING_AWAY
 
 
-def test_application_close():
+def test_application_close(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
         await session.close(status.WS_1001_GOING_AWAY)
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as session:
         with pytest.raises(WebSocketDisconnect) as exc:
             session.receive_text()
         assert exc.value.code == status.WS_1001_GOING_AWAY
 
 
-def test_rejected_connection():
+def test_rejected_connection(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.close(status.WS_1008_POLICY_VIOLATION)
 
-    client = TestClient(app)
+    client = client_factory(app)
     with pytest.raises(WebSocketDisconnect) as exc:
         with client.wsconnect("/"):
             pass
     assert exc.value.code == status.WS_1008_POLICY_VIOLATION
 
 
-def test_subprotocol():
+def test_subprotocol(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         assert session["subprotocols"] == ["soap", "wamp"]
         await session.accept(subprotocol="wamp")
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/", subprotocols=["soap", "wamp"]) as session:
         assert session.accepted_subprotocol == "wamp"
 
 
-def test_websocket_exception():
+def test_websocket_exception(client_factory):
     async def app(scope, receive, send):
         assert False
 
-    client = TestClient(app)
+    client = client_factory(app)
     with pytest.raises(AssertionError):
         with client.wsconnect("/123?a=abc"):
             pass
 
 
-def test_duplicate_close():
+def test_duplicate_close(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
         await session.close()
         await session.close()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with pytest.raises(RuntimeError):
         with client.wsconnect("/") as session:
             pass
 
 
-def test_duplicate_disconnect():
+def test_duplicate_disconnect(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()
@@ -198,13 +198,13 @@ def test_duplicate_disconnect():
         assert message["type"] == "websocket.disconnect"
         message = await session.receive()
 
-    client = TestClient(app)
+    client = client_factory(app)
     with pytest.raises(RuntimeError):
         with client.wsconnect("/") as session:
             session.close()
 
 
-def test_websocket_scope_interface():
+def test_websocket_scope_interface(client_factory):
     """
     A WebSocket can be instantiated with a scope, and presents a `Mapping`
     interface.
@@ -215,7 +215,7 @@ def test_websocket_scope_interface():
     assert len(session) == 3
 
 
-def test_websocket_iter_text():
+def test_websocket_iter_text(client_factory):
     def app(scope):
         async def asgi(receive, send):
             websocket = WebSocket(scope, receive=receive, send=send)
@@ -225,14 +225,14 @@ def test_websocket_iter_text():
 
         return asgi
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as websocket:
         websocket.send_text("Hello, world!")
         data = websocket.receive_text()
         assert data == "Message was: Hello, world!"
 
 
-def test_websocket_iter_bytes():
+def test_websocket_iter_bytes(client_factory):
     def app(scope):
         async def asgi(receive, send):
             websocket = WebSocket(scope, receive=receive, send=send)
@@ -242,14 +242,14 @@ def test_websocket_iter_bytes():
 
         return asgi
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as websocket:
         websocket.send_bytes(b"Hello, world!")
         data = websocket.receive_bytes()
         assert data == b"Message was: Hello, world!"
 
 
-def test_websocket_iter_json():
+def test_websocket_iter_json(client_factory):
     def app(scope):
         async def asgi(receive, send):
             websocket = WebSocket(scope, receive=receive, send=send)
@@ -259,14 +259,14 @@ def test_websocket_iter_json():
 
         return asgi
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as websocket:
         websocket.send_json({"hello": "world"})
         data = websocket.receive_json()
         assert data == {"message": {"hello": "world"}}
 
 
-def test_websocket_concurrency_pattern():
+def test_websocket_concurrency_pattern(client_factory):
     import asyncio
     from yaa.concurrency import run_until_first_complete
 
@@ -292,7 +292,7 @@ def test_websocket_concurrency_pattern():
 
         return asgi
 
-    client = TestClient(app)
+    client = client_factory(app)
     with client.wsconnect("/") as websocket:
         websocket.send_json({"hello": "world"})
         data = websocket.receive_json()

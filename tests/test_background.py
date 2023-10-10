@@ -2,14 +2,13 @@ import asyncio
 
 import pytest
 
-from yaa import TestClient
 from yaa.background import BackgroundTask, BackgroundTasks
 from yaa.requests import Request
 from yaa.responses import Response
 
 
 @pytest.mark.timeout(3)
-def test_async_task():
+def test_async_task(client_factory):
     TASK_DONE = False
 
     async def async_task():
@@ -27,14 +26,14 @@ def test_async_task():
         res = Response("task initiated", media_type="text/plain", background=task)
         await res(scope, receive, send)
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.text == "task initiated"
     assert TASK_DONE
 
 
 @pytest.mark.timeout(3)
-def test_sync_task():
+def test_sync_task(client_factory):
     TASK_DONE = False
 
     def sync_task():
@@ -51,13 +50,13 @@ def test_sync_task():
         res = Response("task initiated", media_type="text/plain", background=task)
         await res(scope, receive, send)
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.text == "task initiated"
     assert TASK_DONE
 
 
-def test_multiple_tasks():
+def test_multiple_tasks(client_factory):
     TASK_COUNTER = 0
 
     def increment(amount):
@@ -74,7 +73,7 @@ def test_multiple_tasks():
         )
         await response(scope, receive, send)
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/")
     assert response.text == "tasks initiated"
     assert TASK_COUNTER == 1 + 2 + 3
