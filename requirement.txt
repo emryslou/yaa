@@ -31,7 +31,7 @@ cryptography
 mypy
 pytest
 pytest-asyncio
-pytest-cov
+coverage >= 5.3
 pytest-timeout
 pytest-benchmark
 flake8

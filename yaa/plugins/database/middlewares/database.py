@@ -93,4 +93,6 @@ class DatabaseLifespan(object):
                 else:
                     handler()
             except Exception as exc:
-                warnings.warn('database init error, may lead to unusabe, err:' + str(exc))
+                warnings.warn(
+                    "database init error, may lead to unusabe, err:" + str(exc)
+                )
