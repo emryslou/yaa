@@ -17,7 +17,7 @@ class Yaa(object):
         ] = None,
         on_startup: typing.List[typing.Callable] = None,
         on_shutdown: typing.List[typing.Callable] = None,
-        lifespan: typing.Callable["Yaa", typing.AsyncGenerator] = None,
+        lifespan: typing.Callable["Yaa", typing.AsyncContextManager] = None,
         **kwargs,
     ) -> None:
         self._debug = debug

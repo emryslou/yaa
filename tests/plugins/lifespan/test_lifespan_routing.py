@@ -1,3 +1,5 @@
+import pytest
+
 from yaa.applications import Yaa
 from yaa.plugins.lifespan.routing import Lifespan
 from yaa.routing import Route, Router
@@ -334,3 +336,54 @@ def test_app_params(client_factory):
         client.get("/")
     assert startup_complete
     assert shutdown_complete
+
+
+deprecated_lifespan = pytest.mark.filterwarnings(
+    r"ignore"
+    r":(async )?generator function lifespans are deprecated, use an "
+    r"@contextlib\.asynccontextmanager function instead"
+    r":DeprecationWarning"
+    r":starlette.routing"
+)
+
+
+@deprecated_lifespan
+def test_async_gen_lifespan(client_factory):
+    startup_complete = False
+    cleanup_complete = False
+
+    async def lifespan(app):
+        nonlocal startup_complete, cleanup_complete
+        startup_complete = True
+        yield
+        cleanup_complete = True
+
+    app = Yaa(lifespan=lifespan)
+    assert not startup_complete
+    assert not cleanup_complete
+    with client_factory(app):
+        assert startup_complete
+        assert not cleanup_complete
+    assert startup_complete
+    assert cleanup_complete
+
+
+@deprecated_lifespan
+def test_sync_gen_lifespan(client_factory):
+    startup_complete = False
+    cleanup_complete = False
+
+    def lifespan(app):
+        nonlocal startup_complete, cleanup_complete
+        startup_complete = True
+        yield
+        cleanup_complete = True
+
+    app = Yaa(lifespan=lifespan)
+    assert not startup_complete
+    assert not cleanup_complete
+    with client_factory(app):
+        assert startup_complete
+        assert not cleanup_complete
+    assert startup_complete
+    assert cleanup_complete

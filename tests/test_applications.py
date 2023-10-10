@@ -1,12 +1,13 @@
 import os
 
+from contextlib import asynccontextmanager
+
 from yaa.applications import Yaa
 from yaa.datastructures import Headers
 from yaa.requests import Request
 from yaa.responses import JSONResponse, PlainTextResponse
 from yaa.routing import Router
 from yaa.staticfiles import StaticFiles
-
 
 app = Yaa()
 
@@ -246,3 +247,24 @@ def test_add_exception(client_factory):
     client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/")
     assert res.json() == {"error": "Srv Err 2333"}
+
+
+def test_app_async_cm_lifespan(client_factory):
+    startup_complete = False
+    cleanup_complete = False
+
+    @asynccontextmanager
+    async def lifespan(app):
+        nonlocal startup_complete, cleanup_complete
+        startup_complete = True
+        yield
+        cleanup_complete = True
+
+    app = Yaa(lifespan=lifespan)
+    assert not startup_complete
+    assert not cleanup_complete
+    with client_factory(app):
+        assert startup_complete
+        assert not cleanup_complete
+    assert startup_complete
+    assert cleanup_complete
