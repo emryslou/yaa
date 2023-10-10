@@ -1,7 +1,7 @@
 import graphene
 
 from yaa import Yaa
-from yaa.responses import Response, FileResponse, RedirectResponse, HTMLResponse
+from yaa.responses import Response, FileResponse, RedirectResponse, HTMLResponse, JSONResponse
 from yaa.requests import Request
 from yaa.staticfiles import StaticFiles
 from yaa.endpoints import HttpEndPoint, WebSocketEndpoint
@@ -18,13 +18,19 @@ class Query(graphene.ObjectType):
         return 'Hello ' + name
 
 app = Yaa(
-    debug=True,
+    debug=False,
     plugins = {
         'session': {
             "secret_key": 'test'
         },
         'template': {
             'template_directory': 'demo/templates'
+        },
+        'database': {
+            "enable_db_types": [{"db_type": "mysql"}],
+            'middlewares': {
+                'database': dict(database_url='mysql+pymysql://root:password@localhost:3306/information_schema')
+            }
         },
         'graphql': {
             'routes': [{
@@ -68,6 +74,22 @@ class WsApp(WebSocketEndpoint):
 @app.route('/aa')
 def aa(req):
     raise RuntimeError('AAA')
+
+@app.route('/db')
+async def db(req):
+    session = req.database
+    conn = await session.acquire_connection()
+    cursor = await conn.cursor()
+    try:
+        await cursor.execute('show tables', ())
+        result = cursor.fetchone()
+        row = result.result()
+        return JSONResponse(row)
+    except BaseException:
+        return JSONResponse(content={'errr'}, status_code=500)
+    finally:
+        await cursor.close()
+        await session.release_connection()
 
 class YaWs(object):
     def __init__(self, scope):

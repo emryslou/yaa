@@ -11,13 +11,13 @@ from yaa.responses import JSONResponse
 
 try:
     url = URL("postgresql://postgres:password@localhost:5432/postgres")
-    os.environ["YAST_TEST_DB_MYSQL"] = str(url)
+    os.environ["YAST_TEST_DB_POSTGRES"] = str(url)
     import socket
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(1)
     sock.connect((url.hostname, url.port))
-    os.environ["YAST_TEST_DB_POSTGRES"] = str(url)
+    raise # todo: test db error
 except Exception as exc:  # pragma: no cover
     pytest.skip(
         f"test db cannot connected {exc}", allow_module_level=True

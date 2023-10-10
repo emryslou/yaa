@@ -1,5 +1,6 @@
 import asyncio
 import typing
+import warnings
 
 from yaa.datastructures import DatabaseURL
 from yaa.middlewares.core import Middleware
@@ -86,7 +87,10 @@ class DatabaseLifespan(object):
 
     async def run_handlers(self, event_type: str) -> None:
         for handler in self.handlers.get(EventType(event_type), []):
-            if asyncio.iscoroutinefunction(handler):
-                await handler()
-            else:
-                handler()
+            try:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler()
+                else:
+                    handler()
+            except Exception as exc:
+                warnings.warn('database init error, may lead to unusabe, err:' + str(exc))

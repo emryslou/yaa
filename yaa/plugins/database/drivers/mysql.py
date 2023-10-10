@@ -21,6 +21,7 @@ class MysqlBackend(DatabaseBackend):
         self.database_url = DatabaseURL(database_url)
         self.dialect = self.get_dialect()
         self.pool = None
+        self.re_startup_time = 3
 
     def get_dialect(self) -> Dialect:
         return pymysql.dialect(paramstyle="pyformat")
