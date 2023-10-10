@@ -52,7 +52,7 @@ def test_websocket_headers(client_factory):
         assert data == {"headers": expected_headers}
 
 
-def test_websocket_headers(client_factory):
+def test_websocket_port(client_factory):
     async def app(scope, receive, send):
         session = WebSocket(scope, receive, send)
         await session.accept()

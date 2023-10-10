@@ -6,7 +6,8 @@
 5. server-push , app state
 6. [known issue] see skip test case
 7. StaticFiles: os.PathLike for directory
-8. anyio integration, but has known issue: testclient plugin/database not passed
+8. anyio integration
+9. ensure testclient run into same eventloop
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

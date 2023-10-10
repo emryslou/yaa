@@ -335,24 +335,9 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request(client_factor
     assert response.headers["vary"] == "Accept-Encoding, Origin"
 
 
-def test_cors_vary_header_is_properly_set_for_credentialed_request(client_factory):
-    app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
-
-    @app.route("/")
-    def homepage(request):
-        return PlainTextResponse(
-            "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
-        )
-
-    client = client_factory(app)
-    response = client.get(
-        "/", headers={"Cookie": "foo=bar", "Origin": "https://someplace.org"}
-    )
-    assert response.status_code == 200
-    assert response.headers["vary"] == "Accept-Encoding, Origin"
-
-
-def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard(client_factory):
+def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard(
+    client_factory,
+):
     app = Yaa(
         plugins={
             "http": {

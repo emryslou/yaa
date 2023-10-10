@@ -26,6 +26,7 @@ _PortalFactoryType = typing.Callable[
     [], typing.ContextManager[anyio.abc.BlockingPortal]
 ]
 
+
 class _HeaderDict(requests.packages.urllib3._collections.HTTPHeaderDict):
     def get_all(self, key, default):
         return self.getheaders(key)
@@ -263,7 +264,9 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
 
 
 class WebSocketTestSession(object):
-    def __init__(self, app: ASGI3App, scope: Scope, portal_factory: _PortalFactoryType) -> None:
+    def __init__(
+        self, app: ASGI3App, scope: Scope, portal_factory: _PortalFactoryType
+    ) -> None:
         self.app = app
         self.scope = scope
         self.portal_factory = portal_factory
@@ -273,9 +276,7 @@ class WebSocketTestSession(object):
 
     def __enter__(self) -> "WebSocketTestSession":
         self.exit_stack = contextlib.ExitStack()
-        self.portal = self.exit_stack.enter_context(
-            self.portal_factory()
-        )
+        self.portal = self.exit_stack.enter_context(self.portal_factory())
         try:
             self.portal.start_task_soon(self._run)
             self.send({"type": "websocket.connect"})
@@ -371,8 +372,8 @@ class TestClient(requests.Session):
     portal: typing.Optional[anyio.abc.BlockingPortal] = None
 
     async_backend = {
-        'backend': 'asyncio',
-        'backend_options': {},
+        "backend": "asyncio",
+        "backend_options": {},
     }
 
     task: Future[None]
@@ -409,7 +410,7 @@ class TestClient(requests.Session):
         self.headers.update({"user-agent": "testclient"})
         self.base_url = base_url
         self.app = asgi_app
-    
+
     @contextlib.contextmanager
     def _portal_factory(self):
         if self.portal is not None:
@@ -446,9 +447,11 @@ class TestClient(requests.Session):
             self.portal = portal = stack.enter_context(
                 anyio.start_blocking_portal(**self.async_backend)
             )
+
             @stack.callback
             def reset_portal():
                 self.portal = None
+
             self.stream_send = StapledObjectStream(
                 *anyio.create_memory_object_stream(math.inf)
             )
@@ -462,6 +465,7 @@ class TestClient(requests.Session):
             @stack.callback
             def wait_shutdown():
                 portal.call(self.wait_shutdown)
+
             self.exit_stack = stack.pop_all()
 
         return self

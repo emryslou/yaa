@@ -17,7 +17,6 @@ try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(1)
     sock.connect((url.hostname, url.port))
-    raise  # todo: test db error
 except Exception as exc:  # pragma: no cover
     pytest.skip(
         f"test db cannot connected {exc}", allow_module_level=True
@@ -52,6 +51,7 @@ app = Yaa(
         }
     }
 )
+
 
 @pytest.fixture(autouse=True, scope="module")
 def create_test_base():
