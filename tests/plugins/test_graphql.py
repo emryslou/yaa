@@ -6,7 +6,7 @@ try:
 except ImportError:  # pragma: nocover
     pass  # pragma: nocover
 
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.datastructures import Headers
 from yaa.middlewares import Middleware
 from yaa.plugins.graphql import GraphQLApp
@@ -42,22 +42,24 @@ class Query(graphene.ObjectType):
 
 schema = graphene.Schema(query=Query)
 app = GraphQLApp(schema=schema)
-client = TestClient(app)
 
 
-def test_get():
+def test_get(client_factory):
+    client = client_factory(app)
     res = client.get("/?query={hello}")
     assert res.status_code == 200
     assert res.json() == {"data": {"hello": "Hello stranger"}}
 
 
-def test_post():
+def test_post(client_factory):
+    client = client_factory(app)
     res = client.post("/?query={hello}")
     assert res.status_code == 200
     assert res.json() == {"data": {"hello": "Hello stranger"}}
 
 
-def test_json():
+def test_json(client_factory):
+    client = client_factory(app)
     res = client.post(
         "/", data="{hello}", headers={"Content-Type": "application/graphql"}
     )
@@ -65,25 +67,28 @@ def test_json():
     assert res.json() == {"data": {"hello": "Hello stranger"}}
 
 
-def test_post_invalid_media_type():
+def test_post_invalid_media_type(client_factory):
     import yaa.status
 
+    client = client_factory(app)
     res = client.post("/", data="{hello}", headers={"Content-Type": "error"})
     assert res.status_code == yaa.status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
     assert res.text == "Unsupported Media Type"
 
 
-def test_no_query():
+def test_no_query(client_factory):
     import yaa.status
 
+    client = client_factory(app)
     res = client.get("/")
     assert res.status_code == yaa.status.HTTP_400_BAD_REQUEST
     assert res.text == "No Graphql query found in the request"
 
 
-def test_invalid_field():
+def test_invalid_field(client_factory):
     import yaa.status
 
+    client = client_factory(app)
     res = client.post("/", json={"query": "{err}"})
     assert res.status_code == yaa.status.HTTP_400_BAD_REQUEST
     assert res.json() == {
@@ -97,18 +102,19 @@ def test_invalid_field():
     }
 
 
-def test_graphiql_get():
+def test_graphiql_get(client_factory):
+    client = client_factory(app)
     response = client.get("/", headers={"accept": "text/html"})
     assert response.status_code == 200
     assert "<!DOCTYPE html>" in response.text
 
 
-def test_add_graphql_route():
+def test_add_graphql_route(client_factory):
     from yaa import Yaa
 
     app = Yaa()
     app.add_route("/", GraphQLApp(schema=schema))
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}}
@@ -125,27 +131,29 @@ async_schema = graphene.Schema(query=AsyncQuery)
 
 
 @pytest.mark.timeout(20)
-def test_graphql_async():
+def test_graphql_async(client_factory):
     app = Yaa()
     app.add_route("/", GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor))
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
-def test_graphql_async_cls():
-    client = TestClient(GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor))
+def test_graphql_async_cls(client_factory):
+    client = client_factory(
+        GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor)
+    )
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
-def test_context():
+def test_context(client_factory):
     graphql_app = Yaa()
     graphql_app.add_route("/", GraphQLApp(schema=schema))
     graphql_app.add_middleware(FakeAuthMiddleware)
-    client = TestClient(graphql_app)
+    client = client_factory(graphql_app)
     res = client.post(
         "/", json={"query": "{whoami}"}, headers={"Authorization": "Bearer 123"}
     )
@@ -153,7 +161,7 @@ def test_context():
     assert res.json() == {"data": {"whoami": "Zhangsan"}}
 
 
-def test_app_plugin():
+def test_app_plugin(client_factory):
     app = Yaa(
         plugins={
             "graphql": {
@@ -167,7 +175,7 @@ def test_app_plugin():
             }
         }
     )
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/?query={ hello }")
     assert response.status_code == 200
     assert response.json() == {"data": {"hello": "Hello stranger"}}

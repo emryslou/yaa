@@ -1,4 +1,4 @@
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.responses import HTMLResponse
 
 

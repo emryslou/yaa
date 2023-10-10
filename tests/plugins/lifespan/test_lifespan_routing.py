@@ -1,10 +1,9 @@
 from yaa.applications import Yaa
 from yaa.plugins.lifespan.routing import Lifespan
 from yaa.routing import Route, Router
-from yaa.testclient import TestClient
 
 
-def test_route_lifespan_handlers():
+def test_route_lifespan_handlers(client_factory):
     from yaa.responses import PlainTextResponse
 
     startup_complete = False
@@ -30,7 +29,7 @@ def test_route_lifespan_handlers():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -38,7 +37,7 @@ def test_route_lifespan_handlers():
     assert shutdown_complete
 
 
-def test_route_sync_lifespan():
+def test_route_sync_lifespan(client_factory):
     from yaa.responses import PlainTextResponse
 
     startup_complete = False
@@ -62,7 +61,7 @@ def test_route_sync_lifespan():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -70,7 +69,7 @@ def test_route_sync_lifespan():
     assert shutdown_complete
 
 
-def test_route_async_lifespan():
+def test_route_async_lifespan(client_factory):
     from yaa.responses import PlainTextResponse
 
     startup_complete = False
@@ -94,7 +93,7 @@ def test_route_async_lifespan():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -102,7 +101,7 @@ def test_route_async_lifespan():
     assert shutdown_complete
 
 
-def test_app():
+def test_app(client_factory):
     startup_complete = False
     shutdown_complete = False
 
@@ -124,7 +123,7 @@ def test_app():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -132,7 +131,7 @@ def test_app():
     assert shutdown_complete
 
 
-def test_app_plugin_lifespan():
+def test_app_plugin_lifespan(client_factory):
     from yaa.responses import PlainTextResponse
 
     startup_complete = False
@@ -155,7 +154,7 @@ def test_app_plugin_lifespan():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -163,7 +162,7 @@ def test_app_plugin_lifespan():
     assert shutdown_complete
 
 
-def test_app_params_lifespan():
+def test_app_params_lifespan(client_factory):
     from yaa.responses import PlainTextResponse
 
     startup_complete = False
@@ -182,7 +181,7 @@ def test_app_params_lifespan():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -190,7 +189,7 @@ def test_app_params_lifespan():
     assert shutdown_complete
 
 
-def test_app_on_event_shutdown():
+def test_app_on_event_shutdown(client_factory):
     startup_complete = False
     shutdown_complete = False
 
@@ -215,7 +214,7 @@ def test_app_on_event_shutdown():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -223,7 +222,7 @@ def test_app_on_event_shutdown():
     assert shutdown_complete
 
 
-def test_app_on_event_startup():
+def test_app_on_event_startup(client_factory):
     startup_complete = False
     shutdown_complete = False
 
@@ -244,7 +243,7 @@ def test_app_on_event_startup():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -252,7 +251,7 @@ def test_app_on_event_startup():
     assert shutdown_complete
 
 
-def test_app_add_event_handler():
+def test_app_add_event_handler(client_factory):
     startup_complete = False
     shutdown_complete = False
 
@@ -275,7 +274,7 @@ def test_app_add_event_handler():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")
@@ -283,7 +282,7 @@ def test_app_add_event_handler():
     assert shutdown_complete
 
 
-def test_startup_runtime_error():
+def test_startup_runtime_error(client_factory):
     import pytest
 
     startup_failed = False
@@ -304,13 +303,13 @@ def test_startup_runtime_error():
         await router(scope, receive, _send)
 
     with pytest.raises(RuntimeError):
-        with TestClient(app):
+        with client_factory(app):
             pass  # pragma: nocover
 
     assert startup_failed
 
 
-def test_app_params():
+def test_app_params(client_factory):
     startup_complete = False
     shutdown_complete = False
 
@@ -329,7 +328,7 @@ def test_app_params():
 
     assert not startup_complete
     assert not shutdown_complete
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         assert startup_complete
         assert not shutdown_complete
         client.get("/")

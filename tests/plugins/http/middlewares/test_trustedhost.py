@@ -2,11 +2,10 @@ import pytest
 
 from yaa.applications import Yaa
 from yaa.responses import PlainTextResponse
-from yaa.testclient import TestClient
 
 
 @pytest.mark.timeout(30)
-def test_trustedhost():
+def test_trustedhost(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -19,23 +18,23 @@ def test_trustedhost():
     async def home(_):
         return PlainTextResponse("OK")
 
-    client = TestClient(app, base_url="http://aa.com")
+    client = client_factory(app, base_url="http://aa.com")
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "OK"
 
-    client = TestClient(app, base_url="http://bb.com")
+    client = client_factory(app, base_url="http://bb.com")
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "OK"
 
-    client = TestClient(app, base_url="http://xx.com")
+    client = client_factory(app, base_url="http://xx.com")
     res = client.get("/")
     assert res.status_code == 400
     assert res.text == "Invalid host header"
 
 
-def test_wildcard():
+def test_wildcard(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -50,31 +49,31 @@ def test_wildcard():
     async def home(_):
         return PlainTextResponse("OK")
 
-    client = TestClient(
+    client = client_factory(
         app,
         base_url="http://aa.com",
     )
     res = client.get("/")
     assert res.status_code == 200
 
-    client = TestClient(app, base_url="http://cc.aa.com")
+    client = client_factory(app, base_url="http://cc.aa.com")
     res = client.get("/")
     assert res.status_code == 400
 
-    client = TestClient(app, base_url="http://kk.ff.com")
+    client = client_factory(app, base_url="http://kk.ff.com")
     res = client.get("/")
     assert res.status_code == 200
 
-    client = TestClient(app, base_url="http://aa.ff.com")
+    client = client_factory(app, base_url="http://aa.ff.com")
     res = client.get("/")
     assert res.status_code == 200
 
-    client = TestClient(app, base_url="http://ff.aa.com")
+    client = client_factory(app, base_url="http://ff.aa.com")
     res = client.get("/")
     assert res.status_code == 400
 
 
-def test_www_redirect():
+def test_www_redirect(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -87,7 +86,7 @@ def test_www_redirect():
     def homepage(request):
         return PlainTextResponse("OK", status_code=200)
 
-    client = TestClient(app, base_url="https://example.com")
+    client = client_factory(app, base_url="https://example.com")
     response = client.get("/")
     assert response.status_code == 200
     assert response.url == "https://www.example.com/"

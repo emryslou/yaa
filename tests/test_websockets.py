@@ -1,7 +1,6 @@
 import pytest
 
 import yaa.status as status
-from yaa import TestClient
 from yaa.websockets import WebSocket, WebSocketDisconnect
 
 

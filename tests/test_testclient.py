@@ -3,7 +3,6 @@ import pytest
 
 from yaa.applications import Yaa
 from yaa.responses import JSONResponse
-from yaa.testclient import TestClient
 from yaa.websockets import WebSocket, WebSocketDisconnect
 
 mock_service = Yaa()
@@ -19,6 +18,8 @@ app = Yaa()
 
 @app.route("/")
 def homepage(request):
+    from yaa.testclient import TestClient
+
     client = TestClient(mock_service)
     response = client.get("/")
     return JSONResponse(response.json())

@@ -2,7 +2,7 @@ import typing
 
 import pytest
 
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.middlewares import BaseHttpMiddleware
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse
@@ -55,8 +55,8 @@ class NoResApp:
 
 
 @pytest.mark.timeout(3)
-def test_vendor():
-    client = TestClient(app)
+def test_vendor(client_factory):
+    client = client_factory(app)
     res = client.get("/")
     assert "Vendor-Header" in res.headers
     assert res.headers["Vendor-Header"] == "Vendor"
@@ -75,7 +75,7 @@ def test_vendor():
 
 
 @pytest.mark.timeout(3)
-def test_decorator():
+def test_decorator(client_factory):
     app = Yaa()
 
     @app.route("/homepage")
@@ -90,7 +90,7 @@ def test_decorator():
         res.headers["Handler"] = "@Func"
         return res
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.text == "OK"
 
@@ -99,7 +99,7 @@ def test_decorator():
     assert res.headers["Handler"] == "@Func"
 
 
-def test_state_data_across_multiple_middlewares():
+def test_state_data_across_multiple_middlewares(client_factory):
     expected_value = "yes"
 
     class aMiddleware(BaseHttpMiddleware):
@@ -122,13 +122,13 @@ def test_state_data_across_multiple_middlewares():
     def homepage(request):
         return PlainTextResponse("OK")
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/")
     assert response.text == "OK"
     assert response.headers["X-State-Show-Me"] == expected_value
 
 
-def test_multiple_middlewares_run_order():
+def test_multiple_middlewares_run_order(client_factory):
     class aMiddleware(BaseHttpMiddleware):
         async def dispatch(self, request: Request, call_next):
             if not hasattr(request.state, "show_me"):
@@ -179,7 +179,7 @@ def test_multiple_middlewares_run_order():
     def homepage(request: Request):
         return PlainTextResponse("OK")
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/")
     assert response.text == "OK"
     assert (

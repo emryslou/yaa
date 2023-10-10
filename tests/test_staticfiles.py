@@ -4,7 +4,7 @@ from email.utils import parsedate
 
 import pytest
 
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.staticfiles import StaticFiles
 
 

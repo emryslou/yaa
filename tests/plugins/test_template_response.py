@@ -3,10 +3,9 @@ import pytest
 from yaa.plugins.template.responses import TemplateResponse
 from yaa.requests import Request
 from yaa.responses import Response
-from yaa.testclient import TestClient
 
 
-def test_template_response():
+def test_template_response(client_factory):
     class Template:
         def __init__(self, name):
             self.name = name
@@ -23,7 +22,7 @@ def test_template_response():
         res = TemplateResponse(template=template, context=context)
         await res(scope, receive, send)
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.text == "username: eml"
     assert res.template.name == "index.html"
@@ -35,7 +34,7 @@ def test_template_require_request():
         TemplateResponse(None, {})
 
 
-def test_template_jinja2_response(tmpdir):
+def test_template_jinja2_response(tmpdir, client_factory):
     import os
     from yaa.applications import Yaa
 
@@ -54,7 +53,7 @@ def test_template_jinja2_response(tmpdir):
             context={"hello": req.query_params["hello"]},
         )
 
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/?hello=abcd1234")
     assert res.template.name == "tpl.example.1.html"
     assert res.status_code == 200

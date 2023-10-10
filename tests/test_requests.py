@@ -2,7 +2,6 @@ import asyncio
 
 import pytest
 
-from yaa import TestClient
 from yaa.requests import ClientDisconnect, Request
 from yaa.responses import JSONResponse
 

@@ -4,7 +4,6 @@ import pytest
 
 from yaa.middlewares import WSGIMiddleware
 from yaa.middlewares.wsgi import build_environ
-from yaa.testclient import TestClient
 
 
 def demo(environ, start_response):
@@ -49,43 +48,43 @@ def return_exc_info(environ, start_response):
 
 
 @pytest.mark.timeout(3)
-def test_get():
+def test_get(client_factory):
     app = WSGIMiddleware(demo)
-    client = TestClient(app)
+    client = client_factory(app)
     res = client.get("/")
     assert res.status_code == 200
     assert res.text == "Hello Demo"
 
 
 @pytest.mark.timeout(3)
-def test_wsgi_post():
+def test_wsgi_post(client_factory):
     app = WSGIMiddleware(echo_body)
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.post("/", json={"example": 123})
     assert response.status_code == 200
     assert response.text == '{"example": 123}'
 
 
 @pytest.mark.timeout(3)
-def test_wsgi_exception():
+def test_wsgi_exception(client_factory):
     # Note that we're testing the WSGI app directly here.
     # The HTTP protocol implementations would catch this error and return 500.
     app = WSGIMiddleware(raise_exception)
-    client = TestClient(app)
+    client = client_factory(app)
     with pytest.raises(RuntimeError):
         response = client.get("/")
 
 
 @pytest.mark.timeout(3)
-def test_wsgi_exc_info():
+def test_wsgi_exc_info(client_factory):
     # Note that we're testing the WSGI app directly here.
     # The HTTP protocol implementations would catch this error and return 500.
     app = WSGIMiddleware(return_exc_info)
-    client = TestClient(app)
+    client = client_factory(app)
     with pytest.raises(RuntimeError):
         response = client.get("/")
     app = WSGIMiddleware(return_exc_info)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     response = client.get("/")
     assert response.status_code == 500
     assert response.text == "Internal Server Error"

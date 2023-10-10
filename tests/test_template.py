@@ -1,6 +1,6 @@
 import os
 
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.responses import HTMLResponse
 from yaa.plugins.template import templates
 

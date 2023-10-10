@@ -1,8 +1,8 @@
-from yaa import Yaa, TestClient
+from yaa import Yaa
 from yaa.responses import PlainTextResponse
 
 
-def test_cors_allow_all():
+def test_cors_allow_all(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -23,7 +23,7 @@ def test_cors_allow_all():
     async def home(_):
         return PlainTextResponse("HOME")
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {
         "Origin": "https://ex.org",
         "Access-Control-Request-Method": "GET",
@@ -65,7 +65,7 @@ def test_cors_allow_all():
     assert "access-control-allow-origin" not in res.headers
 
 
-def test_cors_allow_all_except_credentials():
+def test_cors_allow_all_except_credentials(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -85,7 +85,7 @@ def test_cors_allow_all_except_credentials():
     def homepage(request):
         return PlainTextResponse("Homepage", status_code=200)
 
-    client = TestClient(app)
+    client = client_factory(app)
     # Test pre-flight response
     headers = {
         "Origin": "https://example.org",
@@ -114,7 +114,7 @@ def test_cors_allow_all_except_credentials():
     assert "access-control-allow-origin" not in response.headers
 
 
-def test_cors_specific_origin():
+def test_cors_specific_origin(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -132,7 +132,7 @@ def test_cors_specific_origin():
     async def home(_):
         return PlainTextResponse("HOME")
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {
         "Origin": "https://ex.org",
         "Access-Control-Request-Method": "GET",
@@ -166,7 +166,7 @@ def test_cors_specific_origin():
     assert "access-control-allow-credentials" not in res.headers
 
 
-def test_cors_disallowed_preflight():
+def test_cors_disallowed_preflight(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -184,7 +184,7 @@ def test_cors_disallowed_preflight():
     async def home(_):
         return PlainTextResponse("HOME")  # pragma: nocover
 
-    client = TestClient(app)
+    client = client_factory(app)
 
     headers = {
         "Origin": "https://unknown.org",
@@ -205,7 +205,7 @@ def test_cors_disallowed_preflight():
     assert response.text == "Disallowed CORS headers"
 
 
-def test_cors_allow_origin_regex():
+def test_cors_allow_origin_regex(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -224,7 +224,7 @@ def test_cors_allow_origin_regex():
     def homepage(request):
         return PlainTextResponse("Homepage", status_code=200)
 
-    client = TestClient(app)
+    client = client_factory(app)
     # Test standard response
     headers = {"Origin": "https://example.org"}
     response = client.get("/", headers=headers)
@@ -267,14 +267,14 @@ def test_cors_allow_origin_regex():
     assert "access-control-allow-origin" not in response.headers
 
 
-def test_cors_credentialed_requests_return_specific_origin():
+def test_cors_credentialed_requests_return_specific_origin(client_factory):
     app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(_):
         return PlainTextResponse("HomePage")
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {"Origin": "https://example.org", "Cookie": "start_cookie=sugar"}
     res = client.get("/", headers=headers)
     assert res.status_code == 200
@@ -282,7 +282,7 @@ def test_cors_credentialed_requests_return_specific_origin():
     assert res.headers["access-control-allow-origin"] == "https://example.org"
 
 
-def test_cors_vary_header_defaults_to_orgin():
+def test_cors_vary_header_defaults_to_orgin(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -295,7 +295,7 @@ def test_cors_vary_header_defaults_to_orgin():
     def homepage(_):
         return PlainTextResponse("HomePage")
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {"Origin": "https://example.org"}
     res = client.get("/", headers=headers)
     assert res.status_code == 200
@@ -303,14 +303,14 @@ def test_cors_vary_header_defaults_to_orgin():
     assert res.headers["vary"] == "Origin"
 
 
-def test_cors_vary_header_is_not_set_for_non_credentialed_request():
+def test_cors_vary_header_is_not_set_for_non_credentialed_request(client_factory):
     app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
     def homepage(_):
         return PlainTextResponse("HomePage", headers={"Vary": "Accept-Encoding"})
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {"Origin": "https://example.org"}
     res = client.get("/", headers=headers)
     assert res.status_code == 200
@@ -318,7 +318,7 @@ def test_cors_vary_header_is_not_set_for_non_credentialed_request():
     assert res.headers["vary"] == "Accept-Encoding"
 
 
-def test_cors_vary_header_is_properly_set_for_credentialed_request():
+def test_cors_vary_header_is_properly_set_for_credentialed_request(client_factory):
     app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
@@ -327,7 +327,7 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request():
             "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
         )
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get(
         "/", headers={"Cookie": "foo=bar", "Origin": "https://someplace.org"}
     )
@@ -335,7 +335,7 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request():
     assert response.headers["vary"] == "Accept-Encoding, Origin"
 
 
-def test_cors_vary_header_is_properly_set_for_credentialed_request():
+def test_cors_vary_header_is_properly_set_for_credentialed_request(client_factory):
     app = Yaa(plugins={"http": {"middlewares": {"cors": dict(allow_origins=["*"])}}})
 
     @app.route("/")
@@ -344,7 +344,7 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request():
             "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
         )
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get(
         "/", headers={"Cookie": "foo=bar", "Origin": "https://someplace.org"}
     )
@@ -352,7 +352,7 @@ def test_cors_vary_header_is_properly_set_for_credentialed_request():
     assert response.headers["vary"] == "Accept-Encoding, Origin"
 
 
-def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard():
+def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -367,13 +367,13 @@ def test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard():
             "Homepage", status_code=200, headers={"Vary": "Accept-Encoding"}
         )
 
-    client = TestClient(app)
+    client = client_factory(app)
     response = client.get("/", headers={"Origin": "https://example.org"})
     assert response.status_code == 200
     assert response.headers["vary"] == "Accept-Encoding, Origin"
 
 
-def test_cors_allow_origin_regex_fullmatch():
+def test_cors_allow_origin_regex_fullmatch(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -391,7 +391,7 @@ def test_cors_allow_origin_regex_fullmatch():
     def homepage(request):
         return PlainTextResponse("Homepage", status_code=200)
 
-    client = TestClient(app)
+    client = client_factory(app)
     # Test standard response
     headers = {"Origin": "https://subdomain.example.org"}
     response = client.get("/", headers=headers)
@@ -409,7 +409,7 @@ def test_cors_allow_origin_regex_fullmatch():
     assert "access-control-allow-origin" not in response.headers
 
 
-def test_cors_preflight_allow_all_methods():
+def test_cors_preflight_allow_all_methods(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -427,7 +427,7 @@ def test_cors_preflight_allow_all_methods():
     def homepage(request):
         pass  # pragma: no cover
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {
         "Origin": "https://example.org",
         "Access-Control-Request-Method": "POST",
@@ -438,7 +438,7 @@ def test_cors_preflight_allow_all_methods():
         assert method in response.headers["access-control-allow-methods"]
 
 
-def test_cors_allow_all_methods():
+def test_cors_allow_all_methods(client_factory):
     app = Yaa(
         plugins={
             "http": {
@@ -458,7 +458,7 @@ def test_cors_allow_all_methods():
     def homepage(request):
         return PlainTextResponse("Homepage", status_code=200)
 
-    client = TestClient(app)
+    client = client_factory(app)
     headers = {"Origin": "https://example.org"}
     for method in ("delete", "get", "head", "options", "patch", "post", "put"):
         response = getattr(client, method)("/", headers=headers, json={})

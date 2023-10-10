@@ -6,7 +6,6 @@ from yaa.endpoints import HttpEndPoint, WebSocketEndpoint
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse
 from yaa.routing import Route, Router
-from yaa.testclient import TestClient
 from yaa.websockets import WebSocket
 
 

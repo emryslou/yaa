@@ -14,7 +14,6 @@ from yaa.responses import (
     StreamingResponse,
     UJSONResponse,
 )
-from yaa.testclient import TestClient
 
 
 def test_text_response(client_factory):

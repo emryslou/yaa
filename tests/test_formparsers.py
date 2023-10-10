@@ -4,7 +4,6 @@ from yaa.datastructures.form import UploadFile
 from yaa.formparsers import _user_safe_decode
 from yaa.requests import Request
 from yaa.responses import JSONResponse
-from yaa.testclient import TestClient
 
 
 class ForceMultipartDict(dict):

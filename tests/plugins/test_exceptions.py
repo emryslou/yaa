@@ -1,6 +1,5 @@
 import pytest
 
-from yaa import TestClient
 from yaa.exceptions import HttpException
 from yaa.plugins.exceptions.middlewares.exception import ExceptionMiddleware
 from yaa.responses import PlainTextResponse
@@ -28,34 +27,36 @@ router = Router(
 )
 
 app = ExceptionMiddleware(router)
-client = TestClient(app)
 
 
-def test_debug_enabled():
+def test_debug_enabled(client_factory):
     app = ExceptionMiddleware(router)
     app.debug = True
 
-    client500 = TestClient(app, raise_server_exceptions=False)
+    client500 = client_factory(app, raise_server_exceptions=False)
 
     res = client500.get("/runtime_error")
     assert res.status_code == 500
 
 
-def test_not_acceptable():
+def test_not_acceptable(client_factory):
+    client = client_factory(app)
     res = client.get("/not_acceptable")
     assert res.status_code == 406
     assert "Not Acceptable" == res.text
 
 
-def test_not_modified():
+def test_not_modified(client_factory):
+    client = client_factory(app)
     res = client.get("/not_modified")
     assert res.status_code == 304
     assert "" == res.text
 
 
-def test_websockets_should_raise():
+def test_websockets_should_raise(client_factory):
     from yaa.websockets import WebSocketDisconnect
 
+    client = client_factory(app)
     with pytest.raises(WebSocketDisconnect):
         with client.wsconnect("/runtime_error") as _:
             pass  # pragma: no cover
@@ -64,18 +65,18 @@ def test_websockets_should_raise():
     #     client.wsconnect('/runtime_error')
 
 
-def test_force_500_res():
+def test_force_500_res(client_factory):
     def app(scope):
         raise RuntimeError()
 
-    client_force_500 = TestClient(app, raise_server_exceptions=False)
+    client_force_500 = client_factory(app, raise_server_exceptions=False)
     res = client_force_500.get("/")
 
     assert res.status_code == 500
     assert res.text == ""
 
 
-def test_plugins_servererror():
+def test_plugins_servererror(client_factory):
     from yaa import Yaa
 
     def handle_exc(req, exc):
@@ -98,13 +99,13 @@ def test_plugins_servererror():
     def r_rexc(req):
         raise Exception()
 
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/r_exc")
     assert res.status_code == 200
     assert res.text == "srv err"
 
 
-def test_plugins_exception():
+def test_plugins_exception(client_factory):
     from yaa import Yaa
     from yaa.exceptions import HttpException
 
@@ -149,7 +150,7 @@ def test_plugins_exception():
     def r_my(req):
         raise HttpException(419)
 
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/r_my")
     assert res.status_code == 200
     assert res.text == "my_exc"

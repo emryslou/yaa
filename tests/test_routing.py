@@ -2,7 +2,7 @@ import os, pytest
 
 import yaa.status as http_status
 
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.responses import JSONResponse, PlainTextResponse, Response
 from yaa.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
 from yaa.staticfiles import StaticFiles

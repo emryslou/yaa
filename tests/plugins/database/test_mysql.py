@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.datastructures import URL
 from yaa.plugins.database.decorators import transaction
 from yaa.plugins.database.middlewares import DatabaseMiddleware
@@ -52,8 +52,6 @@ app = Yaa(
         }
     }
 )
-
-client = TestClient(app)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -130,8 +128,8 @@ async def note_field(req: Request):
 
 
 @pytest.mark.timeout(40)
-def test_database(no_trio_support):
-    with TestClient(app) as client:
+def test_database(no_trio_support, client_factory):
+    with client_factory(app) as client:
         data = {"text": "add", "complete": True}
         res = client.post("/notes", json=data)
         assert res.status_code == 200
@@ -163,11 +161,11 @@ def test_database(no_trio_support):
         assert res.json() == {"text": "add"}
 
 
-def test_database_isolated_during_test_cases():
+def test_database_isolated_during_test_cases(client_factory):
     """
     Using `TestClient` as a context manager
     """
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         response = client.post(
             "/notes", json={"text": "just one note", "complete": True}
         )
@@ -175,7 +173,7 @@ def test_database_isolated_during_test_cases():
         response = client.get("/notes")
         assert response.status_code == 200
         assert response.json() == [{"text": "just one note", "complete": True}]
-    with TestClient(app) as client:
+    with client_factory(app) as client:
         response = client.post(
             "/notes", json={"text": "just one note", "complete": True}
         )
@@ -185,8 +183,8 @@ def test_database_isolated_during_test_cases():
         assert response.json() == [{"text": "just one note", "complete": True}]
 
 
-def test_database_executemany():
-    with TestClient(app) as client:
+def test_database_executemany(client_factory):
+    with client_factory(app) as client:
         data = [
             {"text": "buy the milk", "complete": True},
             {"text": "walk the dog", "complete": False},

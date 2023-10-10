@@ -1,11 +1,10 @@
 import pytest
 
-from yaa import TestClient
 from yaa.plugins.exceptions.middlewares.server_error import ServerErrorMiddleware
 from yaa.responses import JSONResponse
 
 
-def test_handler():
+def test_handler(client_factory):
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
@@ -13,30 +12,30 @@ def test_handler():
         return JSONResponse({"detail": "Srv Err"}, status_code=500)
 
     app = ServerErrorMiddleware(app, handler=error_500)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/")
     assert res.status_code == 500
     assert res.json() == {"detail": "Srv Err"}
 
 
-def test_debug_text():
+def test_debug_text(client_factory):
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
     app = ServerErrorMiddleware(app, debug=True)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/", headers={"Accept": "text/plain, */*"})
     assert res.status_code == 500
     assert res.headers["content-type"].startswith("text/plain")
     assert "RuntimeError" in res.text
 
 
-def test_debug_html():
+def test_debug_html(client_factory):
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
     app = ServerErrorMiddleware(app, debug=True)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/", headers={"Accept": "text/html, */*"})
     assert res.status_code == 500
     assert res.headers["content-type"].startswith("text/html")
@@ -44,12 +43,12 @@ def test_debug_html():
     assert "RuntimeError" in res.text
 
 
-def test_error_during_scope():
+def test_error_during_scope(client_factory):
     async def app(scope, receive, send):
         raise RuntimeError("Some error happens")
 
     app = ServerErrorMiddleware(app, debug=True)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = client_factory(app, raise_server_exceptions=False)
     res = client.get("/", headers={"Accept": "text/html, */*"})
     assert res.status_code == 500
     assert res.headers["content-type"].startswith("text/html")

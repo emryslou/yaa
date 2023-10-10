@@ -1,4 +1,3 @@
-from yaa import TestClient
 from yaa.applications import Yaa
 from yaa.endpoints import HttpEndPoint
 from yaa.plugins.schema.schemas import OpenAPIResponse, SchemaGenerator
@@ -212,8 +211,8 @@ paths:
 """
 
 
-def test_schema_endpoint():
-    client = TestClient(app)
+def test_schema_endpoint(client_factory):
+    client = client_factory(app)
     response = client.get("/schema")
     assert response.headers["Content-Type"] == "application/vnd.oai.openapi"
     assert response.text.strip() == EXPECTED_SCHEMA.strip()

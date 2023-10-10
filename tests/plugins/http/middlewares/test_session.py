@@ -1,4 +1,4 @@
-from yaa import TestClient, Yaa
+from yaa import Yaa
 from yaa.responses import JSONResponse
 
 
@@ -25,17 +25,17 @@ def create_app(sess_config: dict = {}):
     return app
 
 
-def test_session():
+def test_session(client_factory):
     app = create_app({"secret_key": "example"})
-    client = TestClient(app)
+    client = client_factory(app)
 
     response = client.get("/view_session")
     assert response.json() == {"session": {}}
 
 
-def test_session_expires():
+def test_session_expires(client_factory):
     app = create_app({"secret_key": "example", "max_age": -1})
-    client = TestClient(app)
+    client = client_factory(app)
 
     response = client.post("/update_session", json={"some": "data"})
     assert response.json() == {"session": {"some": "data"}}
@@ -44,10 +44,10 @@ def test_session_expires():
     assert response.json() == {"session": {}}
 
 
-def test_secure_session():
+def test_secure_session(client_factory):
     app = create_app({"secret_key": "example", "https_only": True})
-    secure_client = TestClient(app, base_url="https://testserver")
-    unsecure_client = TestClient(app, base_url="http://testserver")
+    secure_client = client_factory(app, base_url="https://testserver")
+    unsecure_client = client_factory(app, base_url="http://testserver")
     response = unsecure_client.get("/view_session")
     assert response.json() == {"session": {}}
     response = unsecure_client.post("/update_session", json={"some": "data"})
@@ -66,20 +66,20 @@ def test_secure_session():
     assert response.json() == {"session": {}}
 
 
-def test_session_cookie_subpath():
+def test_session_cookie_subpath(client_factory):
     import re
 
     app = create_app({"secret_key": "example", "https_only": True})
     second_app = create_app({"secret_key": "example", "https_only": True})
     app.mount("/second_app", second_app)
-    client = TestClient(app, base_url="http://testserver/second_app")
+    client = client_factory(app, base_url="http://testserver/second_app")
     response = client.post("second_app/update_session", json={"some": "data"})
     cookie = response.headers["set-cookie"]
     cookie_path = re.search(r"; path=(\S+);", cookie).groups()[0]
     assert cookie_path == "/second_app"
 
 
-def test_session_expired():
+def test_session_expired(client_factory):
     from yaa.requests import Request
     import time
 
@@ -95,7 +95,7 @@ def test_session_expired():
         # req.session.update({'hello': 'abcd'})
         return JSONResponse(content=req.session)
 
-    client = TestClient(app)
+    client = client_factory(app)
     res0 = client.get("/session/set")
 
     res = client.get(
