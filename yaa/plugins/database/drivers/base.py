@@ -22,12 +22,12 @@ def compile(query: ClauseElement, dialect: Dialect) -> typing.Tuple[str, list]:
 
 
 class DatabaseBackend(object):
-    name = None
+    name: str
     drivers: typing.Dict[str, type["DatabaseBackend"]] = {}
 
     def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init_subclass__(*args, **kwargs)
-        names_ = []
+        names_ = [] # type: typing.List[str]
         if hasattr(cls, "name"):
             names_.append(cls.name)
 

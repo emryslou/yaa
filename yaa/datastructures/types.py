@@ -149,10 +149,11 @@ class MultiDict(ImmutableMultiDict):
 
 class State(object):
     def __init__(self, state_dict: typing.Optional[dict] = None) -> None:
-        self._state: dict = state_dict or {}
+        self._state: dict =  {} if state_dict is None else state_dict
 
     def __getattr__(self, __key: str) -> typing.Any:
         try:
+            print('debug -- 01', self._state)
             return self._state[__key]
         except KeyError:
             raise AttributeError(
