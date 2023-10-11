@@ -2,10 +2,15 @@ import asyncio
 import functools
 import typing
 
+from yaa.concurrency import run_in_threadpool
+from yaa.types import P
+
 
 class BackgroundTask(object):
     def __init__(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
+        self,
+        func: typing.Callable[P, typing.Any],
+        *args: P.args, **kwargs: P.kwargs
     ) -> None:
         self.func = func
         self.args = args
@@ -25,7 +30,9 @@ class BackgroundTasks(BackgroundTask):
         self.tasks = list(tasks) if tasks else []
 
     def add_task(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
+        self,
+        func: typing.Callable[P, typing.Any],
+        *args: P.args, **kwargs: P.kwargs
     ) -> None:
         task = BackgroundTask(func, *args, **kwargs)
         self.tasks.append(task)
