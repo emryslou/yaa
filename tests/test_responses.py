@@ -375,3 +375,10 @@ def test_streaming_response_known_size(client_factory):
     client = client_factory(app)
     response = client.get("/")
     assert response.headers["content-length"] == "10"
+
+
+def test_empty_204_response(client_factory):
+    app = Response(status_code=204)
+    client: TestClient = client_factory(app)
+    response = client.get("/")
+    assert "content-length" not in response.headers
