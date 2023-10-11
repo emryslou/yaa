@@ -304,7 +304,9 @@ def test_additional_headers(client_factory):
             websocket = WebSocket(scope, receive=receive, send=send)
             await websocket.accept(headers=[(b"additional", b"header")])
             await websocket.close()
+
         return asgi
+
     client = client_factory(app)
     with client.wsconnect("/") as websocket:
         assert websocket.extra_headers == [(b"additional", b"header")]

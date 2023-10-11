@@ -287,8 +287,8 @@ class WebSocketTestSession(object):
         except Exception:
             self.exit_stack.close()
             raise
-        
-        self.extra_headers = message.get('headers', None)
+
+        self.extra_headers = message.get("headers", None)
         self.accepted_subprotocol = message.get("subprotocol", None)
         return self
 

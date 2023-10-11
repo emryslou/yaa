@@ -144,7 +144,7 @@ def test_add_route(client_factory):
 
     res = client.head("/homepage", stream=True)
     assert res.status_code == 200
-    # assert res.text == ""
+    assert res.text == ""
 
 
 def test_add_ws(client_factory):

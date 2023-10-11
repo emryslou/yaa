@@ -320,3 +320,58 @@ def test_quoting_redirect_response(client_factory):
     response = client.get("/redirect")
     assert response.text == "hello, world"
     assert response.url == "http://testserver/I%20%E2%99%A5%20Yaa/"
+
+
+def test_redirect_response_content_length_header(client_factory):
+    async def app(scope, receive, send):
+        if scope["path"] == "/":
+            response = Response("hello", media_type="text/plain")  # pragma: nocover
+        else:
+            response = RedirectResponse("/")
+        await response(scope, receive, send)
+
+    client = client_factory(app)
+    response = client.request("GET", "/redirect", allow_redirects=False)
+    assert response.url == "http://testserver/redirect"
+    assert response.headers["content-length"] == "0"
+
+
+def test_empty_response(client_factory):
+    app = Response()
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-length"] == "0"
+
+
+def test_non_empty_response(client_factory):
+    app = Response(content="hi")
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-length"] == "2"
+
+
+def test_file_response_known_size(tmpdir, client_factory):
+    path = os.path.join(tmpdir, "xyz")
+    content = b"<file content>" * 1000
+    with open(path, "wb") as file:
+        file.write(content)
+    app = FileResponse(path=path, filename="example.png")
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-length"] == str(len(content))
+
+
+def test_streaming_response_unknown_size(client_factory):
+    app = StreamingResponse(content=iter(["hello", "world"]))
+    client = client_factory(app)
+    response = client.get("/")
+    assert "content-length" not in response.headers
+
+
+def test_streaming_response_known_size(client_factory):
+    app = StreamingResponse(
+        content=iter(["hello", "world"]), headers={"content-length": "10"}
+    )
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-length"] == "10"
