@@ -6,6 +6,7 @@ from yaa.concurrency import run_in_threadpool
 from .headers import Headers
 from .types import ImmutableMultiDict
 
+
 class UploadFile(object):
     spool_max_size = 1024 * 1024
     headers: "Headers"
@@ -16,7 +17,7 @@ class UploadFile(object):
         file: typing.IO = None,
         content_type: str = "",
         *,
-        headers: typing.Optional[Headers] = None
+        headers: typing.Optional[Headers] = None,
     ) -> None:
         self.filename = filename
         self.content_type = content_type

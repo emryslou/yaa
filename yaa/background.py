@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import typing
 
 from yaa.concurrency import run_in_threadpool
@@ -8,21 +7,18 @@ from yaa.types import P
 
 class BackgroundTask(object):
     def __init__(
-        self,
-        func: typing.Callable[P, typing.Any],
-        *args: P.args, **kwargs: P.kwargs
+        self, func: typing.Callable[P, typing.Any], *args: P.args, **kwargs: P.kwargs
     ) -> None:
         self.func = func
         self.args = args
         self.kwargs = kwargs
+        self.is_async = asyncio.iscoroutinefunction(func)
 
     async def __call__(self) -> None:
-        if asyncio.iscoroutinefunction(self.func):
-            await asyncio.ensure_future(self.func(*self.args, **self.kwargs))
+        if self.is_async:
+            await self.func(*self.args, **self.kwargs)
         else:
-            fn = functools.partial(self.func, *self.args, **self.kwargs)
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, fn)
+            await run_in_threadpool(self.func, *self.args, **self.kwargs)
 
 
 class BackgroundTasks(BackgroundTask):
@@ -30,9 +26,7 @@ class BackgroundTasks(BackgroundTask):
         self.tasks = list(tasks) if tasks else []
 
     def add_task(
-        self,
-        func: typing.Callable[P, typing.Any],
-        *args: P.args, **kwargs: P.kwargs
+        self, func: typing.Callable[P, typing.Any], *args: P.args, **kwargs: P.kwargs
     ) -> None:
         task = BackgroundTask(func, *args, **kwargs)
         self.tasks.append(task)

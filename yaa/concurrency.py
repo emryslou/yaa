@@ -22,7 +22,9 @@ async def run_until_first_complete(*args: typing.Tuple[typing.Callable, dict]) -
             tg.start_soon(run, functools.partial(func, **kwargs))
 
 
-async def run_in_threadpool(func: typing.Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+async def run_in_threadpool(
+    func: typing.Callable[P, T], *args: P.args, **kwargs: P.kwargs
+) -> T:
     if contextvars is not None:
         _child = functools.partial(func, *args, **kwargs)
         context = contextvars.copy_context()
@@ -45,7 +47,9 @@ def _next(iterator: typing.Iterator[T]) -> T:
         raise _StopIteration
 
 
-async def iterate_in_threadpool(iterator: typing.Iterator[T]) -> typing.AsyncIterator[T]:
+async def iterate_in_threadpool(
+    iterator: typing.Iterator[T],
+) -> typing.AsyncIterator[T]:
     while True:
         try:
             yield await anyio.to_thread.run_sync(_next, iterator)
