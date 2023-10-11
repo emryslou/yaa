@@ -50,7 +50,8 @@ environ = Environ()
 
 class Config(object):
     def __init__(
-        self, env_file: str = None, environ: typing.Mapping[str, str] = environ
+        self, env_file: typing.Optional[str] = None, 
+        environ: typing.Mapping[str, str] = environ
     ) -> None:
         self.environ = environ
         self.file_values: typing.Dict[str, str] = {}
@@ -81,7 +82,9 @@ class Config(object):
         return file_values
 
     def get(
-        self, key: str, cast: type = None, default: typing.Any = Undefined
+        self, key: str,
+        cast: typing.Optional[typing.Callable] = None,
+        default: typing.Any = Undefined
     ) -> typing.Any:
         if key in self.environ:
             return self._cast(
@@ -102,7 +105,7 @@ class Config(object):
         self,
         key: str,
         value: typing.Any,
-        cast: type = None,
+        cast: typing.Optional[typing.Callable] = None,
         default: typing.Any = Undefined,
     ) -> typing.Any:
         if cast is None:
@@ -133,14 +136,14 @@ class Config(object):
         ...
 
     @typing.overload
-    def __call__(self, key: str, cast: typing.Type[str], default: str = ...) -> T:
+    def __call__(self, key: str, cast: typing.Type[str] = ..., default: str = ...) -> str:
         ...
 
     @typing.overload
-    def __call__(self, key: str, cast: typing.Type[str], default: T = ...) -> T:
+    def __call__(self, key: str, cast: typing.Type[str] = ..., default: T = ...) -> T:
         ...
 
     def __call__(
-        self, key: str, cast: typing.Callable = None, default: typing.Any = Undefined
+        self, key: str, cast: typing.Optional[typing.Callable] = None, default: typing.Any = Undefined
     ) -> typing.Any:
         return self.get(key, cast, default)

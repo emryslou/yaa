@@ -60,3 +60,7 @@ docsvr:
 
 gadd: precommit
 	git add `pwd`/
+
+mypy:
+	# https://mypy.readthedocs.io/en/stable/
+	python -m mypy yaa

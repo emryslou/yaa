@@ -8,9 +8,9 @@ class Headers(typing.Mapping[str, str]):
 
     def __init__(
         self,
-        headers: typing.Mapping[str, str] = None,
-        raw: typing.List[typing.Tuple[bytes, bytes]] = None,
-        scope: Scope = None,
+        headers: typing.Optional[typing.Mapping[str, str]] = None,
+        raw: typing.Optional[typing.List[typing.Tuple[bytes, bytes]]] = None,
+        scope: typing.Optional[Scope] = None,
     ) -> None:
         self._list = []
         if headers is not None:
@@ -30,10 +30,10 @@ class Headers(typing.Mapping[str, str]):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return list(self._list)
 
-    def keys(self):
-        return [key.decode("latin-1") for key, _ in self._list]
+    def keys(self) -> typing.List[str]:
+        return [key.decode("latin-1") for key, _ in self._list] # ignore
 
-    def values(self):
+    def values(self) -> typing.List[str]:
         return [value.decode("latin-1") for _, value in self._list]
 
     def items(self) -> typing.List[typing.Tuple[bytes, bytes]]:

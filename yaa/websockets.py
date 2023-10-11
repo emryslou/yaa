@@ -69,6 +69,7 @@ class WebSocket(HttpConnection):
         subprotocol: str = None,
         headers: typing.Iterator[typing.Tuple[bytes, bytes]] = None,
     ) -> None:
+        headers = headers or []
         if self.client_state == WebSocketState.CONNECTING:
             await self.receive()
         await self.send(

@@ -4,7 +4,7 @@ import uuid
 
 
 class Convertor(object):
-    plugins = {}
+    plugins: typing.Dict[str, type] = {}
 
     name = ""
     regex = ""
