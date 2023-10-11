@@ -17,3 +17,8 @@ class HttpException(Exception):
         return (
             f"{klass_name}(status_code={self.status_code}" f", detail={self.detail!r})"
         )
+
+
+class NotFoundException(HttpException):
+    def __init__(self, detail: str = None):
+        super().__init__(status_code=404, detail=detail)

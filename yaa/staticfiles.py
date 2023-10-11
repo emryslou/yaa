@@ -14,12 +14,8 @@ from email.utils import parsedate
 import anyio
 
 from yaa.datastructures import Headers
-from yaa.responses import (
-    FileResponse,
-    PlainTextResponse,
-    RedirectResponse,
-    Response,
-)
+from yaa.exceptions import HttpException
+from yaa.responses import FileResponse, RedirectResponse, Response
 from yaa.types import Receive, Scope, Send
 
 PathLike = typing.Union[str, "os.PathLike[str]"]
@@ -61,8 +57,8 @@ class StaticFiles(object):
         self.html = html
         self.config_checked = False
 
-        if directory is not None and check_dir:
-            assert os.path.isdir(directory), f'Directory "{directory}" does not exists'
+        if check_dir and directory is not None and not os.path.isdir(directory):
+            raise RuntimeError(f'Directory "{directory}" does not exists')
 
     def get_directories(
         self, directory: PathLike = None, packages: typing.List[str] = None
@@ -105,19 +101,38 @@ class StaticFiles(object):
         scope: Scope,
     ) -> Response:
         if scope["method"] not in ("GET", "HEAD"):
-            return PlainTextResponse("Method Not Allowed", status_code=405)
+            raise HttpException(status_code=405)
 
         if not self.config_checked:
             await self.check_config()
             self.config_checked = True
 
-        full_path, stat_result = await self.lookup_path(path)
+        try:
+            full_path, stat_result = await anyio.to_thread.run_sync(
+                self.lookup_path, path
+            )
+        except (FileNotFoundError, NotADirectoryError):
+            if self.html:
+                full_path, stat_result = await anyio.to_thread.run_sync(
+                    self.lookup_path, "404.html"
+                )
+                if stat_result and stat.S_ISREG(stat_result.st_mode):
+                    return FileResponse(
+                        full_path, stat_result=stat_result, status_code=404
+                    )
+            raise HttpException(status_code=404)
+        except PermissionError:
+            raise HttpException(status_code=401)
+        except OSError:
+            raise
         if stat_result and stat.S_ISREG(stat_result.st_mode):
             return self.file_response(full_path, stat_result, scope=scope)
 
         elif stat_result and stat.S_ISDIR(stat_result.st_mode) and self.html:
             index_path = os.path.join(path, "index.html")
-            full_path, stat_result = await self.lookup_path(index_path)
+            full_path, stat_result = await anyio.to_thread.run_sync(
+                self.lookup_path, index_path
+            )
             if stat_result is not None and stat.S_ISREG(stat_result.st_mode):
                 if not scope["path"].endswith("/"):
                     from yaa.datastructures import URL
@@ -125,16 +140,13 @@ class StaticFiles(object):
                     url = URL(scope=scope)
                     url = url.replace(path=url.path + "/")
                     return RedirectResponse(url)
+                # endif
                 return self.file_response(full_path, stat_result, scope)
+            # endif
+        # endif
+        raise HttpException(status_code=404)
 
-        if self.html:
-            full_path, stat_result = await self.lookup_path("404.html")
-            if stat_result is not None and stat.S_ISREG(stat_result.st_mode):
-                return FileResponse(full_path, stat_result=stat_result, status_code=404)
-
-        return PlainTextResponse("Not Found", status_code=404)
-
-    async def lookup_path(
+    def lookup_path(
         self, path: str
     ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         for directory in self.all_directories:
@@ -143,11 +155,7 @@ class StaticFiles(object):
             if os.path.commonprefix([full_path, directory]) != directory:
                 continue
 
-            try:
-                stat_result = await anyio.to_thread.run_sync(os.stat, full_path)
-                return full_path, stat_result
-            except FileNotFoundError:
-                pass
+            return full_path, os.stat(full_path)
 
         return "", None
 
@@ -197,11 +205,11 @@ class StaticFiles(object):
         try:
             stat_result = await anyio.to_thread.run_sync(os.stat, self.directory)
         except FileNotFoundError:
-            raise RuntimeWarning(
+            raise RuntimeError(
                 f"StaticFile directory `{self.directory}` does not exists"
             )
 
         if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
-            raise RuntimeWarning(
+            raise RuntimeError(
                 f"StaticFile directory `{self.directory}` is not a directory"
             )
