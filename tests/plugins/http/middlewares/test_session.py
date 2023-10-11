@@ -117,3 +117,13 @@ def test_session_expired(client_factory):
         headers={"Cookie": "session=" + res.cookies.get_dict()["session"]},
     )
     assert res.cookies.get_dict() == {}
+
+
+def test_invalid_session_cookie(client_factory):
+    app = create_app({"secret_key": "example"})
+    client = client_factory(app)
+    response = client.post("/update_session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data"}}
+    # we expect it to not raise an exception if we provide a bogus session cookie
+    response = client.get("/view_session", cookies={"session": "invalid"})
+    assert response.json() == {"session": {}}

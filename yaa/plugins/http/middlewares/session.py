@@ -2,7 +2,7 @@ from base64 import b64decode, b64encode
 
 import itsdangerous
 import ujson as json
-from itsdangerous.exc import BadSignature, BadTimeSignature, SignatureExpired
+from itsdangerous.exc import BadSignature
 
 from yaa.datastructures import MutableHeaders
 from yaa.middlewares.core import Middleware
@@ -38,7 +38,7 @@ class SessionMiddleware(Middleware):
                 try:
                     data = self.signer.unsign(data, max_age=self.max_age)
                     scope["session"] = json.loads(b64decode(data))
-                except (BadTimeSignature, SignatureExpired, BadSignature):
+                except BadSignature:
                     scope["session"] = {}
             else:
                 scope["session"] = {}
