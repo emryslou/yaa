@@ -59,16 +59,22 @@ class TemplateResponse(Response):
 
 
 class Jinja2Template(object):
-    def __init__(self, directory: typing.Union[str, os.PathLike] = None) -> None:
+    def __init__(
+        self,
+        directory: typing.Union[str, os.PathLike] = None,
+        **env_options: typing.Any,
+    ) -> None:
         assert (
             jinja2 is not None
         ), "package `jinja2` must be installed if use jinja2 template"
 
         self.env = None
         if directory is not None:
-            self.load_env(directory)
+            self.load_env(directory, **env_options)
 
-    def load_env(self, directory: typing.Union[str, os.PathLike]):
+    def load_env(
+        self, directory: typing.Union[str, os.PathLike], **env_options: typing.Any
+    ) -> "jinja2.Environment":
         assert os.path.isdir(
             directory
         ), f"template directory `{directory}` is not a directory"
@@ -79,7 +85,9 @@ class Jinja2Template(object):
             return req.url_for(name, **path_params)
 
         loader = jinja2.FileSystemLoader(str(directory))
-        env = jinja2.Environment(loader=loader, autoescape=True)
+        env_options.setdefault("loader", loader)
+        env_options.setdefault("autoescape", True)
+        env = jinja2.Environment(**env_options)
         env.globals["url_for"] = url_for
         self.env = env
 
