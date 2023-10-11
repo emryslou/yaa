@@ -40,7 +40,11 @@ class HttpEndPoint(_Endpoint):
     async def dispatch(self) -> None:
         req = Request(self._scope, receive=self._receive)
 
-        handler_name = "get" if req.method == "HEAD" else req.method.lower()
+        handler_name = (
+            "get"
+            if req.method == "HEAD" and not hasattr(self, "head")
+            else req.method.lower()
+        )
         handler = getattr(self, handler_name, self.method_not_allowed)
 
         if asyncio.iscoroutinefunction(handler):
