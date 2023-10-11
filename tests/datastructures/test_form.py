@@ -46,6 +46,7 @@ async def test_upload_file():
 @pytest.mark.anyio
 async def test_upload_file_file_input():
     import io
+
     """Test passing file/stream into the UploadFile constructor"""
     stream = io.BytesIO(b"data")
     file = UploadFile(filename="file", file=stream)

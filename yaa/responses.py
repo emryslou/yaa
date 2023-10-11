@@ -118,9 +118,9 @@ class Response(object):
 
         body = getattr(self, "body", None)
         if (
-            body is not None and 
-            missing_content_length and
-            not (self.status_code < 200 or self.status_code in (204, 304))
+            body is not None
+            and missing_content_length
+            and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
             raw_headers.append((b"content-length", str(len(body)).encode("latin-1")))
 
