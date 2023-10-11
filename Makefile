@@ -31,15 +31,20 @@ help:
 	@echo "| gadd         - code lint && test && git add  |"
 	@echo "================================================"
 
+test_temp:
+	@mkdir -p .temp/pytest
+	@chmod -R 777 .temp/pytest
+	@rm -rf .temp/pytest
+
 mypy:
 	# https://mypy.readthedocs.io/en/stable/
 	python -m mypy yaa
 
-test:
+test: test_temp
 	@export PYTHONPATH=`pwd`
 	python -m coverage run -m pytest $(pytest_params) $(pytest_fn) -s -vv
 
-precommit: mypy
+precommit: test_temp
 	@export PYTHONPATH=`pwd`
 	./scripts/lint
 	python -m flake8 --ignore=E501,E203,W503,W504 yaa/
