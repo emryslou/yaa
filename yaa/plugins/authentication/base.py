@@ -46,7 +46,7 @@ def requires(
 
             @functools.wraps(func)
             async def wrapper(*args, **kwargs) -> Response:
-                req = kwargs.get(_type, args[idx] if args else None)
+                req = kwargs.get(_type, args[idx] if idx < len(args) else None)
                 assert isinstance(req, Request)
                 if not has_required_scope(req, scope_list):
                     if redirect is not None:
@@ -69,7 +69,7 @@ def requires(
 
             @functools.wraps(func)
             async def ws_wrapper(*args, **kwargs) -> Response:
-                ws_req = kwargs.get(_type, args[idx] if args else None)
+                ws_req = kwargs.get(_type, args[idx] if idx < len(args) else None)
 
                 assert isinstance(ws_req, WebSocket)
 
