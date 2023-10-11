@@ -69,18 +69,25 @@ class StaticFiles(object):
             directories.append(directory)
 
         if packages is not None:
-            import importlib
             import os
+            from importlib import util
 
             for package in packages or []:
-                # spec = importlib.util.find_spec(package)
-                # assert spec is not None
-                # assert spec.origin is not None
-                mod = importlib.import_module(package)
-                path = mod.__path__[-1]
-                directory = os.path.normpath(os.path.join(path, "statics"))
-                assert os.path.isdir(directory)
-                directories.append(directory)
+                if isinstance(package, tuple):
+                    package, statics_dir = package
+                else:
+                    statics_dir = "statics"
+                spec = util.find_spec(package)
+                package_directory = os.path.normpath(
+                    os.path.join(spec.submodule_search_locations[0], "..", statics_dir)
+                )
+                assert os.path.isdir(package_directory), (
+                    f"Directory `{statics_dir!r}` "
+                    f"in package `{package}` could not be found\n"
+                    f"{package_directory}"
+                )
+
+                directories.append(package_directory)
             # endfor
         # endif
         return directories
