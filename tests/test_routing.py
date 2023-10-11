@@ -1,4 +1,4 @@
-import os, pytest
+import os, functools, pytest
 
 import yaa.status as http_status
 
@@ -26,6 +26,25 @@ def http_endpoint(req):
     return Response("Hello, Http", media_type="text/plain")
 
 
+async def partial_endpoint(arg, request):
+    return JSONResponse({"arg": arg})
+
+async def partial_ws_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_json({"url": str(websocket.url)})
+    await websocket.close()
+
+class PartialRoutes:
+    @classmethod
+    async def async_endpoint(cls, arg, request):
+        return JSONResponse({"arg": arg})
+
+    @classmethod
+    async def async_ws_endpoint(cls, websocket: WebSocket):
+        await websocket.accept()
+        await websocket.send_json({"url": str(websocket.url)})
+        await websocket.close()
+
 app = Router(
     routes=[
         Route("/", endpoint=home, methods=["GET"]),
@@ -39,6 +58,15 @@ app = Router(
             ),
         ),
         Mount("/static", app=Response("xxxx", media_type="image/png")),
+        Mount(
+            '/partial',
+            routes=[
+                Route('/', endpoint=functools.partial(partial_endpoint, 'foo')),
+                Route('/cls', endpoint=functools.partial(PartialRoutes.async_endpoint, 'foo')),
+                WebSocketRoute('/ws', endpoint=functools.partial(partial_ws_endpoint)),
+                WebSocketRoute('/ws/cls', endpoint=functools.partial(PartialRoutes.async_ws_endpoint))
+            ],
+        ),
     ]
 )
 
@@ -471,3 +499,22 @@ def test_duplicated_param_names(client_factory):
         match="Duplicated param names id, name at path /{id}/{name}/{id}/{name}",
     ):
         Route("/{id}/{name}/{id}/{name}", users)
+
+
+def test_partial_async_endpoint(client_factory):
+    test_client = client_factory(app)
+    response = test_client.get("/partial")
+    assert response.status_code == 200
+    assert response.json() == {"arg": "foo"}
+    cls_method_response = test_client.get("/partial/cls")
+    assert cls_method_response.status_code == 200
+    assert cls_method_response.json() == {"arg": "foo"}
+
+def test_partial_async_ws_endpoint(client_factory):
+    test_client = client_factory(app)
+    with test_client.wsconnect("/partial/ws") as websocket:
+        data = websocket.receive_json()
+        assert data == {"url": "ws://testserver/partial/ws"}
+    with test_client.wsconnect("/partial/ws/cls") as websocket:
+        data = websocket.receive_json()
+        assert data == {"url": "ws://testserver/partial/ws/cls"}

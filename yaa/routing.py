@@ -177,7 +177,11 @@ class WebSocketRoute(BaseRoute):
         self.endpoint = endpoint
         self.name = get_name(endpoint) if name is None else name
 
-        if inspect.isfunction(endpoint) or inspect.ismethod(endpoint):
+        endpoint_handler = endpoint
+        while isinstance(endpoint_handler, functools.partial):
+            endpoint_handler = endpoint_handler.func
+
+        if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
             self.app = ws_session(endpoint)
         else:
             self.app = endpoint
