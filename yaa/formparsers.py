@@ -152,6 +152,7 @@ class MultiPartParser(object):
         _file = None
 
         items = []
+        item_headers = []
 
         async for chunk in self.stream():
             parser.write(chunk)
@@ -163,6 +164,7 @@ class MultiPartParser(object):
                     content_disposition = None
                     content_type = b""
                     data = b""
+                    item_headers = []
                 elif msg_type == MultiPartMessage.HEADER_FIELD:
                     header_field += msg_bytes
                 elif msg_type == MultiPartMessage.HEADER_VALUE:
@@ -174,7 +176,7 @@ class MultiPartParser(object):
                         content_disposition = header_value
                     elif field == b"content-type":
                         content_type = header_value
-
+                    item_headers.append((field, header_value))
                     header_field, header_value = b"", b""
                 elif msg_type == MultiPartMessage.HEADERS_FINISHED:
                     disposition, options = parse_options_header(content_disposition)
@@ -185,6 +187,7 @@ class MultiPartParser(object):
                         _file = UploadFile(
                             filename=filename,
                             content_type=content_type.decode("latin-1"),
+                            headers=Headers(raw=item_headers),
                         )
                     else:
                         _file = None
