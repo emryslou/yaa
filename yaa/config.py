@@ -2,6 +2,8 @@ import os
 import typing
 from collections.abc import MutableMapping
 
+T = typing.TypeVar("T")
+
 
 class Undefined(object):
     pass
@@ -125,3 +127,20 @@ class Config(object):
                 f'Config "{key}" has value "{value}". '
                 f"But not a valid {cast.__name__}"
             )
+
+    @typing.overload
+    def __call__(self, key: str, cast: typing.Type[T], default: T = ...) -> T:
+        ...
+
+    @typing.overload
+    def __call__(self, key: str, cast: typing.Type[str], default: str = ...) -> T:
+        ...
+
+    @typing.overload
+    def __call__(self, key: str, cast: typing.Type[str], default: T = ...) -> T:
+        ...
+
+    def __call__(
+        self, key: str, cast: typing.Callable = None, default: typing.Any = Undefined
+    ) -> typing.Any:
+        return self.get(key, cast, default)

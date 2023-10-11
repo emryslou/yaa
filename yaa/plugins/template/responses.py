@@ -59,7 +59,7 @@ class TemplateResponse(Response):
 
 
 class Jinja2Template(object):
-    def __init__(self, directory: str = None) -> None:
+    def __init__(self, directory: typing.Union[str, os.PathLike] = None) -> None:
         assert (
             jinja2 is not None
         ), "package `jinja2` must be installed if use jinja2 template"
@@ -68,7 +68,7 @@ class Jinja2Template(object):
         if directory is not None:
             self.load_env(directory)
 
-    def load_env(self, directory: str):
+    def load_env(self, directory: typing.Union[str, os.PathLike]):
         assert os.path.isdir(
             directory
         ), f"template directory `{directory}` is not a directory"
