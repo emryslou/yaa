@@ -29,10 +29,12 @@ def http_endpoint(req):
 async def partial_endpoint(arg, request):
     return JSONResponse({"arg": arg})
 
+
 async def partial_ws_endpoint(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_json({"url": str(websocket.url)})
     await websocket.close()
+
 
 class PartialRoutes:
     @classmethod
@@ -44,6 +46,7 @@ class PartialRoutes:
         await websocket.accept()
         await websocket.send_json({"url": str(websocket.url)})
         await websocket.close()
+
 
 app = Router(
     routes=[
@@ -59,12 +62,18 @@ app = Router(
         ),
         Mount("/static", app=Response("xxxx", media_type="image/png")),
         Mount(
-            '/partial',
+            "/partial",
             routes=[
-                Route('/', endpoint=functools.partial(partial_endpoint, 'foo')),
-                Route('/cls', endpoint=functools.partial(PartialRoutes.async_endpoint, 'foo')),
-                WebSocketRoute('/ws', endpoint=functools.partial(partial_ws_endpoint)),
-                WebSocketRoute('/ws/cls', endpoint=functools.partial(PartialRoutes.async_ws_endpoint))
+                Route("/", endpoint=functools.partial(partial_endpoint, "foo")),
+                Route(
+                    "/cls",
+                    endpoint=functools.partial(PartialRoutes.async_endpoint, "foo"),
+                ),
+                WebSocketRoute("/ws", endpoint=functools.partial(partial_ws_endpoint)),
+                WebSocketRoute(
+                    "/ws/cls",
+                    endpoint=functools.partial(PartialRoutes.async_ws_endpoint),
+                ),
             ],
         ),
     ]
@@ -509,6 +518,7 @@ def test_partial_async_endpoint(client_factory):
     cls_method_response = test_client.get("/partial/cls")
     assert cls_method_response.status_code == 200
     assert cls_method_response.json() == {"arg": "foo"}
+
 
 def test_partial_async_ws_endpoint(client_factory):
     test_client = client_factory(app)
