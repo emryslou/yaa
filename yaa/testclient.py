@@ -271,6 +271,7 @@ class WebSocketTestSession(object):
         self.scope = scope
         self.portal_factory = portal_factory
         self.accepted_subprotocol = None
+        self.extra_headers = None
         self._receive_queue = queue.Queue()
         self._send_queue = queue.Queue()
 
@@ -286,7 +287,8 @@ class WebSocketTestSession(object):
         except Exception:
             self.exit_stack.close()
             raise
-
+        
+        self.extra_headers = message.get('headers', None)
         self.accepted_subprotocol = message.get("subprotocol", None)
         return self
 

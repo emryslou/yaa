@@ -296,3 +296,15 @@ def test_websocket_concurrency_pattern(client_factory):
         websocket.send_json({"hello": "world"})
         data = websocket.receive_json()
         assert data == {"hello": "world"}
+
+
+def test_additional_headers(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.accept(headers=[(b"additional", b"header")])
+            await websocket.close()
+        return asgi
+    client = client_factory(app)
+    with client.wsconnect("/") as websocket:
+        assert websocket.extra_headers == [(b"additional", b"header")]
