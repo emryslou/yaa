@@ -6,11 +6,13 @@ from typing import Iterator
 class ImmutableMultiDict(typing.Mapping):
     def __init__(
         self,
-        value: typing.Optional[typing.Union[
-            "ImmutableMultiDict",
-            typing.Mapping,
-            typing.List[typing.Tuple[typing.Any, typing.Any]],
-        ]] = None,
+        value: typing.Optional[
+            typing.Union[
+                "ImmutableMultiDict",
+                typing.Mapping,
+                typing.List[typing.Tuple[typing.Any, typing.Any]],
+            ]
+        ] = None,
     ) -> None:
         if value is None:
             _items = []
@@ -117,11 +119,13 @@ class MultiDict(ImmutableMultiDict):
 
     def update(
         self,
-        values: typing.Optional[typing.Union[
-            "MultiDict",
-            typing.Mapping,
-            typing.List[typing.Tuple[typing.Any, typing.Any]],
-        ]] = None,
+        values: typing.Optional[
+            typing.Union[
+                "MultiDict",
+                typing.Mapping,
+                typing.List[typing.Tuple[typing.Any, typing.Any]],
+            ]
+        ] = None,
         **kwargs: typing.Any,
     ) -> None:
         if values is None:
@@ -149,11 +153,11 @@ class MultiDict(ImmutableMultiDict):
 
 class State(object):
     def __init__(self, state_dict: typing.Optional[dict] = None) -> None:
-        self._state: dict =  {} if state_dict is None else state_dict
+        self._state: dict = {} if state_dict is None else state_dict
 
     def __getattr__(self, __key: str) -> typing.Any:
         try:
-            print('debug -- 01', self._state)
+            print("debug -- 01", self._state)
             return self._state[__key]
         except KeyError:
             raise AttributeError(

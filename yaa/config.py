@@ -50,8 +50,9 @@ environ = Environ()
 
 class Config(object):
     def __init__(
-        self, env_file: typing.Optional[str] = None, 
-        environ: typing.Mapping[str, str] = environ
+        self,
+        env_file: typing.Optional[str] = None,
+        environ: typing.Mapping[str, str] = environ,
     ) -> None:
         self.environ = environ
         self.file_values: typing.Dict[str, str] = {}
@@ -82,9 +83,10 @@ class Config(object):
         return file_values
 
     def get(
-        self, key: str,
+        self,
+        key: str,
         cast: typing.Optional[typing.Callable] = None,
-        default: typing.Any = Undefined
+        default: typing.Any = Undefined,
     ) -> typing.Any:
         if key in self.environ:
             return self._cast(
@@ -136,7 +138,9 @@ class Config(object):
         ...
 
     @typing.overload
-    def __call__(self, key: str, cast: typing.Type[str] = ..., default: str = ...) -> str:
+    def __call__(
+        self, key: str, cast: typing.Type[str] = ..., default: str = ...
+    ) -> str:
         ...
 
     @typing.overload
@@ -144,6 +148,9 @@ class Config(object):
         ...
 
     def __call__(
-        self, key: str, cast: typing.Optional[typing.Callable] = None, default: typing.Any = Undefined
+        self,
+        key: str,
+        cast: typing.Optional[typing.Callable] = None,
+        default: typing.Any = Undefined,
     ) -> typing.Any:
         return self.get(key, cast, default)

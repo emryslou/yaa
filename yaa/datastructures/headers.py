@@ -31,7 +31,7 @@ class Headers(typing.Mapping[str, str]):
         return list(self._list)
 
     def keys(self) -> typing.List[str]:
-        return [key.decode("latin-1") for key, _ in self._list] # ignore
+        return [key.decode("latin-1") for key, _ in self._list]  # ignore
 
     def values(self) -> typing.List[str]:
         return [value.decode("latin-1") for _, value in self._list]

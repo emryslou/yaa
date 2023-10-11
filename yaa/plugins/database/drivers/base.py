@@ -27,7 +27,7 @@ class DatabaseBackend(object):
 
     def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init_subclass__(*args, **kwargs)
-        names_ = [] # type: typing.List[str]
+        names_ = []  # type: typing.List[str]
         if hasattr(cls, "name"):
             names_.append(cls.name)
 
@@ -67,7 +67,7 @@ class DatabaseSession(object):
     def transaction(self) -> "DatabaseTransaction":
         raise NotImplementedError()  # pragma: nocover
 
-    async def acquire_connection(self):
+    async def acquire_connection(self) -> typing.Any:
         raise NotImplementedError()  # pragma: nocover
 
     async def release_connection(self) -> None:
@@ -80,9 +80,9 @@ class DatabaseTransaction(object):
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         raise NotImplementedError()  # pragma: nocover
 
