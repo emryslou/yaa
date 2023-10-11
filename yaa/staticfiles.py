@@ -111,16 +111,6 @@ class StaticFiles(object):
             full_path, stat_result = await anyio.to_thread.run_sync(
                 self.lookup_path, path
             )
-        except (FileNotFoundError, NotADirectoryError):
-            if self.html:
-                full_path, stat_result = await anyio.to_thread.run_sync(
-                    self.lookup_path, "404.html"
-                )
-                if stat_result and stat.S_ISREG(stat_result.st_mode):
-                    return FileResponse(
-                        full_path, stat_result=stat_result, status_code=404
-                    )
-            raise HttpException(status_code=404)
         except PermissionError:
             raise HttpException(status_code=401)
         except OSError:
@@ -144,6 +134,12 @@ class StaticFiles(object):
                 return self.file_response(full_path, stat_result, scope)
             # endif
         # endif
+        if self.html:
+            full_path, stat_result = await anyio.to_thread.run_sync(
+                self.lookup_path, "404.html"
+            )
+            if stat_result and stat.S_ISREG(stat_result.st_mode):
+                return FileResponse(full_path, stat_result=stat_result, status_code=404)
         raise HttpException(status_code=404)
 
     def lookup_path(
@@ -154,8 +150,10 @@ class StaticFiles(object):
             directory = os.path.realpath(directory)
             if os.path.commonprefix([full_path, directory]) != directory:
                 continue
-
-            return full_path, os.stat(full_path)
+            try:
+                return full_path, os.stat(full_path)
+            except (FileNotFoundError, NotADirectoryError):
+                continue
 
         return "", None
 
