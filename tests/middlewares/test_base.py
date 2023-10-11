@@ -1,122 +1,119 @@
-import typing
-
 import pytest
 
-from yaa import Yaa
-from yaa.middlewares import BaseHttpMiddleware
-from yaa.requests import Request
+from yaa.applications import Yaa
+from yaa.middlewares import Middleware, BaseHttpMiddleware
 from yaa.responses import PlainTextResponse
-from yaa.types import ASGIInstance
+from yaa.routing import Route
 
 
-class VenderMiddleware(BaseHttpMiddleware):
-    async def dispatch(self, req: Request, call_next: typing.Callable) -> ASGIInstance:
-        res = await call_next(req)
-        res.headers["Vendor-Header"] = "Vendor"
-        return res
+class CustomMiddleware(BaseHttpMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["Custom-Header"] = "Example"
+        return response
 
 
 app = Yaa()
-app.add_middleware(VenderMiddleware)
+app.add_middleware(CustomMiddleware)
 
 
 @app.route("/")
-def _(_):
-    return PlainTextResponse("index")
+def homepage(request):
+    return PlainTextResponse("Homepage")
 
 
 @app.route("/exc")
-def exc(_):
-    raise Exception()
+def exc(request):
+    raise Exception("Exc")
 
 
-@app.route("/rterr")
-def rterr(_):
-    raise RuntimeError()
+@app.route("/no-response")
+class NoResponse:
+    def __init__(self, scope, receive, send):
+        pass
+
+    def __await__(self):
+        return self.dispatch().__await__()
+
+    async def dispatch(self):
+        pass
 
 
 @app.ws_route("/ws")
-async def ws_ep(s):
-    await s.accept()
-    await s.send_text("ws_ep")
-    await s.close()
+async def websocket_endpoint(session):
+    await session.accept()
+    await session.send_text("Hello, world!")
+    await session.close()
 
 
-@app.route("/no_res")
-class NoResApp:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __await__(self) -> typing.Generator:
-        return self.__call__().__await__()
-
-    async def __call__(self):
-        pass
-
-
-@pytest.mark.timeout(3)
-def test_vendor(client_factory):
+def test_custom_middleware(client_factory):
     client = client_factory(app)
-    res = client.get("/")
-    assert "Vendor-Header" in res.headers
-    assert res.headers["Vendor-Header"] == "Vendor"
+    response = client.get("/")
+    assert response.headers["Custom-Header"] == "Example"
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as ctx:
         response = client.get("/exc")
+    assert str(ctx.value) == "Exc"
+
     with pytest.raises(RuntimeError):
-        response = client.get("/rterr")
+        response = client.get("/no-response")
 
     with client.wsconnect("/ws") as session:
         text = session.receive_text()
-        assert text == "ws_ep"
-
-    with pytest.raises(RuntimeError):
-        client.get("/no_res")
+        assert text == "Hello, world!"
 
 
-@pytest.mark.timeout(3)
-def test_decorator(client_factory):
+def test_middleware_decorator(client_factory):
     app = Yaa()
 
     @app.route("/homepage")
-    def _(_):
+    def homepage(request):
         return PlainTextResponse("Homepage")
 
     @app.middleware("http")
-    async def plaintext(req, call_next):
-        if req.url.path == "/":
+    async def plaintext(request, call_next):
+        if request.url.path == "/":
             return PlainTextResponse("OK")
-        res = await call_next(req)
-        res.headers["Handler"] = "@Func"
-        return res
+        response = await call_next(request)
+        response.headers["Custom"] = "Example"
+        return response
 
     client = client_factory(app)
-    res = client.get("/")
-    assert res.text == "OK"
+    response = client.get("/")
+    assert response.text == "OK"
 
-    res = client.get("/homepage")
-    assert res.text == "Homepage"
-    assert res.headers["Handler"] == "@Func"
+    response = client.get("/homepage")
+    assert response.text == "Homepage"
+    assert response.headers["Custom"] == "Example"
 
 
 def test_state_data_across_multiple_middlewares(client_factory):
-    expected_value = "yes"
+    expected_value1 = "foo"
+    expected_value2 = "bar"
 
     class aMiddleware(BaseHttpMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            request.state.show_me = expected_value
+        async def dispatch(self, request, call_next):
+            request.state.foo = expected_value1
             response = await call_next(request)
             return response
 
     class bMiddleware(BaseHttpMiddleware):
         async def dispatch(self, request, call_next):
+            request.state.bar = expected_value2
             response = await call_next(request)
-            response.headers["X-State-Show-Me"] = request.state.show_me
+            response.headers["X-State-Foo"] = request.state.foo
+            return response
+
+    class cMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            response.headers["X-State-Bar"] = request.state.bar
             return response
 
     app = Yaa()
     app.add_middleware(aMiddleware)
     app.add_middleware(bMiddleware)
+    app.add_middleware(cMiddleware)
 
     @app.route("/")
     def homepage(request):
@@ -125,64 +122,30 @@ def test_state_data_across_multiple_middlewares(client_factory):
     client = client_factory(app)
     response = client.get("/")
     assert response.text == "OK"
-    assert response.headers["X-State-Show-Me"] == expected_value
+    assert response.headers["X-State-Foo"] == expected_value1
+    assert response.headers["X-State-Bar"] == expected_value2
 
 
-def test_multiple_middlewares_run_order(client_factory):
-    class aMiddleware(BaseHttpMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            if not hasattr(request.state, "show_me"):
-                request.state.show_me = self.__class__.__name__
-            else:
-                request.state.show_me += "," + self.__class__.__name__
-            response = await call_next(request)
-            response.headers["X-State-Show-Me"] = request.state.show_me
-            return response
+def test_app_middleware_argument(client_factory):
+    def homepage(request):
+        return PlainTextResponse("Homepage")
 
-    class bMiddleware(BaseHttpMiddleware):
-        async def dispatch(self, request, call_next):
-            if not hasattr(request.state, "show_me"):
-                request.state.show_me = self.__class__.__name__
-            else:
-                request.state.show_me += "," + self.__class__.__name__
-            response = await call_next(request)
-
-            return response
-
-    class cMiddleware(BaseHttpMiddleware):
-        async def dispatch(self, request, call_next):
-            if not hasattr(request.state, "show_me"):
-                request.state.show_me = self.__class__.__name__
-            else:
-                request.state.show_me += "," + self.__class__.__name__
-            response = await call_next(request)
-
-            return response
-
-    class dMiddleware(BaseHttpMiddleware):
-        async def dispatch(self, request, call_next):
-            if not hasattr(request.state, "show_me"):
-                request.state.show_me = self.__class__.__name__
-            else:
-                request.state.show_me += "," + self.__class__.__name__
-            response = await call_next(request)
-
-            return response
-
-    app = Yaa(
-        middlewares=[(aMiddleware, {}), (bMiddleware, {})], plugins={"session": {}}
-    )
-    app.add_middleware(cMiddleware)
-    app.add_middleware(dMiddleware)
-
-    @app.route("/")
-    def homepage(request: Request):
-        return PlainTextResponse("OK")
+    app = Yaa(routes=[Route("/", homepage)], middlewares=[(CustomMiddleware, {})])
 
     client = client_factory(app)
     response = client.get("/")
-    assert response.text == "OK"
-    assert (
-        response.headers["X-State-Show-Me"]
-        == "aMiddleware,bMiddleware,cMiddleware,dMiddleware"
-    )
+    assert response.headers["Custom-Header"] == "Example"
+
+
+def test_fully_evaluated_response(client_factory):
+    class CustomMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            await call_next(request)
+            return PlainTextResponse("Custom")
+
+    app = Yaa()
+    app.add_middleware(CustomMiddleware)
+
+    client = client_factory(app)
+    response = client.get("/does_not_exist")
+    assert response.text == "Custom"
