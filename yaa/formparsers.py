@@ -138,7 +138,7 @@ class MultiPartParser(object):
         charset = params.get(b"charset", "utf-8")
         if isinstance(charset, bytes):
             charset = charset.decode("utf-8")
-        boundary = params.get(b"boundary")
+        boundary = params[b"boundary"]
         _mpm_attrs = [f"on_{fm.name.lower()}" for fm in list(MultiPartMessage)]
         callbacks = {
             attr: getattr(self, attr) for attr in self.__dir__() if attr in _mpm_attrs

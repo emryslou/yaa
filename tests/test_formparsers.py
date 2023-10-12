@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from yaa.datastructures.form import UploadFile
 from yaa.formparsers import _user_safe_decode
 from yaa.requests import Request
@@ -374,3 +376,18 @@ def test_multipart_request_multiple_files_with_headers(tmpdir, client_factory):
                 ],
             },
         }
+
+
+def test_missing_boundary_parameter(client_factory):
+    client = client_factory(app)
+    with pytest.raises(KeyError, match="boundary"):
+        client.post(
+            "/",
+            data=(
+                # file
+                b'Content-Disposition: form-data; name="file"; filename="\xe6\x96\x87\xe6\x9b\xb8.txt"\r\n'  # noqa: E501
+                b"Content-Type: text/plain\r\n\r\n"
+                b"<file content>\r\n"
+            ),
+            headers={"Content-Type": "multipart/form-data; charset=utf-8"},
+        )
