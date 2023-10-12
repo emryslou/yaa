@@ -8,7 +8,10 @@ from yaa.types import Scope
 
 from .types import ImmutableMultiDict, MultiDict
 
-Address = namedtuple("Address", ["host", "port"])
+
+class Address(typing.NamedTuple):
+    host: typing.Optional[str]
+    port: typing.Optional[int]
 
 
 class CommaSeparatedStrings(Sequence):
