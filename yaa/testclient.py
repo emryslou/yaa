@@ -15,7 +15,7 @@ import anyio.abc
 import requests
 from anyio.streams.stapled import StapledObjectStream
 
-from yaa.types import Receive, P, Scope, Send
+from yaa.types import P, Receive, Scope, Send
 from yaa.websockets import WebSocketDisconnect
 
 ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
@@ -27,7 +27,7 @@ _PortalFactoryType = typing.Callable[
 ]
 
 
-class _HeaderDict(requests.packages.urllib3._collections.HTTPHeaderDict): # type: ignore
+class _HeaderDict(requests.packages.urllib3._collections.HTTPHeaderDict):  # type: ignore
     def get_all(self, key: str, default: str) -> str:
         return self.getheaders(key)
 
@@ -97,14 +97,14 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         self.root_path = root_path
         self.raise_server_exceptions = raise_server_exceptions
 
-    def send(self, request: requests.PreparedRequest, *args: P.args, **kwargs: P.kwargs) -> requests.Response: # type: ignore[override]
+    def send(self, request: requests.PreparedRequest, *args: P.args, **kwargs: P.kwargs) -> requests.Response:  # type: ignore[override]
         scheme, netloc, path, query, fragement = urlsplit(request.url)
 
         default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[str(scheme)]
 
         if ":" in netloc:
-            host, port = netloc.split(":", 1) # type: ignore[arg-type]
-            port = int(port) # type: ignore[assignment]
+            host, port = netloc.split(":", 1)  # type: ignore[arg-type]
+            port = int(port)  # type: ignore[assignment]
         else:
             host = netloc
             port = default_port  # type: ignore[assignment]
@@ -113,9 +113,9 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
         if "host" in request.headers:
             headers = []
         elif port == default_port:
-            headers = [[b"host", host.encode()]] # type: ignore
+            headers = [[b"host", host.encode()]]  # type: ignore
         else:
-            headers = [[b"host", (f"{host}:{port}").encode()]] # type: ignore
+            headers = [[b"host", (f"{host}:{port}").encode()]]  # type: ignore
 
         # Include other request headers.
         headers += [
@@ -134,10 +134,10 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             scope = {
                 "type": "websocket",
                 "path": unquote(path),
-                "raw_path": path.encode(), # type: ignore
+                "raw_path": path.encode(),  # type: ignore
                 "root_path": self.root_path,
                 "scheme": scheme,
-                "query_string": query.encode(), # type: ignore
+                "query_string": query.encode(),  # type: ignore
                 "headers": headers,
                 "client": ["testclient", 50000],
                 "server": [host, port],
@@ -151,10 +151,10 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
             "http_version": "1.1",
             "method": request.method,
             "path": unquote(path),
-            "raw_path": path.encode(), # type: ignore
+            "raw_path": path.encode(),  # type: ignore
             "root_path": self.root_path,
             "scheme": scheme,
-            "query_string": query.encode(), # type: ignore
+            "query_string": query.encode(),  # type: ignore
             "headers": headers,
             "client": ["testclient", 50000],
             "server": [host, port],
@@ -257,7 +257,7 @@ class _ASGIAdapter(requests.adapters.HTTPAdapter):
                 "body": io.BytesIO(),
             }
 
-        raw = requests.packages.urllib3.HTTPResponse(**raw_kwargs) # type: ignore
+        raw = requests.packages.urllib3.HTTPResponse(**raw_kwargs)  # type: ignore
         res = self.build_response(request, raw)
         if template is not None:
             res.template = template
@@ -421,15 +421,17 @@ class TestClient(requests.Session):
         if self.portal is not None:
             yield self.portal
         else:
-            with anyio.start_blocking_portal(**self.async_backend) as portal: # type: ignore[arg-type]
+            with anyio.start_blocking_portal(**self.async_backend) as portal:  # type: ignore[arg-type]
                 # self.portal = portal
                 yield portal
 
-    def request(self, method: str, url: str, **kwargs: typing.Any) -> requests.Response: # type: ignore
+    def request(self, method: str, url: str, **kwargs: typing.Any) -> requests.Response:  # type: ignore
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
-    def wsconnect(self, url: str, subprotocols: typing.Optional[str] = None, **kwargs: typing.Any) -> WebSocketTestSession:
+    def wsconnect(
+        self, url: str, subprotocols: typing.Optional[str] = None, **kwargs: typing.Any
+    ) -> WebSocketTestSession:
         url = urljoin("ws://testserver", url)
         headers = kwargs.get("headers", {})
         headers.setdefault("connection", "upgrade")
@@ -450,7 +452,7 @@ class TestClient(requests.Session):
     def __enter__(self) -> "TestClient":
         with contextlib.ExitStack() as stack:
             self.portal = portal = stack.enter_context(
-                anyio.start_blocking_portal(**self.async_backend) # type: ignore
+                anyio.start_blocking_portal(**self.async_backend)  # type: ignore
             )
 
             @stack.callback
