@@ -3,6 +3,7 @@ import contextlib
 import functools
 import inspect
 import traceback
+import types
 import typing
 import warnings
 
@@ -21,15 +22,22 @@ class _AsyncLiftContextManager(typing.AsyncContextManager[_T]):
     async def __aenter__(self) -> _T:
         return self._cm.__enter__()
 
-    async def __aexit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(
+        self,
+        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_value: typing.Optional[BaseException],
+        traceback: typing.Optional[types.TracebackType],
+    ) -> typing.Optional[bool]:
         return self._cm.__exit__(exc_type, exc_value, traceback)
 
 
-def _wrap_gen_lifespan_context(lifespan_context):
+def _wrap_gen_lifespan_context(
+    lifespan_context: typing.Callable[[typing.Any], typing.Generator]
+) -> typing.Callable[[typing.Any], typing.AsyncContextManager]:
     cmgr = contextlib.contextmanager(lifespan_context)
 
     @functools.wraps(cmgr)
-    def wrapper(app) -> _AsyncLiftContextManager:
+    def wrapper(app: typing.Any) -> _AsyncLiftContextManager:
         return _AsyncLiftContextManager(cmgr(app))
 
     return wrapper
@@ -39,11 +47,11 @@ class _DefaultLifespan:
     def __init__(self, router: "Router"):
         self._router = router
 
-    async def __aenter__(self) -> _T:
-        await self._router.handler(EventType.STARTUP)
+    async def __aenter__(self) -> None:
+        await self._router.handler(EventType.STARTUP)  # type: ignore
 
-    async def __aexit__(self, *exc_info: object):
-        await self._router.handler(EventType.SHUTDOWN)
+    async def __aexit__(self, *exc_info: object) -> None:
+        await self._router.handler(EventType.SHUTDOWN)  # type: ignore
 
     def __call__(self: _T, app: object) -> _T:
         return self
@@ -52,7 +60,7 @@ class _DefaultLifespan:
 class Lifespan(BaseRoute):
     def __init__(
         self,
-        context: typing.AsyncContextManager = None,
+        context: typing.Optional[typing.AsyncContextManager] = None,
         **handlers: typing.List[typing.Callable],
     ) -> None:
         assert not (
@@ -60,23 +68,23 @@ class Lifespan(BaseRoute):
         ), "Use either `context` or `**handlers`"
         self.handlers = {et: handlers.get(str(et), []) for et in list(EventType)}
         if context is None:
-            self.context = _DefaultLifespan(self)
+            self.context = _DefaultLifespan(self)  # type: ignore
         elif inspect.isasyncgenfunction(context):
             warnings.warn(
                 "async generator function lifespans are deprecated, "
                 "use an @contextlib.asynccontextmanager function instead",
                 DeprecationWarning,
             )
-            self.context = contextlib.asynccontextmanager(context)
+            self.context = contextlib.asynccontextmanager(context)  # type: ignore
         elif inspect.isgeneratorfunction(context):
             warnings.warn(
                 "generator function lifespans are deprecated, "
                 "use an @contextlib.asynccontextmanager function instead",
                 DeprecationWarning,
             )
-            self.context = _wrap_gen_lifespan_context(context)
+            self.context = _wrap_gen_lifespan_context(context)  # type: ignore
         else:
-            self.context = context
+            self.context = context  # type: ignore
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         started = False
@@ -107,7 +115,7 @@ class Lifespan(BaseRoute):
         self.handlers[EventType(event_type)].append(func)
 
     def on_event(self, event_type: str) -> typing.Callable:
-        def decorator(func):
+        def decorator(func: typing.Callable) -> typing.Callable:
             self.add_event_handler(event_type, func)
             return func
 

@@ -4,7 +4,7 @@ import typing
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    yaml = None  # pragma: no cover
+    yaml = None  # type: ignore # pragma: no cover
 
 from yaa.requests import Request
 from yaa.responses import Response
@@ -29,7 +29,7 @@ class BaseSchemaGenerator(object):
             if isinstance(route, Mount):
                 sub_routes = route.routes or []
                 endpoints_info.extend(
-                    self.get_endpoints(routes=sub_routes, parent_path=route.path)
+                    self.get_endpoints(routes=sub_routes, parent_path=route.path)  # type: ignore
                 )
 
             elif not isinstance(route, Route) or not route.include_in_schema:
