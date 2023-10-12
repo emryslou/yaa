@@ -1,9 +1,11 @@
 import asyncio
-
+import typing
 import pytest
 
+from yaa.datastructures import Address
 from yaa.requests import ClientDisconnect, Request
 from yaa.responses import JSONResponse
+from yaa.types import Scope
 
 
 class ForceMultipartDict(dict):
@@ -381,9 +383,6 @@ def test_cookie_lenient_parsing(client_factory):
     assert set(result["cookies"].keys()) == expected_keys
 
 
-# These test cases copied from Tornado's implementation
-
-
 @pytest.mark.parametrize(
     "set_cookie,expected",
     [
@@ -470,3 +469,17 @@ def test_request_raw_path(client_factory):
     client = client_factory(app)
     response = client.get("/he%2Fllo")
     assert response.text == "/he/llo, b'/he%2Fllo'"
+
+
+@pytest.mark.parametrize(
+    "scope,expected_client",
+    [
+        ({"client": ["client", 42]}, Address("client", 42)),
+        ({"client": None}, None),
+        ({}, None),
+    ],
+)
+def test_request_client(scope: Scope, expected_client: typing.Optional[Address]):
+    scope.update({"type": "http"})  # required by Request's constructor
+    client = Request(scope).client
+    assert client == expected_client

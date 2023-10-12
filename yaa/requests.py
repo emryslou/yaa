@@ -128,9 +128,11 @@ class HttpConnection(Mapping):
         return self._cookies
 
     @property
-    def client(self) -> Address:
-        host, port = self._scope.get("client") or (None, None)
-        return Address(host=host, port=port)
+    def client(self) -> typing.Optional[Address]:
+        host_port = self._scope.get("client")
+        if host_port is not None:
+            return Address(*host_port)  # type: ignore[arg-type]
+        return None
 
     @property
     def session(self) -> dict:

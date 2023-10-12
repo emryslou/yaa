@@ -9,8 +9,8 @@ from .types import ImmutableMultiDict, MultiDict
 
 
 class Address(typing.NamedTuple):
-    host: typing.Optional[str]
-    port: typing.Optional[int]
+    host: str
+    port: int
 
 
 class CommaSeparatedStrings(Sequence):

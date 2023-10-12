@@ -116,3 +116,16 @@ def test_websocket_blocking_receive(client_factory):
     with client.wsconnect("/") as websocket:
         data = websocket.receive_json()
         assert data == {"message": "test"}
+
+
+def test_client(client_factory):
+    async def app(scope, receive, send):
+        client = scope.get("client")
+        assert client is not None
+        host, port = client
+        response = JSONResponse({"host": host, "port": port})
+        await response(scope, receive, send)
+
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.json() == {"host": "testclient", "port": 50000}
