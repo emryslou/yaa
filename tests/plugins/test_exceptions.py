@@ -14,6 +14,10 @@ async def not_acceptable(req):
     raise HttpException(status_code=406)
 
 
+def no_content(request):
+    raise HttpException(status_code=204)
+
+
 async def not_modified(req):
     raise HttpException(status_code=304)
 
@@ -23,6 +27,7 @@ router = Router(
         Route("/runtime_error", endpoint=raise_runtime_error),
         Route("/not_acceptable", endpoint=not_acceptable),
         Route("/not_modified", endpoint=not_modified),
+        Route("/no_content", endpoint=no_content),
     ]
 )
 
@@ -60,9 +65,6 @@ def test_websockets_should_raise(client_factory):
     with pytest.raises(WebSocketDisconnect):
         with client.wsconnect("/runtime_error") as _:
             pass  # pragma: no cover
-
-    # with pytest.raises(RuntimeError):
-    #     client.wsconnect('/runtime_error')
 
 
 def test_force_500_res(client_factory):
@@ -162,3 +164,10 @@ def test_plugins_exception(client_factory):
     res = client.get("/r_419")
     assert res.status_code == 200
     assert res.text == "sc:419"
+
+
+def test_no_content(client_factory):
+    client = client_factory(app)
+    response = client.get("/no_content")
+    assert response.status_code == 204
+    assert "content-length" not in response.headers
