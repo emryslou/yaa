@@ -70,13 +70,15 @@ def test_session_cookie_subpath(client_factory):
     import re
 
     app = create_app({"secret_key": "example", "https_only": True})
-    second_app = create_app({"secret_key": "example", "https_only": True})
+    second_app = create_app(
+        {"secret_key": "example", "https_only": True, "path": "/second_app_aaa"}
+    )
     app.mount("/second_app", second_app)
     client = client_factory(app, base_url="http://testserver/second_app")
     response = client.post("second_app/update_session", json={"some": "data"})
     cookie = response.headers["set-cookie"]
     cookie_path = re.search(r"; path=(\S+);", cookie).groups()[0]
-    assert cookie_path == "/second_app"
+    assert cookie_path == "/second_app_aaa"
 
 
 def test_session_expired(client_factory):
@@ -127,3 +129,11 @@ def test_invalid_session_cookie(client_factory):
     # we expect it to not raise an exception if we provide a bogus session cookie
     response = client.get("/view_session", cookies={"session": "invalid"})
     assert response.json() == {"session": {}}
+
+
+def test_session_path(client_factory):
+    app = create_app({"secret_key": "example", "path": "/my_path"})
+    client = client_factory(app)
+    response = client.post("/update_session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data"}}
+    assert "path=/my_path" in response.headers["set-cookie"]

@@ -17,6 +17,7 @@ class SessionMiddleware(Middleware):
         secret_key: str,
         session_cookie: str = "session",
         max_age: int = 14 * 24 * 60 * 60,  # 14 days, in seconds
+        path: str = "/",
         same_site: str = "lax",
         https_only: bool = False,
         debug: bool = False,
@@ -25,6 +26,7 @@ class SessionMiddleware(Middleware):
         self.debug = debug
         self.signer = itsdangerous.TimestampSigner(secret_key)
         self.session_cookie = session_cookie
+        self.path = path
         self.max_age = max_age
         self.security_flags = "httponly; samesite=" + same_site
         if https_only:
@@ -51,7 +53,6 @@ class SessionMiddleware(Middleware):
 
         async def sender(message: Message) -> None:
             if message["type"] == "http.response.start":
-                path = scope.get("root_path", "") or "/"
                 if scope["session"]:
                     data = b64encode(json.dumps(scope["session"]).encode())
                     data = self.signer.sign(data)
@@ -59,7 +60,7 @@ class SessionMiddleware(Middleware):
                     header_value = "%s=%s; path=%s; Max-Age=%d; %s" % (
                         self.session_cookie,
                         data.decode("utf-8"),
-                        path,
+                        self.path,
                         self.max_age,
                         self.security_flags,
                     )
@@ -68,7 +69,7 @@ class SessionMiddleware(Middleware):
                     headers = MutableHeaders(scope=message)
                     header_value = "%s=%s; %s" % (
                         self.session_cookie,
-                        f"null; path={path}; expires=Thu, 01 Jan 1970 00:00:00 GMT",
+                        f"null; path={self.path}; expires=Thu, 01 Jan 1970 00:00:00 GMT",
                         self.security_flags,
                     )
                     headers.append("Set-Cookie", header_value)
