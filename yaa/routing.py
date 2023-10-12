@@ -353,7 +353,7 @@ class Host(BaseRoute):
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] in ("http", "websocket"):
             headers = Headers(scope=scope)
-            host = headers.get("host", "").split(":")[0]
+            host = headers.get("host", "").split(":")[0]  # type: ignore
             matched = self.host_regex.match(host)
             if matched:
                 matched_params = matched.groupdict()

@@ -7,17 +7,21 @@ from yaa.types import ASGIApp, Receive, Scope, Send
 
 
 class Yaa(object):
-    def __init__(
+    def __init__(  # type: ignore
         self,
         debug: bool = False,
-        routes: typing.List[BaseRoute] = None,
-        middlewares: typing.List[typing.Tuple[Middleware, dict]] = None,
-        exception_handlers: typing.Dict[
-            typing.Union[int, typing.Type[Exception]], typing.Callable
+        routes: typing.Optional[typing.List[BaseRoute]] = None,
+        middlewares: typing.Optional[
+            typing.List[typing.Tuple[Middleware, dict]]
         ] = None,
-        on_startup: typing.List[typing.Callable] = None,
-        on_shutdown: typing.List[typing.Callable] = None,
-        lifespan: typing.Callable["Yaa", typing.AsyncContextManager] = None,
+        exception_handlers: typing.Optional[
+            typing.Dict[typing.Union[int, typing.Type[Exception]], typing.Callable]
+        ] = None,
+        on_startup: typing.Optional[typing.List[typing.Callable]] = None,
+        on_shutdown: typing.Optional[typing.List[typing.Callable]] = None,
+        lifespan: typing.Optional[
+            typing.Callable[["Yaa"], typing.AsyncContextManager]
+        ] = None,
         **kwargs,
     ) -> None:
         self._debug = debug
@@ -46,15 +50,15 @@ class Yaa(object):
             on_shutdown is None and on_startup is None
         ), "Use either `lifespan` or `on_startup`/`on_shutdown`, not both"
         if lifespan is not None:
-            self.config["plugins"]["lifespan"]["context"] = lifespan
-            self.config["plugins"]["lifespan"]["event_handlers"] = {}
+            self.config["plugins"]["lifespan"]["context"] = lifespan  # type: ignore
+            self.config["plugins"]["lifespan"]["event_handlers"] = {}  # type: ignore
         else:
             if on_startup is not None:
-                self.config["plugins"]["lifespan"]["event_handlers"][
+                self.config["plugins"]["lifespan"]["event_handlers"][  # type: ignore
                     "startup"
                 ] += on_startup
             if on_shutdown is not None:
-                self.config["plugins"]["lifespan"]["event_handlers"][
+                self.config["plugins"]["lifespan"]["event_handlers"][  # type: ignore
                     "shutdown"
                 ] += on_shutdown
 
@@ -64,13 +68,13 @@ class Yaa(object):
         self.user_middlewares = [] if middlewares is None else list(middlewares)
         for _k, _cfg in kwargs.pop("plugins", {}).items():
             if _k in self.config["plugins"]:
-                self.config["plugins"][_k].update(_cfg)
+                self.config["plugins"][_k].update(_cfg)  # type: ignore
             else:
-                self.config["plugins"][_k] = _cfg
+                self.config["plugins"][_k] = _cfg  # type: ignore
         self.init_plugins(self.config.get("plugins", {}))
         self.build_middleware_stack()
 
-    def init_plugins(self, plugins_config: dict = {}):
+    def init_plugins(self, plugins_config: dict = {}) -> None:
         _all_plugins = {}
         import importlib
         import os
@@ -80,9 +84,9 @@ class Yaa(object):
         plugin_middlewares = getattr(module, "plugin_middlewares")
         plugin_middlewares.clear()
 
-        scan_path = os.path.dirname(module.__file__)
+        scan_path = os.path.dirname(module.__file__)  # type: ignore
         for file in os.listdir(scan_path):
-            package_path = os.path.join(scan_path, file)
+            package_path = os.path.join(scan_path, file)  # type: ignore
             if not os.path.isdir(package_path) or package_path.endswith("__"):
                 continue
             sub_module = importlib.import_module(f"{module_name}.{file}")
@@ -95,7 +99,7 @@ class Yaa(object):
                 init_fn = _all_plugins[plugin_name]
                 init_fn(self, plugin_cfg)
 
-    def build_middleware_stack(self):
+    def build_middleware_stack(self) -> None:
         app = self.app
         from yaa.plugins import plugin_middlewares as pmw
 
@@ -140,19 +144,19 @@ class Yaa(object):
     def debug(self, val: bool) -> None:
         self._debug = val
 
-    def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
+    def mount(self, path: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
         assert app != self
         self.router.mount(path, app=app, name=name)
 
-    def host(self, host: str, app: ASGIApp, name: str = None) -> None:
+    def host(self, host: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
         self.router.host(host, app=app, name=name)
 
     def add_route(
         self,
         path: str,
         route: typing.Union[typing.Callable, BaseRoute],
-        methods: list[str] = None,
-        name: str = None,
+        methods: typing.Optional[list[str]] = None,
+        name: typing.Optional[str] = None,
         include_in_schema: bool = True,
     ) -> None:
         self.router.add_route(
@@ -168,18 +172,18 @@ class Yaa(object):
         self,
         middleware_class_or_func: typing.Union[type, typing.Callable],
         **kwargs: typing.Any,
-    ):
-        self.user_middlewares.append((middleware_class_or_func, kwargs))
+    ) -> None:
+        self.user_middlewares.append((middleware_class_or_func, kwargs))  # type: ignore
         self.build_middleware_stack()
 
     def route(
         self,
         path: str,
-        methods: list[str] = None,
-        name: str = None,
+        methods: typing.Optional[list[str]] = None,
+        name: typing.Optional[str] = None,
         include_in_schema: bool = True,
     ) -> typing.Callable:
-        def decorator(func):
+        def decorator(func: typing.Callable) -> typing.Callable:
             self.router.add_route(
                 path, func, methods, name=name, include_in_schema=include_in_schema
             )
@@ -187,8 +191,8 @@ class Yaa(object):
 
         return decorator
 
-    def ws_route(self, path: str, name: str = None) -> typing.Callable:
-        def decorator(func):
+    def ws_route(self, path: str, name: typing.Optional[str] = None) -> typing.Callable:
+        def decorator(func: typing.Callable) -> typing.Callable:
             self.router.add_route_ws(path, func, name=name)
             return func
 
@@ -204,9 +208,9 @@ class Yaa(object):
 
         return decorator
 
-    def url_path_for(self, name, **path_params: str) -> URLPath:
+    def url_path_for(self, name: str, **path_params: str) -> URLPath:
         return self.router.url_path_for(name=name, **path_params)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        scope["app"] = self
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore
+        scope["app"] = self  # type: ignore
         await self.middleware_app(scope, receive, send)
