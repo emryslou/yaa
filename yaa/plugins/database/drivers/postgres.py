@@ -51,8 +51,8 @@ class PostgresSession(DatabaseSession):
     def __init__(self, pool: asyncpg.pool.Pool, dialect: Dialect) -> None:
         self.pool = pool
         self.dialect = dialect
-        self.conn = None
-        self.connection_holders = 0
+        self.conn: asyncpg.Connection = None
+        self.connection_holders: int = 0
 
     async def fetchall(self, query: ClauseElement) -> typing.Any:
         query, args = compile(query, dialect=self.dialect)
@@ -114,9 +114,9 @@ class PostgresTransaction(DatabaseTransaction):
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         if exc_type is not None:
             await self.rollback()
