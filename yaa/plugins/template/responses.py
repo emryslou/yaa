@@ -12,9 +12,9 @@ try:
     if hasattr(jinja2, "pass_context"):
         pass_context = jinja2.pass_context
     else:
-        pass_context = jinja2.contextfunction
+        pass_context = jinja2.contextfunction # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover
-    jinja2 = None  # pragma: no cover
+    jinja2 = None # type: ignore # pragma: no cover
 
 
 class TemplateResponse(Response):
@@ -25,9 +25,9 @@ class TemplateResponse(Response):
         template: typing.Any,
         context: dict,
         status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
+        headers: typing.Optional[dict] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
     ) -> None:
         if "request" not in context:
             raise ValueError('context must include a "request" key')
@@ -61,20 +61,20 @@ class TemplateResponse(Response):
 class Jinja2Template(object):
     def __init__(
         self,
-        directory: typing.Union[str, os.PathLike] = None,
+        directory: typing.Optional[typing.Union[str, os.PathLike]] = None,
         **env_options: typing.Any,
     ) -> None:
         assert (
             jinja2 is not None
         ), "package `jinja2` must be installed if use jinja2 template"
 
-        self.env = None
+        self.env: jinja2.Environment
         if directory is not None:
             self.load_env(directory, **env_options)
 
     def load_env(
         self, directory: typing.Union[str, os.PathLike], **env_options: typing.Any
-    ) -> "jinja2.Environment":
+    ) -> None:
         assert os.path.isdir(
             directory
         ), f"template directory `{directory}` is not a directory"
@@ -89,6 +89,7 @@ class Jinja2Template(object):
         env_options.setdefault("autoescape", True)
         env = jinja2.Environment(**env_options)
         env.globals["url_for"] = url_for
+
         self.env = env
 
     def get_template(self, name: str) -> jinja2.Template:
@@ -101,9 +102,9 @@ class Jinja2Template(object):
         request: Request,
         context: dict = {},
         status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
+        headers: typing.Optional[dict] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
     ) -> TemplateResponse:
         if "request" not in context:
             context["request"] = request
