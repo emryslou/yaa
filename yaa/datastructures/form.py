@@ -14,10 +14,10 @@ class UploadFile(object):
     def __init__(
         self,
         filename: str,
-        file: typing.IO = None,
+        file: typing.Optional[typing.IO] = None,
         content_type: str = "",
         *,
-        headers: typing.Optional[Headers] = None,
+        headers: Headers = Headers(),
     ) -> None:
         self.filename = filename
         self.content_type = content_type
@@ -33,9 +33,9 @@ class UploadFile(object):
 
     async def write(self, data: typing.Union[bytes, str]) -> None:
         if self._in_memory:
-            self.file.write(data)
+            self.file.write(data) # type: ignore[arg-type]
         else:
-            await run_in_threadpool(self.file.write, data)
+            await run_in_threadpool(self.file.write, data) # type: ignore[arg-type]
 
     async def read(self, size: int = -1) -> typing.Union[bytes, str]:
         if self._in_memory:
@@ -55,17 +55,17 @@ class UploadFile(object):
             await run_in_threadpool(self.file.close)
 
 
-FormValue = typing.Union[str, "FormValue"]
+FormValue = typing.Union[str, "FormValue"] # type: ignore[misc]
 
 
 class FormData(ImmutableMultiDict):
     def __init__(
         self,
-        value: typing.Union[
+        value: typing.Optional[typing.Union[
             "FormData",
             typing.Mapping[str, FormValue],
             typing.List[typing.Tuple[str, FormValue]],
-        ] = None,
+        ]] = None,
         **kwargs: typing.Any,
     ) -> None:
         if kwargs:

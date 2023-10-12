@@ -1,6 +1,6 @@
 import typing
 
-from yaa.types import Scope
+from yaa.types import Scope, T
 
 
 class Headers(typing.Mapping[str, str]):
@@ -30,16 +30,16 @@ class Headers(typing.Mapping[str, str]):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return list(self._list)
 
-    def keys(self) -> typing.List[str]:
-        return [key.decode("latin-1") for key, _ in self._list]  # ignore
+    def keys(self) -> typing.List[str]: # type: ignore[override]
+        return [key.decode("latin-1") for key, _ in self._list]
 
-    def values(self) -> typing.List[str]:
+    def values(self) -> typing.List[str]: # type: ignore[override]
         return [value.decode("latin-1") for _, value in self._list]
 
-    def items(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+    def items(self) -> typing.List[typing.Tuple[str, str]]: # type: ignore[override]
         return [(k.decode("latin-1"), v.decode("latin-1")) for k, v in self._list]
 
-    def get(self, key: str, default: str = None):
+    def get(self, key: str, default: typing.Optional[str] = None) -> typing.Optional[str]: # type: ignore[override]
         try:
             return self[key]
         except KeyError:
@@ -49,10 +49,10 @@ class Headers(typing.Mapping[str, str]):
         h_k = key.lower().encode("latin-1")
         return [iv.decode("latin-1") for ik, iv in self._list if ik == h_k]
 
-    def mutablecopy(self):
+    def mutablecopy(self) -> "MutableHeaders":
         return MutableHeaders(raw=self._list[:])
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> str:
         h_k = key.lower().encode("latin-1")
         for ik, iv in self._list:
             if h_k == ik:
@@ -60,16 +60,16 @@ class Headers(typing.Mapping[str, str]):
 
         raise KeyError(key)
 
-    def __contains__(self, key: str):
+    def __contains__(self, key: str) -> bool: # type: ignore
         return key.lower() in self.keys()
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator:
         return iter(self.keys())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._list)
 
-    def __eq__(self, other):
+    def __eq__(self, other: T) -> bool:
         if not isinstance(other, Headers):
             return False
         return sorted(self._list) == sorted(other._list)
@@ -82,7 +82,7 @@ class Headers(typing.Mapping[str, str]):
 
 
 class MutableHeaders(Headers):
-    def __setitem__(self, key: str, value: str):
+    def __setitem__(self, key: str, value: str) -> None:
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
 
@@ -102,7 +102,7 @@ class MutableHeaders(Headers):
         else:
             self._list.append((set_key, set_value))
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         del_key = key.lower().encode("latin-1")
         pop_indexes = []
         for idx, (ik, _) in enumerate(self._list):
@@ -116,7 +116,7 @@ class MutableHeaders(Headers):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return self._list
 
-    def setdefault(self, key: str, value: str):
+    def setdefault(self, key: str, value: str) -> str:
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
 
@@ -127,7 +127,7 @@ class MutableHeaders(Headers):
         self._list.append((set_key, set_value))
         return value
 
-    def update(self, other: dict):
+    def update(self, other: dict) -> None:
         for key, val in other.items():
             self[key] = val
 
@@ -136,7 +136,7 @@ class MutableHeaders(Headers):
         app_val = value.encode("latin-1")
         self._list.append((app_key, app_val))
 
-    def add_vary_header(self, vary):
+    def add_vary_header(self, vary: str) -> None:
         existing = self.get("vary")
         if existing is not None:
             vary = ", ".join([existing, vary])

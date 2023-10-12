@@ -44,12 +44,12 @@ class CommaSeparatedStrings(Sequence):
 class QueryParams(ImmutableMultiDict):
     def __init__(
         self,
-        value: typing.Union[
+        value: typing.Optional[typing.Union[
             "ImmutableMultiDict",
             typing.Mapping,
             typing.List[typing.Tuple[typing.Any, typing.Any]],
-        ] = None,
-        scope: Scope = None,
+        ]] = None,
+        scope: typing.Optional[Scope] = None,
         **kwargs: typing.Any,
     ) -> None:
         if kwargs:
@@ -91,7 +91,7 @@ class Secret(object):
 
 class URL(object):
     def __init__(
-        self, url: str = "", scope: Scope = None, **components: typing.Any
+        self, url: str = "", scope: typing.Optional[Scope] = None, **components: typing.Any
     ) -> None:
         if scope is not None:
             assert not url, "Cannot set both `url` and `scope`"
@@ -220,13 +220,13 @@ class URL(object):
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def __eq__(self, other: typing.Union[str, "URL"]) -> bool:
+    def __eq__(self, other: typing.Union[str, "URL"]) -> bool: # type: ignore[override]
         return str(self) == str(other)
 
     def __str__(self) -> str:
         return str(self._url)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         url = str(self)
         if self.password:
             url = str(self.replace(password="********"))
@@ -252,7 +252,7 @@ class DatabaseURL(URL):
 
 
 class URLPath(str):
-    def __new__(cls, path: str, protocol: str = "", host: str = "") -> str:
+    def __new__(cls, path: str, protocol: str = "", host: str = "") -> "URLPath":
         assert protocol in ("http", "websocket", "")
         return str.__new__(cls, path)
 
