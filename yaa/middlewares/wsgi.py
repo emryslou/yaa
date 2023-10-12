@@ -5,7 +5,7 @@ import typing
 
 import anyio
 
-from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.types import ASGI3App, Receive, Scope, Send
 
 from .core import Middleware
 
@@ -52,16 +52,16 @@ def build_environ(scope: Scope, body: bytes) -> dict:
 
 
 class WSGIMiddleware(Middleware):
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGI3App) -> None:
         super().__init__(app)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
         assert scope["type"] == "http"
         await WSGIResponser(self.app)(scope, receive, send)
 
 
 class WSGIResponser(object):
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGI3App) -> None:
         self.app = app
         self.status = None
         self.response_headers = None
@@ -97,7 +97,7 @@ class WSGIResponser(object):
         self,
         status: str,
         response_headers: typing.List[typing.Tuple[str, str]],
-        exc_info=None,
+        exc_info: typing.Optional[typing.Any] = None,
     ) -> None:
         self.exc_info = exc_info
         if not self.response_started:
@@ -119,7 +119,7 @@ class WSGIResponser(object):
             )
 
     def wsgi(self, environ: dict, start_response: typing.Callable) -> None:
-        for chunk in self.app(environ, start_response):
+        for chunk in self.app(environ, start_response):  # type: ignore
             anyio.from_thread.run(
                 self.stream_send.send,
                 {

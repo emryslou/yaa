@@ -84,7 +84,7 @@ class Response(object):
         for key in self.headers:
             if scope["method"] in ("HEAD"):
                 if key.encode().lower() == b"content-length":
-                    value = b"0"
+                    value = "0"
                 else:
                     value = self.headers[key]
             else:
