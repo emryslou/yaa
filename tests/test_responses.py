@@ -46,16 +46,6 @@ def test_ujson_response(client_factory):
     assert response.json() == {"hello": "world"}
 
 
-def test_json_none_response(client_factory):
-    async def app(scope, receive, send):
-        response = JSONResponse(None)
-        await response(scope, receive, send)
-
-    client = client_factory(app)
-    response = client.get("/")
-    assert response.json() is None
-
-
 def test_redirect_response(client_factory):
     async def app(scope, receive, send):
         if scope["path"] == "/":
@@ -336,13 +326,6 @@ def test_redirect_response_content_length_header(client_factory):
     assert response.headers["content-length"] == "0"
 
 
-def test_empty_response(client_factory):
-    app = Response()
-    client = client_factory(app)
-    response = client.get("/")
-    assert response.headers["content-length"] == "0"
-
-
 def test_non_empty_response(client_factory):
     app = Response(content="hi")
     client = client_factory(app)
@@ -382,3 +365,21 @@ def test_empty_204_response(client_factory):
     client: TestClient = client_factory(app)
     response = client.get("/")
     assert "content-length" not in response.headers
+
+
+def test_json_none_response(client_factory):
+    async def app(scope, receive, send):
+        response = JSONResponse(None)
+        await response(scope, receive, send)
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.json() is None
+    assert response.content == b"null"
+
+def test_empty_response(client_factory):
+    app = Response()
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.content == b""
+    assert response.headers["content-length"] == "0"
+    assert "content-type" not in response.headers
