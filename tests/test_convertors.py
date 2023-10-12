@@ -16,29 +16,30 @@ def refresh_convertor_types():
 
 class DateTimeConvertor(Convertor):
     regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?"
-    name = 'datetime'
+    name = "datetime"
 
     def convert(self, value: str) -> datetime.datetime:
-        return datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
-    
+        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+
     def to_string(self, value: datetime.datetime) -> str:
-        return value.strftime('%Y-%m-%dT%H:%M:%S')
+        return value.strftime("%Y-%m-%dT%H:%M:%S")
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def app() -> Router:
-    register_url_convertor('datetime', DateTimeConvertor())
+    register_url_convertor("datetime", DateTimeConvertor())
+
     def datetime_convertor(req):
-        param = req.path_params['param']
+        param = req.path_params["param"]
         assert isinstance(param, datetime.datetime)
-        return JSONResponse({'datetime': param.strftime('%Y-%m-%dT%H:%M:%S')})
-    
+        return JSONResponse({"datetime": param.strftime("%Y-%m-%dT%H:%M:%S")})
+
     return Router(
         routes=[
             Route(
-                '/datetime/{param:datetime}',
+                "/datetime/{param:datetime}",
                 endpoint=datetime_convertor,
-                name='datetime-convertor',
+                name="datetime-convertor",
             )
         ]
     )
@@ -46,10 +47,12 @@ def app() -> Router:
 
 def test_my_convert(client_factory, app):
     client = client_factory(app)
-    res = client.get('/datetime/2023-01-02T01:02:03')
+    res = client.get("/datetime/2023-01-02T01:02:03")
     assert res.json() == {"datetime": "2023-01-02T01:02:03"}
 
     assert (
-        app.url_path_for('datetime-convertor', param=datetime.datetime(2024, 11, 11, 11, 11, 11))
-        == '/datetime/2024-11-11T11:11:11'
+        app.url_path_for(
+            "datetime-convertor", param=datetime.datetime(2024, 11, 11, 11, 11, 11)
+        )
+        == "/datetime/2024-11-11T11:11:11"
     )

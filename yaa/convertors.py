@@ -85,10 +85,7 @@ class UUIDConvertor(Convertor):
         return str(value)
 
 
-CONVERTOR_TYPES = {
-    name: klass()
-    for name, klass in Convertor.plugins.items()
-}
+CONVERTOR_TYPES = {name: klass() for name, klass in Convertor.plugins.items()}
 
 
 def register_url_convertor(key: str, convertor: Convertor) -> None:
