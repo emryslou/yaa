@@ -2,8 +2,8 @@ import typing
 
 from yaa.datastructures import URL, Headers
 from yaa.middlewares.core import Middleware
-from yaa.responses import PlainTextResponse, RedirectResponse
-from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.responses import PlainTextResponse, RedirectResponse, Response
+from yaa.types import ASGI3App, Receive, Scope, Send
 
 ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."
 
@@ -11,9 +11,9 @@ ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'
 class TrustedHostMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         debug: bool = False,
-        allowed_hosts: typing.List[str] = None,
+        allowed_hosts: typing.Optional[typing.List[str]] = None,
         www_redirect: bool = True,
     ) -> None:
         super().__init__(app)
@@ -28,10 +28,10 @@ class TrustedHostMiddleware(Middleware):
         self.allow_any = "*" in self.allowed_hosts
         self.www_redirect = www_redirect
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
         if scope["type"] in ("http", "websocket") and not self.allow_any:
             headers = Headers(scope=scope)
-            host = headers.get("host", "").split(":")[0]
+            host = headers.get("host", "").split(":")[0]  # type: ignore
             found_www_redirect = False
             for pattern in self.allowed_hosts:
                 if (
@@ -43,6 +43,7 @@ class TrustedHostMiddleware(Middleware):
                 elif "www." + host == pattern:
                     found_www_redirect = True
             else:
+                res: Response
                 if found_www_redirect and self.www_redirect:
                     url = URL(scope=scope)
                     redirect_url = url.replace(netloc="www." + url.netloc)

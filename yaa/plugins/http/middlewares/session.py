@@ -1,19 +1,19 @@
 from base64 import b64decode, b64encode
 
 import itsdangerous
-import ujson as json
+import ujson as json  # type: ignore[import]
 from itsdangerous.exc import BadSignature
 
 from yaa.datastructures import MutableHeaders
 from yaa.middlewares.core import Middleware
 from yaa.requests import HttpConnection
-from yaa.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
 
 class SessionMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         secret_key: str,
         session_cookie: str = "session",
         max_age: int = 14 * 24 * 60 * 60,  # 14 days, in seconds
@@ -22,7 +22,7 @@ class SessionMiddleware(Middleware):
         https_only: bool = False,
         debug: bool = False,
     ) -> None:
-        self.app = app
+        super().__init__(app)
         self.debug = debug
         self.signer = itsdangerous.TimestampSigner(secret_key)
         self.session_cookie = session_cookie
@@ -32,18 +32,18 @@ class SessionMiddleware(Middleware):
         if https_only:
             self.security_flags += "; secure"
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
         if scope["type"] in ("http", "websocket"):
             conn = HttpConnection(scope=scope)
             if self.session_cookie in conn.cookies:
                 data = conn.cookies[self.session_cookie].encode("utf-8")
                 try:
                     data = self.signer.unsign(data, max_age=self.max_age)
-                    scope["session"] = json.loads(b64decode(data))
+                    scope["session"] = json.loads(b64decode(data))  # type: ignore
                 except BadSignature:
-                    scope["session"] = {}
+                    scope["session"] = {}  # type: ignore
             else:
-                scope["session"] = {}
+                scope["session"] = {}  # type: ignore
             await self.asgi(scope=scope, receive=receive, send=send)
         else:
             await self.app(scope, receive, send)  # pragma: no cover

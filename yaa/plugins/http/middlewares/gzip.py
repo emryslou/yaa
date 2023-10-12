@@ -3,13 +3,13 @@ import io
 
 from yaa.datastructures import Headers, MutableHeaders
 from yaa.middlewares import Middleware
-from yaa.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
 
 class GZipMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         debug: bool = False,
         minimum_size: int = 500,
         compresslevel: int = 9,
@@ -19,10 +19,10 @@ class GZipMiddleware(Middleware):
         self.minimum_size = minimum_size
         self.compresslevel = compresslevel
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore
         if scope["type"] == "http":
             headers = Headers(scope=scope)
-            if "gzip" in headers.get("Accept-Encoding", ""):
+            if "gzip" in (headers.get("Accept-Encoding", "") or ""):
                 res = GZipResponder(self.app, self.minimum_size, self.compresslevel)
                 await res(scope, receive, send)
                 return
@@ -30,11 +30,13 @@ class GZipMiddleware(Middleware):
 
 
 class GZipResponder(object):
-    def __init__(self, app: ASGIApp, minimum_size: int, compresslevel: int = 9) -> None:
+    def __init__(
+        self, app: ASGI3App, minimum_size: int, compresslevel: int = 9
+    ) -> None:
         self.inner = app
         self.minimum_size = minimum_size
-        self.send = unattached_send
-        self.init_message = {}
+        self.send: Send = unattached_send
+        self.init_message: Message = {}
         self.started = False
         self.gzip_buffer = io.BytesIO()
         self.gzip_file = gzip.GzipFile(
@@ -42,10 +44,10 @@ class GZipResponder(object):
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        self.send = send
+        self.send = send  #
         await self.inner(scope, receive, self._send)
 
-    async def _send(self, message: Message):
+    async def _send(self, message: Message) -> None:
         if message["type"] == "http.response.start":
             self.init_message = message
         elif message["type"] == "http.response.body":
@@ -63,14 +65,14 @@ class GZipResponder(object):
                     headers["Content-Encoding"] = "gzip"
                     headers["Content-Length"] = str(len(body))
                     headers.add_vary_header("Accept-Encoding")
-                    message["body"] = body
+                    message["body"] = body  # type: ignore[index]
                 else:
                     headers = MutableHeaders(raw=self.init_message["headers"])
                     headers["Content-Encoding"] = "gzip"
                     headers.add_vary_header("Accept-Encoding")
                     del headers["Content-Length"]
                     self.gzip_file.write(body)
-                    message["body"] = self.gzip_buffer.getvalue()
+                    message["body"] = self.gzip_buffer.getvalue()  # type: ignore[index]
                     self.gzip_buffer.seek(0)
                     self.gzip_buffer.truncate()
                 # endif
@@ -84,11 +86,11 @@ class GZipResponder(object):
                 self.gzip_file.write(body)
                 if not more_body:
                     self.gzip_file.close()
-                message["body"] = self.gzip_buffer.getvalue()
+                message["body"] = self.gzip_buffer.getvalue()  # type: ignore[index]
                 self.gzip_buffer.seek(0)
                 self.gzip_buffer.truncate()
                 await self.send(message)
 
 
-async def unattached_send(_):
+async def unattached_send(_: Message) -> None:
     raise RuntimeError("send awaitable not set")  # pragma: nocover

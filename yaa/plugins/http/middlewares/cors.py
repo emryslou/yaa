@@ -5,7 +5,7 @@ import typing
 from yaa.datastructures import Headers, MutableHeaders
 from yaa.middlewares.core import Middleware
 from yaa.responses import PlainTextResponse, Response
-from yaa.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
 ALL_METHODS = (
     "DELETE",
@@ -23,13 +23,13 @@ SAFELISTED_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-
 class CORSMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         debug: bool = False,
         allow_origins: typing.Sequence[str] = (),
         allow_methods: typing.Sequence[str] = ("GET"),
         allow_headers: typing.Sequence[str] = (),
         allow_credentials: bool = False,
-        allow_origin_regex: str = None,
+        allow_origin_regex: typing.Optional[str] = None,
         expose_headers: typing.Sequence[str] = (),
         max_age: int = 600,
     ) -> None:
@@ -67,7 +67,7 @@ class CORSMiddleware(Middleware):
                 "Access-Control-Max-Age": str(max_age),
             }
         )
-        allow_headers = SAFELISTED_HEADERS | set(allow_headers)
+        allow_headers = SAFELISTED_HEADERS | set(allow_headers)  # type: ignore[assignment]
         if allow_headers and not allow_all_headers:
             preflight_headers["Access-Control-Allow-Headers"] = ", ".join(allow_headers)
         if allow_credentials:
@@ -89,7 +89,7 @@ class CORSMiddleware(Middleware):
 
         self.simple_headers = simple_headers
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
         if scope["type"] == "http":
             method = scope["method"]
             headers = Headers(scope=scope)
@@ -103,7 +103,7 @@ class CORSMiddleware(Middleware):
                         scope=scope,
                         receive=receive,
                         send=send,
-                        origin=origin,
+                        # origin=origin,
                         request_headers=headers,
                     )
                 return
@@ -120,7 +120,7 @@ class CORSMiddleware(Middleware):
             return True
         return origin in self.allow_origins
 
-    def preflight_response(self, request_headers) -> Response:
+    def preflight_response(self, request_headers: Headers) -> Response:
         req_origin = request_headers["origin"]
         req_method = request_headers["access-control-request-method"]
         req_headers = request_headers.get("access-control-request-headers")
@@ -155,18 +155,20 @@ class CORSMiddleware(Middleware):
         self,
         receive: Receive,
         send: Send,
-        scope=None,
-        origin=None,
-        request_headers=None,
-    ):
+        scope: typing.Optional[Scope] = None,
+        # origin=None,
+        request_headers: typing.Optional[Headers] = None,
+    ) -> None:
         send = functools.partial(self.send, send=send, request_headers=request_headers)
-        await self.app(scope, receive, send)
+        await self.app(scope, receive, send)  # type: ignore
 
-    async def send(self, message: Message, send: Send, request_headers=None) -> None:
+    async def send(
+        self, message: Message, send: Send, request_headers: Headers
+    ) -> None:
         if message["type"] != "http.response.start":
             await send(message)
             return
-        message.setdefault("headers", [])
+        message.setdefault("headers", [])  # type: ignore
         headers = MutableHeaders(raw=message["headers"])
         headers.update(self.simple_headers)
         origin = request_headers["Origin"]
