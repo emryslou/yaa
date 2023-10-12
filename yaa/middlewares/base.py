@@ -5,7 +5,7 @@ import anyio
 from yaa.middlewares.core import Middleware
 from yaa.requests import Request
 from yaa.responses import Response, StreamingResponse
-from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.types import ASGI3App, Receive, Scope, Send
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
@@ -15,18 +15,21 @@ DispatchFunction = typing.Callable[
 
 class BaseHttpMiddleware(Middleware):
     def __init__(
-        self, app: ASGIApp, debug: bool = False, dispatch: DispatchFunction = None
+        self,
+        app: ASGI3App,
+        debug: bool = False,
+        dispatch: typing.Optional[DispatchFunction] = None,
     ) -> None:
         super().__init__(app)
         self.debug = debug
         self.dispatch_func = dispatch if dispatch is not None else self.dispatch
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
-        async def call_next(req: Request):
+        async def call_next(req: Request) -> Response:
             app_exc: typing.Optional[Exception] = None
             stream_send, stream_receive = anyio.create_memory_object_stream()
 

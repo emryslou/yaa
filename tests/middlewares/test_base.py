@@ -151,20 +151,22 @@ def test_fully_evaluated_response(client_factory):
     assert response.text == "Custom"
 
 
-
 @app.route("/exc-stream")
 def exc_stream(request):
     return StreamingResponse(_generate_faulty_stream())
 
+
 def _generate_faulty_stream():
     yield b"Ok"
     raise Exception("Faulty Stream")
+
 
 def test_generate_faulty_stream(client_factory):
     client = client_factory(app)
     with pytest.raises(Exception) as ctx:
         response = client.get("/exc-stream")
     assert str(ctx.value) == "Faulty Stream"
+
 
 def test_exception_on_mounted_apps(client_factory):
     sub_app = Yaa(routes=[Route("/", exc)])
