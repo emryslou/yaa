@@ -2,21 +2,22 @@ import math
 import typing
 import uuid
 
+from yaa.types import T
 
 class Convertor(object):
     plugins: typing.Dict[str, type] = {}
 
-    name = ""
-    regex = ""
+    name: typing.ClassVar[str] = ""
+    regex: typing.ClassVar[str] = ""
 
     def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init_subclass__(*args, **kwargs)
         cls.plugins[cls.name] = cls
 
-    def convert(self, value: str) -> typing.Any:
+    def convert(self, value: str) -> str:
         raise NotImplementedError()  # pragma: no cover
 
-    def to_string(self, value: typing.Any) -> str:
+    def to_string(self, value: T) -> str:
         raise NotImplementedError()  # pragma: no cover
 
 
@@ -48,7 +49,7 @@ class IntegerConvertor(Convertor):
     regex = "[+]?[0-9]+"
     name = "int"
 
-    def convert(self, value: str) -> int:
+    def convert(self, value: str) -> int: # type: ignore[override]
         return int(value)
 
     def to_string(self, value: typing.Any) -> str:
