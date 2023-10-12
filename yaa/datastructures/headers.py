@@ -30,16 +30,16 @@ class Headers(typing.Mapping[str, str]):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return list(self._list)
 
-    def keys(self) -> typing.List[str]: # type: ignore[override]
+    def keys(self) -> typing.List[str]:  # type: ignore[override]
         return [key.decode("latin-1") for key, _ in self._list]
 
-    def values(self) -> typing.List[str]: # type: ignore[override]
+    def values(self) -> typing.List[str]:  # type: ignore[override]
         return [value.decode("latin-1") for _, value in self._list]
 
-    def items(self) -> typing.List[typing.Tuple[str, str]]: # type: ignore[override]
+    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore[override]
         return [(k.decode("latin-1"), v.decode("latin-1")) for k, v in self._list]
 
-    def get(self, key: str, default: typing.Optional[str] = None) -> typing.Optional[str]: # type: ignore[override]
+    def get(self, key: str, default: typing.Optional[str] = None) -> typing.Optional[str]:  # type: ignore[override]
         try:
             return self[key]
         except KeyError:
@@ -60,7 +60,7 @@ class Headers(typing.Mapping[str, str]):
 
         raise KeyError(key)
 
-    def __contains__(self, key: str) -> bool: # type: ignore
+    def __contains__(self, key: str) -> bool:  # type: ignore
         return key.lower() in self.keys()
 
     def __iter__(self) -> typing.Iterator:

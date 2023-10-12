@@ -1,5 +1,4 @@
 import typing
-from collections import namedtuple
 from collections.abc import Sequence
 from shlex import shlex
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
@@ -44,11 +43,13 @@ class CommaSeparatedStrings(Sequence):
 class QueryParams(ImmutableMultiDict):
     def __init__(
         self,
-        value: typing.Optional[typing.Union[
-            "ImmutableMultiDict",
-            typing.Mapping,
-            typing.List[typing.Tuple[typing.Any, typing.Any]],
-        ]] = None,
+        value: typing.Optional[
+            typing.Union[
+                "ImmutableMultiDict",
+                typing.Mapping,
+                typing.List[typing.Tuple[typing.Any, typing.Any]],
+            ]
+        ] = None,
         scope: typing.Optional[Scope] = None,
         **kwargs: typing.Any,
     ) -> None:
@@ -91,7 +92,10 @@ class Secret(object):
 
 class URL(object):
     def __init__(
-        self, url: str = "", scope: typing.Optional[Scope] = None, **components: typing.Any
+        self,
+        url: str = "",
+        scope: typing.Optional[Scope] = None,
+        **components: typing.Any,
     ) -> None:
         if scope is not None:
             assert not url, "Cannot set both `url` and `scope`"
@@ -220,7 +224,7 @@ class URL(object):
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def __eq__(self, other: typing.Union[str, "URL"]) -> bool: # type: ignore[override]
+    def __eq__(self, other: typing.Union[str, "URL"]) -> bool:  # type: ignore[override]
         return str(self) == str(other)
 
     def __str__(self) -> str:
