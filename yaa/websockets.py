@@ -20,7 +20,10 @@ class WebSocketDisconnect(Exception):
 
 class WebSocket(HttpConnection):
     def __init__(
-        self, scope: Scope, receive: Receive = None, send: Send = None
+        self,
+        scope: Scope,
+        receive: typing.Optional[Receive] = None,
+        send: typing.Optional[Send] = None,
     ) -> None:
         assert scope["type"] == "websocket"
         self._scope = scope
@@ -31,12 +34,12 @@ class WebSocket(HttpConnection):
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:
-            message = await self._receive()
+            message = await self._receive()  # type: ignore
             assert message["type"] == "websocket.connect"
             self.client_state = WebSocketState.CONNECTED
             return message
         elif self.client_state == WebSocketState.CONNECTED:
-            message = await self._receive()
+            message = await self._receive()  # type: ignore
             assert message["type"] in {"websocket.receive", "websocket.disconnect"}
             if message["type"] == "websocket.disconnect":
                 self.client_state = WebSocketState.DISCONNECTED
@@ -54,26 +57,26 @@ class WebSocket(HttpConnection):
                 self.application_state = WebSocketState.DISCONNECTED
             else:
                 self.application_state = WebSocketState.CONNECTED
-            await self._send(message)
+            await self._send(message)  # type: ignore
         elif self.application_state == WebSocketState.CONNECTED:
             assert message["type"] in {"websocket.send", "websocket.close"}
 
             if message["type"] == "websocket.close":
                 self.application_state = WebSocketState.DISCONNECTED
 
-            await self._send(message)
+            await self._send(message)  # type: ignore
         else:
             raise RuntimeError('Cannot call "send" once a close message has been sent.')
 
     async def accept(
         self,
-        subprotocol: str = None,
-        headers: typing.Iterator[typing.Tuple[bytes, bytes]] = None,
+        subprotocol: typing.Optional[str] = None,
+        headers: typing.Optional[typing.Iterator[typing.Tuple[bytes, bytes]]] = None,
     ) -> None:
-        headers = headers or []
+        headers = headers or []  # type: ignore
         if self.client_state == WebSocketState.CONNECTING:
             await self.receive()
-        await self.send(
+        await self.send(  # type: ignore
             {
                 "type": "websocket.accept",
                 "subprotocol": subprotocol,
@@ -132,7 +135,7 @@ class WebSocket(HttpConnection):
     async def send_bytes(self, data: bytes) -> None:
         await self.send({"type": "websocket.send", "bytes": data})
 
-    async def send_json(self, data) -> None:
+    async def send_json(self, data: typing.Any) -> None:
         _j = json.dumps(data).encode("utf-8")
         await self.send({"type": "websocket.send", "bytes": _j})
 
@@ -145,7 +148,7 @@ class WebSocket(HttpConnection):
 
 
 class WebSocketClose(object):
-    def __init__(self, code: int = 1000, reason: str = None) -> None:
+    def __init__(self, code: int = 1000, reason: typing.Optional[str] = None) -> None:
         self.code = code
         self.reason = reason or ""
 
