@@ -43,7 +43,7 @@ class AuthenticationMiddleware(Middleware):
                 from yaa.websockets import WebSocketClose
 
                 ws_close = WebSocketClose()
-                await ws_close(receive, send)
+                await ws_close(scope, receive, send)
             else:
                 res = self.on_error(conn, exc)
                 await res(scope, receive, send)

@@ -119,6 +119,7 @@ def test_router(client_factory):
     res = client.post("/func")
     assert res.status_code == http_status.HTTP_405_METHOD_NOT_ALLOWED
     assert res.text == "Method Not Allowed"
+    assert sorted(res.headers['allow'].split(', ')) == sorted(['GET', 'HEAD'])
 
     res = client.get("/users")
     assert res.status_code == 200

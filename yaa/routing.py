@@ -32,7 +32,7 @@ def compile_path(
 ) -> typing.Tuple[typing.Pattern, str, typing.Dict[str, Convertor]]:
     path_regex = "^"
     path_format = ""
-    duplicated_params = set()
+    duplicated_params: typing.Set[str] = set()
 
     idx = 0
     param_converts = {}
@@ -59,7 +59,7 @@ def compile_path(
         idx = match.end()
     # endfor
     if duplicated_params:
-        duplicated_params = sorted(duplicated_params)
+        duplicated_params = sorted(duplicated_params) # type: ignore
         names = ", ".join(duplicated_params)
         ending = "s" if len(duplicated_params) > 1 else ""
         raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
@@ -77,8 +77,22 @@ class BaseRoute(object):
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
         raise NotImplementedError()  # pragma: nocover
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         raise NotImplementedError()  # pragma: nocover
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        match, child_scope = self.matches(scope)
+        if match == Match.NONE:
+            if scope['type'] == 'http':
+                res = PlainTextResponse("Not Found", status_code=404)
+                await res(scope, receive, send)
+            elif scope['type'] == 'websocket':
+                ws_close = WebSocketClose()
+                await ws_close(scope, receive, send)
+            return
+        #end if
+        scope.update(child_scope) # type: ignore
+        await self.handle(scope, receive, send)
 
     def __str__(self) -> str:
         return "%s(path=%s,endpoint=%s)" % (
@@ -94,9 +108,9 @@ class Route(BaseRoute):
         path: str,
         endpoint: typing.Callable,
         *,
-        methods: typing.Sequence[str] = None,
-        name: str = None,
-        include_in_schema: bool = True,
+        methods: typing.Optional[typing.Sequence[str]] = None,
+        name: typing.Optional[str] = None,
+        include_in_schema: typing.Optional[bool] = True,
     ) -> None:
         assert path.startswith("/"), 'Routed paths must always start "/"'
         self.path = path
@@ -115,9 +129,8 @@ class Route(BaseRoute):
         else:
             self.app = endpoint
 
-        if methods is None:
-            self.methods = None
-        else:
+        self.methods: typing.Optional[typing.Set] = None
+        if methods is not None:
             self.methods = {method.upper() for method in methods}
             if "GET" in self.methods:
                 self.methods.add("HEAD")
@@ -150,11 +163,13 @@ class Route(BaseRoute):
         )
         return URLPath(protocol="http", path=path)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self.methods and scope["method"] not in self.methods:
-            if "app" in scope:
-                raise HttpException(status_code=405)
-            res = PlainTextResponse("Method Not Allowed", 405)
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if self.methods and scope['method'] not in self.methods:
+            headers = {'Allow': ', '.join(self.methods)}
+            if 'app' in scope:
+                raise HttpException(status_code=405, headers=headers)
+            else:
+                res = PlainTextResponse("Method Not Allowed", status_code=405, headers=headers)
             await res(scope, receive=receive, send=send)
         else:
             await self.app(scope, receive=receive, send=send)
@@ -170,7 +185,8 @@ class Route(BaseRoute):
 
 class WebSocketRoute(BaseRoute):
     def __init__(
-        self, path: str, endpoint: typing.Callable, *, name: str = None
+        self, path: str, endpoint: typing.Callable, *,
+        name: typing.Optional[str] = None
     ) -> None:
         assert path.startswith("/"), 'Routed paths must be always start "/"'
         self.path = path
@@ -212,7 +228,7 @@ class WebSocketRoute(BaseRoute):
         assert not remaining_params
         return URLPath(protocol="websocket", path=path)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.app(scope, receive=receive, send=send)
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -227,9 +243,9 @@ class Mount(BaseRoute):
     def __init__(
         self,
         path: str,
-        app: ASGIApp = None,
-        routes: typing.List[BaseRoute] = None,
-        name: str = None,
+        app: typing.Optional[ASGIApp] = None,
+        routes: typing.Optional[typing.List[BaseRoute]] = None,
+        name: typing.Optional[str] = None,
     ) -> None:
         assert path == "" or path.startswith("/"), 'Routed paths must always start "/"'
         assert (
@@ -237,9 +253,9 @@ class Mount(BaseRoute):
         ), "`app=...` or `routes=[...]` must be specified one of them"
         self.path = path.rstrip("/")
         if routes is None:
-            self.app = app
+            self.app = app # type: ignore
         else:
-            self.app = Router(routes=routes)
+            self.app = Router(routes=routes)  # type: ignore
 
         self.name = name
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(
@@ -453,7 +469,7 @@ class Router(object):
 
     async def not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "websocket":
-            await WebSocketClose()(receive, send)
+            await WebSocketClose()(scope, receive, send)
             return
 
         if "app" in scope:

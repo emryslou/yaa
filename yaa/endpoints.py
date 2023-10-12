@@ -5,12 +5,12 @@ import yaa.status as status
 from yaa.concurrency import run_in_threadpool
 from yaa.exceptions import HttpException
 from yaa.requests import Request
-from yaa.responses import PlainTextResponse
+from yaa.responses import Response, PlainTextResponse
 from yaa.types import Message, Receive, Scope, Send
 from yaa.websockets import WebSocket
 
 try:
-    import ujson as json
+    import ujson as json # type: ignore
 except ImportError:  # pragma: no cover
     import json  # pragma: no cover
 
@@ -23,13 +23,36 @@ class _Endpoint(object):
         self._scope = scope
         self._receive = receive
         self._send = send
+        self._allow_methods = [
+            method
+            for method in ('GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS')
+            if getattr(self, method.lower(), None) is not None
+        ]
 
     def __await__(self) -> typing.Generator:
         return self.dispatch().__await__()
 
     async def dispatch(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
+        req = Request(self._scope, receive=self._receive)
+        handler_name = (
+            'get'
+            if req.method == 'HEAD' and not hasattr(self, 'head')
+            else req.method
+        )
+        handler = getattr(self, handler_name, self.method_not_allowed)
+        is_async = asyncio.iscoroutine(handler)
+        if is_async:
+            res = await handler(req)
+        else:
+            res = await run_in_threadpool(handler, req)
+        await res(self._scope, self._receive, self._send)
 
+    async def method_not_allowed(self, req: Request) -> Response:
+        headers = {'Allow': ', '.join(self._allow_methods)}
+        if 'app' in self._scope:
+            raise HttpException(status_code=405, headers=headers)
+        
+        return PlainTextResponse("Method Not Allowed", status_code=405, headers=headers)
 
 class HttpEndPoint(_Endpoint):
     _type = "http"
@@ -46,7 +69,6 @@ class HttpEndPoint(_Endpoint):
             else req.method.lower()
         )
         handler = getattr(self, handler_name, self.method_not_allowed)
-
         if asyncio.iscoroutinefunction(handler):
             res = await handler(req)
         else:
@@ -54,16 +76,17 @@ class HttpEndPoint(_Endpoint):
 
         await res(self._scope, self._receive, self._send)
 
-    async def method_not_allowed(self, req: Request):
+    async def method_not_allowed(self, req: Request) -> Response:
+        headers = {'Allow': ', '.join(self._allow_methods)}
         if "app" in self._scope:
-            raise HttpException(status_code=405)  # pragma: nocover
-        return PlainTextResponse("Method Not Allowed", 405)
+            raise HttpException(status_code=405, headers=headers)  # pragma: nocover
+        return PlainTextResponse("Method Not Allowed", 405, headers=headers)
 
 
 class WebSocketEndpoint(_Endpoint):
     _type = "websocket"
     encoding = None  # 'text', 'bytes', 'json'
-    ws: WebSocket = None
+    ws: WebSocket
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
         super().__init__(scope, receive, send)
@@ -89,11 +112,11 @@ class WebSocketEndpoint(_Endpoint):
         finally:
             await self.on_disconnect(close_code)
 
-    async def send(self, data, send_type: str = "bytes"):
+    async def send(self, data: typing.Any, send_type: str = "bytes") -> None:
         fn = getattr(self.ws, "send_" + send_type)
         await fn(data)
 
-    async def decode(self, message: Message):
+    async def decode(self, message: Message) -> typing.Any:
         if self.encoding is not None:
             decode_fn_name = "_decode_" + self.encoding.lower()
             if not hasattr(self, decode_fn_name):
@@ -104,7 +127,7 @@ class WebSocketEndpoint(_Endpoint):
         decode_fn = getattr(self, decode_fn_name)
         return await decode_fn(message)
 
-    async def _decode_text(self, message: Message):
+    async def _decode_text(self, message: Message) -> str:
         if "text" not in message:
             await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)  # pragma: nocover
             raise RuntimeError(
@@ -112,7 +135,7 @@ class WebSocketEndpoint(_Endpoint):
             )  # pragma: nocover
         return message["text"]
 
-    async def _decode_bytes(self, message: Message):
+    async def _decode_bytes(self, message: Message) -> bytes:
         if "bytes" not in message:
             await self.ws.close(status.WS_1003_UNSUPPORTED_DATA)  # pragma: nocover
             raise RuntimeError(
@@ -120,7 +143,7 @@ class WebSocketEndpoint(_Endpoint):
             )  # pragma: nocover
         return message["bytes"]
 
-    async def _decode_json(self, message: Message):
+    async def _decode_json(self, message: Message) -> typing.Any:
         try:
             if "text" in message:
                 msg_json = json.loads(message["text"])
@@ -132,20 +155,20 @@ class WebSocketEndpoint(_Endpoint):
         else:
             return msg_json
 
-    async def _decode_unknown(self, message: Message):
+    async def _decode_unknown(self, message: Message) -> str:
         return await self._decode_text(message)  # pragma: nocover
 
-    async def _decode_none(self, message: Message):
+    async def _decode_none(self, message: Message) -> str:
         return await self._decode_text(message)  # pragma: nocover
 
     async def on_connect(self, **kwargs: typing.Any) -> None:
         """Override to handle an incoming websocket connection"""
         await self.ws.accept()
 
-    async def on_receive(self, data):
+    async def on_receive(self, data: typing.Any) -> typing.Any:
         """Override to handle an incoming websocket message"""
         pass  # pragma: no cover
 
-    async def on_disconnect(self, code: int):
+    async def on_disconnect(self, code: int) -> None:
         """Override to handle a disconnecting websocket"""
         pass  # pragma: no cover
