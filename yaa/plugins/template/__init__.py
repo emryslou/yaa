@@ -16,4 +16,4 @@ def plugin_init(app: Yaa, config: dict = {}) -> None:
     def get_template(app: Yaa, name: str) -> typing.Any:
         return templates.get_template(name)  # pragma: no cover
 
-    app.get_template = functools.partial(get_template, app=app) # type: ignore[attr-defined]
+    app.get_template = functools.partial(get_template, app=app)  # type: ignore[attr-defined]

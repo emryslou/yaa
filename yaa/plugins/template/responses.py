@@ -12,9 +12,9 @@ try:
     if hasattr(jinja2, "pass_context"):
         pass_context = jinja2.pass_context
     else:
-        pass_context = jinja2.contextfunction # type: ignore[attr-defined]
+        pass_context = jinja2.contextfunction  # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover
-    jinja2 = None # type: ignore # pragma: no cover
+    jinja2 = None  # type: ignore # pragma: no cover
 
 
 class TemplateResponse(Response):
