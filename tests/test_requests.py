@@ -176,7 +176,7 @@ def test_request_disconnect():
 
     scope = {"method": "POST", "path": "/"}
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     with pytest.raises(ClientDisconnect):
         loop.run_until_complete(app(scope, recv, None))
 

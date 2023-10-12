@@ -3,11 +3,6 @@ import typing
 
 import anyio
 
-try:
-    import contextvars
-except ImportError:  # pragma: no cover
-    contextvars = None  # pragma: no cover
-
 from yaa.types import P, T
 
 
@@ -25,12 +20,7 @@ async def run_until_first_complete(*args: typing.Tuple[typing.Callable, dict]) -
 async def run_in_threadpool(
     func: typing.Callable[P, T], *args: P.args, **kwargs: P.kwargs
 ) -> T:
-    if contextvars is not None:
-        _child = functools.partial(func, *args, **kwargs)
-        context = contextvars.copy_context()
-        func = context.run
-        args = (_child,)
-    elif kwargs:  # pragma: no cover
+    if kwargs:  # pragma: no cover
         func = functools.partial(func, **kwargs)
 
     return await anyio.to_thread.run_sync(func, *args)
