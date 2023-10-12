@@ -4,6 +4,7 @@ import uuid
 
 from yaa.types import T
 
+
 class Convertor(object):
     plugins: typing.Dict[str, type] = {}
 
@@ -49,7 +50,7 @@ class IntegerConvertor(Convertor):
     regex = "[+]?[0-9]+"
     name = "int"
 
-    def convert(self, value: str) -> int: # type: ignore[override]
+    def convert(self, value: str) -> int:  # type: ignore[override]
         return int(value)
 
     def to_string(self, value: typing.Any) -> str:
