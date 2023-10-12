@@ -6,6 +6,7 @@ import typing
 from yaa.exceptions import HttpException
 from yaa.requests import HttpConnection, Request
 from yaa.responses import RedirectResponse, Response
+from yaa.types import P
 
 
 def has_required_scope(conn: HttpConnection, scopes: typing.Sequence[str]) -> bool:
@@ -25,7 +26,7 @@ def has_required_scope(conn: HttpConnection, scopes: typing.Sequence[str]) -> bo
 def requires(
     scopes: typing.Union[str, typing.Sequence[str]],
     status_code: int = 403,
-    redirect: str = None,
+    redirect: typing.Optional[str] = None,
 ) -> typing.Callable:
     scope_list = [scopes] if isinstance(scopes, str) else scopes
 
@@ -44,8 +45,8 @@ def requires(
 
         if _type == "request":
 
-            @functools.wraps(func)
-            async def wrapper(*args, **kwargs) -> Response:
+            @functools.wraps(func)  # type: ignore
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Response:
                 req = kwargs.get(_type, args[idx] if idx < len(args) else None)
                 assert isinstance(req, Request)
                 if not has_required_scope(req, scope_list):
@@ -67,8 +68,8 @@ def requires(
         elif _type == "websocket":
             from yaa.websockets import WebSocket
 
-            @functools.wraps(func)
-            async def ws_wrapper(*args, **kwargs) -> Response:
+            @functools.wraps(func)  # type: ignore
+            async def ws_wrapper(*args: P.args, **kwargs: P.kwargs) -> Response:
                 ws_req = kwargs.get(_type, args[idx] if idx < len(args) else None)
 
                 assert isinstance(ws_req, WebSocket)
@@ -79,8 +80,9 @@ def requires(
                     await func(*args, **kwargs)
 
             # end def ws_wrapper
-
             return ws_wrapper
+        else:
+            raise RuntimeError(f"unknown type {_type!r}")
 
     # end def decorator
     return decorator
@@ -91,12 +93,12 @@ class AuthenticationError(Exception):
 
 
 class AuthenticationBackend(object):
-    async def authenticate(self, conn: HttpConnection):
+    async def authenticate(self, conn: HttpConnection) -> typing.Any:
         raise NotImplementedError()  # pragma: nocover
 
 
 class AuthCredentials(object):
-    def __init__(self, scopes: typing.Sequence[str] = None) -> None:
+    def __init__(self, scopes: typing.Optional[typing.Sequence[str]] = None) -> None:
         self.scopes = [] if scopes is None else scopes
 
     def __str__(self) -> str:
@@ -134,7 +136,7 @@ class SimpleUser(BaseUser):
 
     @property
     def identity(self) -> str:
-        raise ""  # pragma: nocover
+        raise Exception()  # pragma: nocover
 
 
 class UnauthenticatedUser(BaseUser):
@@ -148,4 +150,4 @@ class UnauthenticatedUser(BaseUser):
 
     @property
     def identity(self) -> str:
-        raise ""  # pragma: nocover
+        raise Exception()  # pragma: nocover
