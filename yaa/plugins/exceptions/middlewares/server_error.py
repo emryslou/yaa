@@ -8,18 +8,21 @@ from yaa.concurrency import run_in_threadpool
 from yaa.middlewares import Middleware
 from yaa.requests import Request
 from yaa.responses import HTMLResponse, PlainTextResponse, Response
-from yaa.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
 
 class ServerErrorMiddleware(Middleware):
     def __init__(
-        self, app: ASGIApp, handler: typing.Callable = None, debug: bool = False
+        self,
+        app: ASGI3App,
+        handler: typing.Optional[typing.Callable] = None,
+        debug: bool = False,
     ) -> None:
         super().__init__(app)
         self.handler = handler
         self.debug = debug
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -72,7 +75,7 @@ class ServerErrorMiddleware(Middleware):
 
     def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool) -> str:
         code_context = "".join(
-            self.format_line(index, line, frame.lineno, frame.index)
+            self.format_line(index, line, frame.lineno, frame.index)  # type: ignore
             for index, line in enumerate(frame.code_context or [])
         )
 
@@ -109,7 +112,7 @@ class ServerErrorMiddleware(Middleware):
     def debug_response(self, request: Request, exc: Exception) -> Response:
         accept = request.headers.get("accept", "")
 
-        if "text/html" in accept:
+        if "text/html" in (accept or ""):
             content = self.generate_html(exc)
             return HTMLResponse(content, status_code=500)
         content = self.generate_plain_text(exc)

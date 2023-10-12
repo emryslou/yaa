@@ -7,13 +7,13 @@ from yaa.exceptions import HttpException
 from yaa.middlewares.core import Middleware
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse, Response
-from yaa.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
 
 class ExceptionMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         debug: bool = False,
         handlers: typing.Optional[
             typing.Dict[typing.Union[int, typing.Type[Exception]], typing.Callable]

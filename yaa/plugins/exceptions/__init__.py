@@ -25,11 +25,11 @@ def plugin_init(app: Yaa, config: dict = {}) -> None:
     def exception_handler(
         exc_class_or_status_code: typing.Union[int, typing.Type[Exception]], app: Yaa
     ) -> typing.Callable:
-        def decorator(func):
-            app.add_exception_handler(exc_class_or_status_code, func)
+        def decorator(func: typing.Callable) -> typing.Callable:
+            app.add_exception_handler(exc_class_or_status_code, func)  # type: ignore
             return func
 
         return decorator
 
-    app.add_exception_handler = functools.partial(add_exception_handler, app=app)
-    app.exception_handler = functools.partial(exception_handler, app=app)
+    app.add_exception_handler = functools.partial(add_exception_handler, app=app)  # type: ignore
+    app.exception_handler = functools.partial(exception_handler, app=app)  # type: ignore
