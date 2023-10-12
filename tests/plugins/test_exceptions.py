@@ -22,12 +22,17 @@ async def not_modified(req):
     raise HttpException(status_code=304)
 
 
+async def with_headers(req):
+    raise HttpException(status_code=304, headers={"x-my-header": "hello"})
+
+
 router = Router(
     [
         Route("/runtime_error", endpoint=raise_runtime_error),
         Route("/not_acceptable", endpoint=not_acceptable),
         Route("/not_modified", endpoint=not_modified),
         Route("/no_content", endpoint=no_content),
+        Route("/with_headers", endpoint=with_headers),
     ]
 )
 
@@ -171,3 +176,12 @@ def test_no_content(client_factory):
     response = client.get("/no_content")
     assert response.status_code == 204
     assert "content-length" not in response.headers
+
+
+def test_with_headers(client_factory):
+    client = client_factory(app)
+    response = client.get("/with_headers")
+    assert response.status_code == 304
+    # {'x-my-header': 'hello'}
+    assert "x-my-header" in response.headers
+    assert "hello" == response.headers["x-my-header"]

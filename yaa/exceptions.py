@@ -3,7 +3,12 @@ import typing
 
 
 class HttpException(Exception):
-    def __init__(self, status_code: int, detail: typing.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        status_code: int,
+        detail: typing.Optional[str] = None,
+        headers: typing.Optional[dict] = None,
+    ) -> None:
         if detail is None:
             try:
                 detail = http.HTTPStatus(status_code).phrase
@@ -12,6 +17,7 @@ class HttpException(Exception):
 
         self.status_code = status_code
         self.detail = detail
+        self.headers = headers or {}
 
     def __repr__(self) -> str:
         klass_name = self.__class__.__name__

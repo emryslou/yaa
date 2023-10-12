@@ -93,6 +93,8 @@ class ExceptionMiddleware(Middleware):
     def http_exception(self, req: Request, exc: type) -> Response:
         assert isinstance(exc, HttpException)
         if exc.status_code in {204, 304}:
-            return Response(status_code=exc.status_code)
+            return Response(status_code=exc.status_code, headers=exc.headers)
 
-        return PlainTextResponse(exc.detail, status_code=exc.status_code)
+        return PlainTextResponse(
+            exc.detail, status_code=exc.status_code, headers=exc.headers
+        )
