@@ -1,8 +1,9 @@
 import http
+import typing
 
 
 class HttpException(Exception):
-    def __init__(self, status_code: int, detail: str = None):
+    def __init__(self, status_code: int, detail: typing.Optional[str] = None) -> None:
         if detail is None:
             try:
                 detail = http.HTTPStatus(status_code).phrase
@@ -20,5 +21,5 @@ class HttpException(Exception):
 
 
 class NotFoundException(HttpException):
-    def __init__(self, detail: str = None):
+    def __init__(self, detail: typing.Optional[str] = None):
         super().__init__(status_code=404, detail=detail)
