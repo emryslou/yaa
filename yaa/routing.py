@@ -10,7 +10,7 @@ from yaa.datastructures import URL, Headers, URLPath
 from yaa.exceptions import HttpException
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse, RedirectResponse
-from yaa.types import ASGIApp, ASGIInstance, P, Receive, Scope, Send
+from yaa.types import ASGIApp, P, Receive, Scope, Send
 from yaa.websockets import WebSocket, WebSocketClose
 
 
@@ -59,7 +59,7 @@ def compile_path(
         idx = match.end()
     # endfor
     if duplicated_params:
-        duplicated_params = sorted(duplicated_params) # type: ignore
+        duplicated_params = sorted(duplicated_params)  # type: ignore
         names = ", ".join(duplicated_params)
         ending = "s" if len(duplicated_params) > 1 else ""
         raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
@@ -83,15 +83,15 @@ class BaseRoute(object):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         match, child_scope = self.matches(scope)
         if match == Match.NONE:
-            if scope['type'] == 'http':
+            if scope["type"] == "http":
                 res = PlainTextResponse("Not Found", status_code=404)
                 await res(scope, receive, send)
-            elif scope['type'] == 'websocket':
+            elif scope["type"] == "websocket":
                 ws_close = WebSocketClose()
                 await ws_close(scope, receive, send)
             return
-        #end if
-        scope.update(child_scope) # type: ignore
+        # end if
+        scope.update(child_scope)  # type: ignore
         await self.handle(scope, receive, send)
 
     def __str__(self) -> str:
@@ -164,15 +164,17 @@ class Route(BaseRoute):
         return URLPath(protocol="http", path=path)
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self.methods and scope['method'] not in self.methods:
-            headers = {'Allow': ', '.join(self.methods)}
-            if 'app' in scope:
+        if self.methods and scope["method"] not in self.methods:
+            headers = {"Allow": ", ".join(self.methods)}
+            if "app" in scope:
                 raise HttpException(status_code=405, headers=headers)
             else:
-                res = PlainTextResponse("Method Not Allowed", status_code=405, headers=headers)
+                res = PlainTextResponse(
+                    "Method Not Allowed", status_code=405, headers=headers
+                )
             await res(scope, receive=receive, send=send)
         else:
-            await self.app(scope, receive=receive, send=send) # type: ignore
+            await self.app(scope, receive=receive, send=send)  # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -185,8 +187,7 @@ class Route(BaseRoute):
 
 class WebSocketRoute(BaseRoute):
     def __init__(
-        self, path: str, endpoint: typing.Callable, *,
-        name: typing.Optional[str] = None
+        self, path: str, endpoint: typing.Callable, *, name: typing.Optional[str] = None
     ) -> None:
         assert path.startswith("/"), 'Routed paths must be always start "/"'
         self.path = path
@@ -229,7 +230,7 @@ class WebSocketRoute(BaseRoute):
         return URLPath(protocol="websocket", path=path)
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive=receive, send=send) # type: ignore
+        await self.app(scope, receive=receive, send=send)  # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -253,7 +254,7 @@ class Mount(BaseRoute):
         ), "`app=...` or `routes=[...]` must be specified one of them"
         self.path = path.rstrip("/")
         if routes is None:
-            self.app = app # type: ignore
+            self.app = app  # type: ignore
         else:
             self.app = Router(routes=routes)  # type: ignore
 
@@ -324,10 +325,9 @@ class Mount(BaseRoute):
         raise NoMatchFound()
 
     async def __call__(
-            self, scope: Scope,
-            receive: Receive, send: Send
-        ) -> None: # type: ignore
-        await self.app(scope, receive, send) # type: ignore
+        self, scope: Scope, receive: Receive, send: Send
+    ) -> None:  # type: ignore
+        await self.app(scope, receive, send)  # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -339,9 +339,8 @@ class Mount(BaseRoute):
 
 class Host(BaseRoute):
     def __init__(
-            self, host: str, app: ASGIApp,
-            name: typing.Optional[str] = None
-        ) -> None:
+        self, host: str, app: ASGIApp, name: typing.Optional[str] = None
+    ) -> None:
         self.host = host
         self.app = app
         self.name = name
@@ -396,7 +395,7 @@ class Host(BaseRoute):
         raise NoMatchFound()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive=receive, send=send) # type: ignore
+        await self.app(scope, receive=receive, send=send)  # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -469,7 +468,9 @@ class Router(object):
         )
         self.routes.append(instance)
 
-    def add_route_ws(self, path: str, route: typing.Callable, name: typing.Optional[str] = None) -> None:
+    def add_route_ws(
+        self, path: str, route: typing.Callable, name: typing.Optional[str] = None
+    ) -> None:
         instance = WebSocketRoute(path, name=name, endpoint=route)
         self.routes.append(instance)
 
@@ -482,7 +483,7 @@ class Router(object):
             raise HttpException(status_code=404)
         await PlainTextResponse("Not Found", 404)(scope, receive, send)
 
-    def url_path_for(self, name: str, **path_params: P.kwargs) -> URLPath: # type: ignore
+    def url_path_for(self, name: str, **path_params: P.kwargs) -> URLPath:  # type: ignore
         for route in self.routes:
             try:
                 return route.url_path_for(name, **path_params)
@@ -503,14 +504,14 @@ class Router(object):
         assert scope["type"] in ("http", "websocket", "lifespan")
 
         if "router" not in scope:
-            scope["router"] = self # type: ignore
+            scope["router"] = self  # type: ignore
 
         partial = None
 
         for route in self.routes:
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
-                scope.update(child_scope) # type: ignore
+                scope.update(child_scope)  # type: ignore
                 await route(scope, receive=receive, send=send)
                 return
             elif match == Match.PARTIAL and partial is None:
@@ -518,7 +519,7 @@ class Router(object):
                 partial_scope = child_scope
 
         if partial is not None:
-            scope.update(partial_scope) # type: ignore
+            scope.update(partial_scope)  # type: ignore
             await partial(scope, receive=receive, send=send)
             return
 
@@ -544,7 +545,7 @@ class Router(object):
             await self._lifespan(scope, receive=receive, send=send)
             return
 
-        await self.default(scope, receive=receive, send=send) # type: ignore
+        await self.default(scope, receive=receive, send=send)  # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, Router) and self.routes == other.routes
@@ -555,7 +556,7 @@ class ProtocalRouter(object):
         self.protocals = protocals
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.protocals[scope["type"]](scope, receive=receive, send=send) # type: ignore
+        await self.protocals[scope["type"]](scope, receive=receive, send=send)  # type: ignore
 
 
 def req_res(func: typing.Callable) -> typing.Callable:

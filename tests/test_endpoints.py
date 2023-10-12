@@ -36,12 +36,13 @@ def test_http_endpoint_route(client_factory):
     assert res.status_code == 200
     assert res.text == "Hello, abc"
 
+
 def test_http_endpoint_route_405(client_factory):
     client = client_factory(app)
-    res = client.post('/abc')
+    res = client.post("/abc")
     assert res.status_code == 405
-    assert res.text == 'Method Not Allowed'
-    assert res.headers['allow'] == 'GET'
+    assert res.text == "Method Not Allowed"
+    assert res.headers["allow"] == "GET"
 
 
 def test_websocket_endpoint_on_connect(client_factory):

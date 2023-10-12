@@ -5,12 +5,12 @@ import yaa.status as status
 from yaa.concurrency import run_in_threadpool
 from yaa.exceptions import HttpException
 from yaa.requests import Request
-from yaa.responses import Response, PlainTextResponse
+from yaa.responses import PlainTextResponse, Response
 from yaa.types import Message, Receive, Scope, Send
 from yaa.websockets import WebSocket
 
 try:
-    import ujson as json # type: ignore
+    import ujson as json  # type: ignore
 except ImportError:  # pragma: no cover
     import json  # pragma: no cover
 
@@ -25,7 +25,7 @@ class _Endpoint(object):
         self._send = send
         self._allow_methods = [
             method
-            for method in ('GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS')
+            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             if getattr(self, method.lower(), None) is not None
         ]
 
@@ -35,9 +35,7 @@ class _Endpoint(object):
     async def dispatch(self) -> None:
         req = Request(self._scope, receive=self._receive)
         handler_name = (
-            'get'
-            if req.method == 'HEAD' and not hasattr(self, 'head')
-            else req.method
+            "get" if req.method == "HEAD" and not hasattr(self, "head") else req.method
         )
         handler = getattr(self, handler_name, self.method_not_allowed)
         is_async = asyncio.iscoroutine(handler)
@@ -48,11 +46,12 @@ class _Endpoint(object):
         await res(self._scope, self._receive, self._send)
 
     async def method_not_allowed(self, req: Request) -> Response:
-        headers = {'Allow': ', '.join(self._allow_methods)}
-        if 'app' in self._scope:
+        headers = {"Allow": ", ".join(self._allow_methods)}
+        if "app" in self._scope:
             raise HttpException(status_code=405, headers=headers)
-        
+
         return PlainTextResponse("Method Not Allowed", status_code=405, headers=headers)
+
 
 class HttpEndPoint(_Endpoint):
     _type = "http"
@@ -77,7 +76,7 @@ class HttpEndPoint(_Endpoint):
         await res(self._scope, self._receive, self._send)
 
     async def method_not_allowed(self, req: Request) -> Response:
-        headers = {'Allow': ', '.join(self._allow_methods)}
+        headers = {"Allow": ", ".join(self._allow_methods)}
         if "app" in self._scope:
             raise HttpException(status_code=405, headers=headers)  # pragma: nocover
         return PlainTextResponse("Method Not Allowed", 405, headers=headers)
