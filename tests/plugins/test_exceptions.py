@@ -185,3 +185,32 @@ def test_with_headers(client_factory):
     # {'x-my-header': 'hello'}
     assert "x-my-header" in response.headers
     assert "hello" == response.headers["x-my-header"]
+
+
+def test_background_task(client_factory):
+    from yaa.applications import Yaa
+    from yaa.background import BackgroundTask
+    from yaa.responses import Response
+
+    accessed_error_handler = False
+
+    def error_handler(request, exc):
+        nonlocal accessed_error_handler
+        accessed_error_handler = True
+
+    def raise_exception():
+        raise Exception("Something went wrong")
+
+    async def endpoint(request):
+        task = BackgroundTask(raise_exception)
+        return Response(status_code=204, background=task)
+
+    app = Yaa(
+        routes=[Route("/", endpoint=endpoint)],
+        exception_handlers={Exception: error_handler},
+    )
+    client = client_factory(app, raise_server_exceptions=False)
+    response = client.get("/")
+
+    assert response.status_code == 204
+    assert accessed_error_handler
