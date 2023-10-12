@@ -86,11 +86,10 @@ class UUIDConvertor(Convertor):
 
 
 CONVERTOR_TYPES = {
-    # "str": StringConvertor(),
-    # "path": PathConvertor(),
-    # "int": IntegerConvertor(),
-    # "float": FloatConvertor(),
-    # 'uuid': UUIDConvertor(),
     name: klass()
     for name, klass in Convertor.plugins.items()
 }
+
+
+def register_url_convertor(key: str, convertor: Convertor) -> None:
+    CONVERTOR_TYPES[key] = convertor
