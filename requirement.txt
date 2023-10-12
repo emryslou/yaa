@@ -1,5 +1,5 @@
 # cores
-anyio >= 3.0.0, < 4
+anyio >= 3.4.0, < 4
 requests
 aiofiles
 ujson
