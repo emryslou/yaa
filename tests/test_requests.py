@@ -455,3 +455,18 @@ def test_cookies_invalid(set_cookie, expected, client_factory):
     response = client.get("/", headers={"cookie": set_cookie})
     result = response.json()
     assert result["cookies"] == expected
+
+
+
+def test_request_raw_path(client_factory):
+    from yaa.responses import PlainTextResponse
+
+    async def app(scope, receive, send):
+        request = Request(scope, receive)
+        path = request.scope["path"]
+        raw_path = request.scope["raw_path"]
+        response = PlainTextResponse(f"{path}, {raw_path}")
+        await response(scope, receive, send)
+    client = client_factory(app)
+    response = client.get("/he%2Fllo")
+    assert response.text == "/he/llo, b'/he%2Fllo'"
