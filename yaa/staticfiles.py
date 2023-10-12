@@ -46,8 +46,8 @@ class StaticFiles(object):
     def __init__(
         self,
         *,
-        directory: PathLike = None,
-        packages: typing.List[str] = None,
+        directory: typing.Optional[PathLike] = None,
+        packages: typing.Optional[typing.List[str]] = None,
         html: bool = False,
         check_dir: bool = True,
     ) -> None:
@@ -61,7 +61,9 @@ class StaticFiles(object):
             raise RuntimeError(f'Directory "{directory}" does not exists')
 
     def get_directories(
-        self, directory: PathLike = None, packages: typing.List[str] = None
+        self,
+        directory: typing.Optional[PathLike] = None,
+        packages: typing.Optional[typing.List[str]] = None,
     ) -> typing.List[PathLike]:
         directories = []
 
@@ -79,7 +81,7 @@ class StaticFiles(object):
                     statics_dir = "statics"
                 spec = util.find_spec(package)
                 package_directory = os.path.normpath(
-                    os.path.join(spec.submodule_search_locations[0], "..", statics_dir)
+                    os.path.join(spec.submodule_search_locations[0], "..", statics_dir)  # type: ignore
                 )
                 assert os.path.isdir(package_directory), (
                     f"Directory `{statics_dir!r}` "
@@ -173,9 +175,11 @@ class StaticFiles(object):
     ) -> Response:
         req_headers = Headers(scope=scope)
 
-        res = FileResponse(full_path, status_code=status_code, stat_result=stat_result)
+        res = FileResponse(
+            full_path, status_code=status_code, stat_result=stat_result
+        )  # type: Response
         if self.is_not_modified(res.headers, req_headers):
-            res = NotModifiedResponse(res.headers)
+            res = NotModifiedResponse(res.headers)  # type: ignore
         return res
 
     def is_not_modified(
