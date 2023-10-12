@@ -1,7 +1,7 @@
 import pytest
 
 import yaa.status as status
-from yaa.websockets import WebSocket, WebSocketDisconnect
+from yaa.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 
 
 def test_websocket_url(client_factory):
@@ -341,3 +341,105 @@ def test_websocket_close_reason(client_factory) -> None:
             websocket.receive_text()
         assert exc.value.code == status.WS_1001_GOING_AWAY
         assert exc.value.reason == "Going Away"
+
+
+def test_receive_text_before_accept(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.receive_text()
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/"):
+            pass  # pragma: nocover
+
+
+def test_receive_bytes_before_accept(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.receive_bytes()
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/"):
+            pass  # pragma: nocover
+
+
+def test_receive_json_before_accept(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.receive_json()
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/"):
+            pass  # pragma: nocover
+
+
+def test_send_before_accept(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.send({"type": "websocket.send"})
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/"):
+            pass  # pragma: nocover
+
+
+def test_send_wrong_message_type(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.send({"type": "websocket.accept"})
+            await websocket.send({"type": "websocket.accept"})
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/"):
+            pass  # pragma: nocover
+
+
+def test_receive_before_accept(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.accept()
+            websocket.client_state = WebSocketState.CONNECTING
+            await websocket.receive()
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/") as websocket:
+            websocket.send({"type": "websocket.send"})
+
+
+def test_receive_wrong_message_type(client_factory):
+    def app(scope):
+        async def asgi(receive, send):
+            websocket = WebSocket(scope, receive=receive, send=send)
+            await websocket.accept()
+            await websocket.receive()
+
+        return asgi
+
+    client = client_factory(app)
+    with pytest.raises(RuntimeError):
+        with client.wsconnect("/") as websocket:
+            websocket.send({"type": "websocket.connect"})

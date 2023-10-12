@@ -35,12 +35,21 @@ class WebSocket(HttpConnection):
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:
             message = await self._receive()  # type: ignore
-            assert message["type"] == "websocket.connect"
+            if message["type"] != "websocket.connect":
+                raise RuntimeError(
+                    "Expected ASGI message `websocket.connect`, "
+                    f'but got `{message["type"]!r}`'
+                )
             self.client_state = WebSocketState.CONNECTED
             return message
         elif self.client_state == WebSocketState.CONNECTED:
             message = await self._receive()  # type: ignore
-            assert message["type"] in {"websocket.receive", "websocket.disconnect"}
+            if message["type"] not in {"websocket.receive", "websocket.disconnect"}:
+                raise RuntimeError(
+                    "Expected ASGI message `websocket.receive` or "
+                    f' `websocket.disconnect`, but got `{message["type"]!r}`'
+                )
+
             if message["type"] == "websocket.disconnect":
                 self.client_state = WebSocketState.DISCONNECTED
             return message
@@ -51,15 +60,22 @@ class WebSocket(HttpConnection):
 
     async def send(self, message: Message) -> None:
         if self.application_state == WebSocketState.CONNECTING:
-            assert message["type"] in {"websocket.accept", "websocket.close"}
-
+            if message["type"] not in {"websocket.accept", "websocket.close"}:
+                raise RuntimeError(
+                    "Expected ASGI message `websocket.accept` or "
+                    f' `websocket.close`, but got `{message["type"]!r}`'
+                )
             if message["type"] == "websocket.close":
                 self.application_state = WebSocketState.DISCONNECTED
             else:
                 self.application_state = WebSocketState.CONNECTED
             await self._send(message)  # type: ignore
         elif self.application_state == WebSocketState.CONNECTED:
-            assert message["type"] in {"websocket.send", "websocket.close"}
+            if message["type"] not in {"websocket.send", "websocket.close"}:
+                raise RuntimeError(
+                    "Expected ASGI message `websocket.send` or "
+                    f' `websocket.close`, but got `{message["type"]!r}`'
+                )
 
             if message["type"] == "websocket.close":
                 self.application_state = WebSocketState.DISCONNECTED
@@ -91,14 +107,20 @@ class WebSocket(HttpConnection):
             raise WebSocketDisconnect(message["code"], message.get("reason", ""))
 
     async def receive_text(self) -> str:
-        assert self.application_state == WebSocketState.CONNECTED
+        if self.application_state != WebSocketState.CONNECTED:
+            raise RuntimeError(
+                "WebSocket is not connected. Need to call `accept` first "
+            )
 
         message = await self.receive()
         self._raise_on_disconnect(message)
         return message["text"]
 
     async def receive_bytes(self) -> bytes:
-        assert self.application_state == WebSocketState.CONNECTED
+        if self.application_state != WebSocketState.CONNECTED:
+            raise RuntimeError(
+                "WebSocket is not connected. Need to call `accept` first "
+            )
 
         message = await self.receive()
         self._raise_on_disconnect(message)
