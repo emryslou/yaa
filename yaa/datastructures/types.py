@@ -46,7 +46,9 @@ class ImmutableMultiDict(typing.Mapping):
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
         return list(self._list)
 
-    def get(self, key: typing.Any, default: typing.Optional[typing.Any] = None) -> typing.Any:
+    def get(
+        self, key: typing.Any, default: typing.Optional[typing.Any] = None
+    ) -> typing.Any:
         if key in self._dict:
             return self._dict[key]
         return default
@@ -81,7 +83,9 @@ class MultiDict(ImmutableMultiDict):
         self._list = [(k, v) for k, v in self._list if k != key]
         del self._dict[key]
 
-    def pop(self, key: typing.Any, default: typing.Optional[typing.Any] = None) -> typing.Any:
+    def pop(
+        self, key: typing.Any, default: typing.Optional[typing.Any] = None
+    ) -> typing.Any:
         self._list = [(k, v) for k, v in self._list if k != key]
         return self._dict.pop(key, default)
 
@@ -99,10 +103,12 @@ class MultiDict(ImmutableMultiDict):
         self._dict.clear()
         self._list.clear()
 
-    def setdefault(self, key: typing.Any, default: typing.Optional[typing.Any] = None) -> typing.Any:
+    def setdefault(
+        self, key: typing.Any, default: typing.Optional[typing.Any] = None
+    ) -> typing.Any:
         if key not in self:
-            self._dict[key] = default # type: ignore
-            self._list.append((key, default)) # type: ignore
+            self._dict[key] = default  # type: ignore
+            self._list.append((key, default))  # type: ignore
         return self[key]
 
     def setlist(self, key: typing.Any, values: typing.List) -> None:
