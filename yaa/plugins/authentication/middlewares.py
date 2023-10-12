@@ -18,21 +18,21 @@ class AuthenticationMiddleware(Middleware):
         self,
         app: ASGIApp,
         backend: AuthenticationBackend,
-        debug: bool = False,
-        on_error: typing.Callable[
+        debug: typing.Optional[bool] = False,
+        on_error: typing.Optional[typing.Callable[
             [HttpConnection, AuthenticationError], Response
-        ] = None,
+        ]] = None,
     ) -> None:
         super().__init__(app)
         self.debug = debug
         self.backend = backend
         self.on_error = on_error if on_error is not None else self.default_on_error
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None: # type: ignore
         if scope["type"] in ("http", "websocket"):
-            await self.asgi(scope=scope, receive=receive, send=send)
+            await self.asgi(scope=scope, receive=receive, send=send) # type: ignore
         else:
-            await self.app(scope, receive=receive, send=send)
+            await self.app(scope, receive=receive, send=send) # type: ignore
 
     async def asgi(self, receive: Receive, send: Send, scope: Scope) -> None:
         conn = HttpConnection(scope=scope)
@@ -52,9 +52,9 @@ class AuthenticationMiddleware(Middleware):
         if auth_result is None:
             auth_result = AuthCredentials(), UnauthenticatedUser()
 
-        scope["auth"], scope["user"] = auth_result
+        scope["auth"], scope["user"] = auth_result # type: ignore
 
-        await self.app(scope, receive, send)
+        await self.app(scope, receive, send) # type: ignore
 
     @staticmethod
     def default_on_error(conn: HttpConnection, exc: Exception) -> Response:
