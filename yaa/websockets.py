@@ -13,8 +13,9 @@ class WebSocketState(enum.Enum):
 
 
 class WebSocketDisconnect(Exception):
-    def __init__(self, code=1000):
+    def __init__(self, code: int = 1000, reason: typing.Optional[str] = None) -> None:
         self.code = code
+        self.reason = reason or ""
 
 
 class WebSocket(HttpConnection):
@@ -80,11 +81,11 @@ class WebSocket(HttpConnection):
             }
         )
 
-    def _raise_on_disconnect(self, message: Message):
+    def _raise_on_disconnect(self, message: Message) -> None:
         if message is None:
             raise RuntimeError("Message is None")  # pragma: nocover
         if message["type"] == "websocket.disconnect":
-            raise WebSocketDisconnect(message["code"])
+            raise WebSocketDisconnect(message["code"], message.get("reason", ""))
 
     async def receive_text(self) -> str:
         assert self.application_state == WebSocketState.CONNECTED
@@ -135,13 +136,20 @@ class WebSocket(HttpConnection):
         _j = json.dumps(data).encode("utf-8")
         await self.send({"type": "websocket.send", "bytes": _j})
 
-    async def close(self, code=1000) -> None:
-        await self.send({"type": "websocket.close", "code": code})
+    async def close(
+        self, code: int = 1000, reason: typing.Optional[str] = None
+    ) -> None:
+        await self.send(
+            {"type": "websocket.close", "code": code, "reason": reason or ""}
+        )
 
 
 class WebSocketClose(object):
-    def __init__(self, code: int = 1000):
+    def __init__(self, code: int = 1000, reason: str = None) -> None:
         self.code = code
+        self.reason = reason or ""
 
     async def __call__(self, receive: Receive, send: Send) -> None:
-        await send({"type": "websocket.close", "code": self.code})
+        await send(
+            {"type": "websocket.close", "code": self.code, "reason": self.reason}
+        )

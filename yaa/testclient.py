@@ -323,7 +323,9 @@ class WebSocketTestSession(object):
 
     def _raise_on_close(self, message):
         if message["type"] == "websocket.close":
-            raise WebSocketDisconnect(message.get("code", 1000))
+            raise WebSocketDisconnect(
+                message.get("code", 1000), message.get("reason", "")
+            )
 
     def send(self, value):
         if value is None:
