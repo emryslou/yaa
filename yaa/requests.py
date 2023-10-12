@@ -17,7 +17,7 @@ from yaa.datastructures import (
     State,
 )
 from yaa.formparsers import FormParser, MultiPartParser
-from yaa.types import Message, Receive, Scope, Send
+from yaa.types import Message, P, Receive, Scope, Send
 
 try:
     from multipart.multipart import parse_options_header
@@ -61,9 +61,9 @@ class HttpConnection(Mapping):
     __eq__ = object.__eq__
     __hash__ = object.__hash__
 
-    def __init__(self, scope: Scope, *args, **kwargs) -> None:
-        self._scope = scope
-        self._scope.setdefault("state", {})
+    def __init__(self, scope: Scope, *args: P.args, **kwargs: P.kwargs) -> None:
+        self._scope = scope  # type: ignore
+        self._scope.setdefault("state", {})  # type: ignore
 
     def __getitem__(self, __key: typing.Any) -> typing.Any:
         return self._scope[__key]
@@ -98,7 +98,7 @@ class HttpConnection(Mapping):
         return self._scope["app"]
 
     @property
-    def scope(self):
+    def scope(self) -> Scope:
         return self._scope
 
     @property
@@ -133,14 +133,14 @@ class HttpConnection(Mapping):
         return Address(host=host, port=port)
 
     @property
-    def session(self):
+    def session(self) -> dict:
         assert "session" in self._scope, (
             "`SessionMiddleware` must be " "installed to access request.session"
         )
         return self._scope["session"]
 
     @property
-    def database(self):
+    def database(self):  # type: ignore
         warnings.warn("attr `database` will be removed in the future")
         assert "database" in self._scope, (
             "`DatabaseMiddleware` must be " "installed to access request.database"
@@ -209,10 +209,10 @@ class Request(HttpConnection):
         return self._relative_url
 
     @property
-    def receive(self):
+    def receive(self) -> Receive:
         return self._receive
 
-    async def stream(self):
+    async def stream(self) -> typing.AsyncIterator[bytes]:
         if hasattr(self, "_body"):
             yield self._body
             yield b""
@@ -259,16 +259,16 @@ class Request(HttpConnection):
             content_type_header = self.headers.get("Content-Type")
             content_type, options = parse_options_header(content_type_header)
             if content_type == b"multipart/form-data":
-                parser = MultiPartParser(self.headers, self.stream)
+                parser = MultiPartParser(self.headers, self.stream)  # type: ignore
                 self._form = await parser.parse()
             elif content_type == b"application/x-www-form-urlencoded":
-                parser = FormParser(self.headers, self.stream)
+                parser = FormParser(self.headers, self.stream)  # type: ignore
                 self._form = await parser.parse()
             else:
                 self._form = FormData()
         return self._form
 
-    async def close(self):
+    async def close(self) -> None:
         if hasattr(self, "_form"):
             await self._form.close()
 
