@@ -6,13 +6,13 @@ from yaa.datastructures import DatabaseURL
 from yaa.middlewares.core import Middleware
 from yaa.plugins.database.drivers.base import DatabaseBackend
 from yaa.plugins.lifespan.types import EventType
-from yaa.types import ASGIApp, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
 
 class DatabaseMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         database_url: typing.Union[str, DatabaseURL],
         debug: bool = False,
         rollback_on_shutdown: bool = False,
@@ -66,7 +66,7 @@ class DatabaseMiddleware(Middleware):
 
 
 class DatabaseLifespan(object):
-    def __init__(self, app: ASGIApp, **handlers: typing.Callable) -> None:
+    def __init__(self, app: ASGI3App, **handlers: typing.Callable) -> None:
         self.inner = app
         self.handlers = {
             event_type: handlers.get(str(event_type), [])
