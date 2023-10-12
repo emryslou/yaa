@@ -158,9 +158,9 @@ class MysqlTransaction(DatabaseTransaction):
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         if exc_type is not None:
             await self.rollback()
