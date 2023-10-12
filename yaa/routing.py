@@ -10,7 +10,7 @@ from yaa.datastructures import URL, Headers, URLPath
 from yaa.exceptions import HttpException
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse, RedirectResponse
-from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.types import ASGIApp, ASGIInstance, P, Receive, Scope, Send
 from yaa.websockets import WebSocket, WebSocketClose
 
 
@@ -172,7 +172,7 @@ class Route(BaseRoute):
                 res = PlainTextResponse("Method Not Allowed", status_code=405, headers=headers)
             await res(scope, receive=receive, send=send)
         else:
-            await self.app(scope, receive=receive, send=send)
+            await self.app(scope, receive=receive, send=send) # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -229,7 +229,7 @@ class WebSocketRoute(BaseRoute):
         return URLPath(protocol="websocket", path=path)
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive=receive, send=send)
+        await self.app(scope, receive=receive, send=send) # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -263,7 +263,7 @@ class Mount(BaseRoute):
         )
 
     @property
-    def routes(self):
+    def routes(self) -> typing.Optional[typing.List[Route]]:
         return getattr(self.app, "routes", None)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
@@ -323,8 +323,11 @@ class Mount(BaseRoute):
 
         raise NoMatchFound()
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive, send)
+    async def __call__(
+            self, scope: Scope,
+            receive: Receive, send: Send
+        ) -> None: # type: ignore
+        await self.app(scope, receive, send) # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -335,14 +338,17 @@ class Mount(BaseRoute):
 
 
 class Host(BaseRoute):
-    def __init__(self, host: str, app: ASGIApp, name: str = None) -> None:
+    def __init__(
+            self, host: str, app: ASGIApp,
+            name: typing.Optional[str] = None
+        ) -> None:
         self.host = host
         self.app = app
         self.name = name
         (self.host_regex, self.host_format, self.param_convertors) = compile_path(host)
 
     @property
-    def routes(self) -> typing.List[BaseRoute]:
+    def routes(self) -> typing.Optional[typing.List[BaseRoute]]:
         return getattr(self.app, "routes", None)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
@@ -390,7 +396,7 @@ class Host(BaseRoute):
         raise NoMatchFound()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive=receive, send=send)
+        await self.app(scope, receive=receive, send=send) # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -403,29 +409,29 @@ class Host(BaseRoute):
 class Router(object):
     def __init__(
         self,
-        routes: typing.List[BaseRoute] = None,
-        redirect_slashes: bool = True,
-        default: ASGIApp = None,
+        routes: typing.Optional[typing.List[BaseRoute]] = None,
+        redirect_slashes: typing.Optional[bool] = True,
+        default: typing.Optional[ASGIApp] = None,
     ) -> None:
         self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
         self.default = self.not_found if default is None else default
         self._lifespan = None
 
-    def mount(self, path: str, app: ASGIApp, name: str = None) -> None:
+    def mount(self, path: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
         prefix = Mount(path, app=app, name=name)
         self.routes.append(prefix)
 
-    def host(self, host: str, app: ASGIApp, name: str = None) -> None:
+    def host(self, host: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
         route = Host(host, app=app, name=name)
         self.routes.append(route)
 
     def route(
         self,
         path: str,
-        methods: typing.Sequence[str] = None,
-        name: str = None,
-        include_in_schema: bool = True,
+        methods: typing.Optional[typing.Sequence[str]] = None,
+        name: typing.Optional[str] = None,
+        include_in_schema: typing.Optional[bool] = True,
     ) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route(
@@ -439,7 +445,7 @@ class Router(object):
 
         return decorator
 
-    def route_ws(self, path: str, name: str = None) -> typing.Callable:
+    def route_ws(self, path: str, name: typing.Optional[str] = None) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route_ws(path, func, name=name)
             return func
@@ -450,9 +456,9 @@ class Router(object):
         self,
         path: str,
         endpoint: typing.Callable,
-        methods: typing.Sequence[str] = None,
-        name: str = None,
-        include_in_schema: bool = True,
+        methods: typing.Optional[typing.Sequence[str]] = None,
+        name: typing.Optional[str] = None,
+        include_in_schema: typing.Optional[bool] = True,
     ) -> None:
         instance = Route(
             path,
@@ -463,7 +469,7 @@ class Router(object):
         )
         self.routes.append(instance)
 
-    def add_route_ws(self, path: str, route: typing.Callable, name: str = None) -> None:
+    def add_route_ws(self, path: str, route: typing.Callable, name: typing.Optional[str] = None) -> None:
         instance = WebSocketRoute(path, name=name, endpoint=route)
         self.routes.append(instance)
 
@@ -476,7 +482,7 @@ class Router(object):
             raise HttpException(status_code=404)
         await PlainTextResponse("Not Found", 404)(scope, receive, send)
 
-    def url_path_for(self, name: str, **path_params) -> URLPath:
+    def url_path_for(self, name: str, **path_params: P.kwargs) -> URLPath: # type: ignore
         for route in self.routes:
             try:
                 return route.url_path_for(name, **path_params)
@@ -486,25 +492,25 @@ class Router(object):
         raise NoMatchFound()
 
     @property
-    def lifespan(self):
+    def lifespan(self) -> typing.Any:
         return self._lifespan
 
     @lifespan.setter
-    def lifespan(self, lifespan):
+    def lifespan(self, lifespan: typing.Any) -> None:
         self._lifespan = lifespan
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] in ("http", "websocket", "lifespan")
 
         if "router" not in scope:
-            scope["router"] = self
+            scope["router"] = self # type: ignore
 
         partial = None
 
         for route in self.routes:
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
-                scope.update(child_scope)
+                scope.update(child_scope) # type: ignore
                 await route(scope, receive=receive, send=send)
                 return
             elif match == Match.PARTIAL and partial is None:
@@ -512,7 +518,7 @@ class Router(object):
                 partial_scope = child_scope
 
         if partial is not None:
-            scope.update(partial_scope)
+            scope.update(partial_scope) # type: ignore
             await partial(scope, receive=receive, send=send)
             return
 
@@ -538,7 +544,7 @@ class Router(object):
             await self._lifespan(scope, receive=receive, send=send)
             return
 
-        await self.default(scope, receive=receive, send=send)
+        await self.default(scope, receive=receive, send=send) # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, Router) and self.routes == other.routes
@@ -549,10 +555,10 @@ class ProtocalRouter(object):
         self.protocals = protocals
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.protocals[scope["type"]](scope, receive=receive, send=send)
+        await self.protocals[scope["type"]](scope, receive=receive, send=send) # type: ignore
 
 
-def req_res(func: typing.Callable):
+def req_res(func: typing.Callable) -> typing.Callable:
     is_coroutine = inspect.iscoroutinefunction(func)
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
@@ -567,7 +573,7 @@ def req_res(func: typing.Callable):
     return app
 
 
-def ws_session(func: typing.Callable):
+def ws_session(func: typing.Callable) -> typing.Callable:
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         session = WebSocket(scope, receive, send)
         await func(session)
