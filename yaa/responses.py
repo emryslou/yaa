@@ -18,12 +18,12 @@ from yaa.datastructures import URL, MutableHeaders
 from yaa.types import Receive, Scope, Send
 
 try:
-    import aiofiles
+    import aiofiles  # type: ignore
 except ImportError:  # pragma: nocover
     aiofiles = None  # type: ignore
 
 try:
-    import ujson
+    import ujson  # type: ignore
 except ImportError:  # pragma: nocover
     ujson = None  # type: ignore
 
@@ -33,10 +33,10 @@ def guess_type(
 ) -> typing.Tuple[typing.Optional[str], typing.Optional[str]]:
     if sys.version_info < (3, 8):  # pragma: no cover
         url = os.fspath(url)  # pragma: no cover
-    return mimetypes_guess_type(url, strict)
+    return mimetypes_guess_type(url, strict=strict)
 
 
-http.cookies.Morsel._reserved["samesite"] = "SameSite"
+http.cookies.Morsel._reserved["samesite"] = "SameSite"  # type: ignore
 
 
 class Response(object):
@@ -45,11 +45,11 @@ class Response(object):
 
     def __init__(
         self,
-        content: typing.Any = None,
+        content: typing.Optional[typing.Any] = None,
         status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
+        headers: typing.Optional[dict] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
     ) -> None:
         self.status_code = status_code
         if media_type is not None:
@@ -74,7 +74,7 @@ class Response(object):
         if self.background is not None:
             await self.background()
 
-    def get_send_headers(self, scope: Scope):
+    def get_send_headers(self, scope: Scope) -> typing.List:
         import warnings
 
         warnings.warn(
@@ -90,8 +90,8 @@ class Response(object):
             else:
                 value = self.headers[key]
             if isinstance(value, bytes):
-                value = value.decode()
-            _headers.append([key.encode(), value.encode()])
+                value = value.decode()  # type: ignore
+            _headers.append([key.encode(), value.encode()])  # type: ignore
 
         return _headers
 
@@ -102,7 +102,7 @@ class Response(object):
             return content
         return content.encode(self.charset)
 
-    def init_headers(self, headers: dict = None):
+    def init_headers(self, headers: typing.Optional[dict] = None) -> None:
         if headers is None:
             raw_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
             missing_content_length = True
@@ -135,16 +135,16 @@ class Response(object):
     def set_cookie(
         self,
         key: str,
-        value: str = "",
-        max_age: int = None,
-        expires: int = None,
-        path: str = None,
-        domain: str = None,
-        secure: bool = False,
-        httponly: bool = False,
-        samesite: str = "lax",
+        value: typing.Optional[str] = "",
+        max_age: typing.Optional[int] = None,
+        expires: typing.Optional[int] = None,
+        path: typing.Optional[str] = None,
+        domain: typing.Optional[str] = None,
+        secure: typing.Optional[bool] = False,
+        httponly: typing.Optional[bool] = False,
+        samesite: typing.Optional[str] = "lax",
     ) -> None:
-        cookie = http.cookies.SimpleCookie()
+        cookie: dict = http.cookies.SimpleCookie()
         cookie[key] = value
         if max_age is not None:
             cookie[key]["max-age"] = max_age
@@ -166,14 +166,14 @@ class Response(object):
             ), "samesite must be either `strict`, `lax` or `none`"
             cookie[key]["samesite"] = samesite
 
-        cookie_val = cookie.output(header="").strip()
+        cookie_val = cookie.output(header="").strip()  # type: ignore
         self.raw_headers.append((b"set-cookie", cookie_val.encode("latin-1")))
 
     def del_cookie(
         self,
         key: str,
         path: str = "/",
-        domain: str = None,
+        domain: typing.Optional[str] = None,
         secure: bool = False,
         httponly: bool = False,
         samesite: str = "lax",
@@ -190,7 +190,7 @@ class Response(object):
         )
 
     @property
-    def headers(self):
+    def headers(self) -> MutableHeaders:
         if not hasattr(self, "_headers"):
             self._headers = MutableHeaders(raw=self.raw_headers)
         return self._headers
@@ -211,9 +211,9 @@ class JSONResponse(Response):
         self,
         content: typing.Any,
         status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
+        headers: typing.Optional[dict] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
     ) -> None:
         super().__init__(content, status_code, headers, media_type, background)
 
@@ -243,9 +243,9 @@ class StreamingResponse(Response):
         self,
         content: typing.Any,
         status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
+        headers: typing.Optional[dict] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
     ) -> None:
         if isinstance(content, typing.AsyncIterable):
             self.body_iter = content
@@ -302,11 +302,11 @@ class FileResponse(Response):
         self,
         path: typing.Union[str, "os.PathLike[str]"],
         status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
-        filename: str = None,
-        stat_result: os.stat_result = None,
+        headers: typing.Optional[dict] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
+        filename: typing.Optional[str] = None,
+        stat_result: typing.Optional[os.stat_result] = None,
     ) -> None:
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
@@ -332,7 +332,7 @@ class FileResponse(Response):
         if stat_result is not None:
             self.set_stat_headers(stat_result)
 
-    def set_stat_headers(self, stat_result: os.stat_result):
+    def set_stat_headers(self, stat_result: os.stat_result) -> None:
         stat_headers = self.get_stat_headers(stat_result)
         for _name, _value in stat_headers.items():
             self.headers.setdefault(_name, _value)
@@ -392,9 +392,9 @@ class RedirectResponse(Response):
     def __init__(
         self,
         url: typing.Union[str, URL],
-        status_code=307,
-        headers: dict = None,
-        background: BackgroundTask = None,
+        status_code: int = 307,
+        headers: typing.Optional[dict] = None,
+        background: typing.Optional[BackgroundTask] = None,
     ) -> None:
         super().__init__(
             b"", status_code=status_code, headers=headers, background=background

@@ -371,10 +371,12 @@ def test_json_none_response(client_factory):
     async def app(scope, receive, send):
         response = JSONResponse(None)
         await response(scope, receive, send)
+
     client = client_factory(app)
     response = client.get("/")
     assert response.json() is None
     assert response.content == b"null"
+
 
 def test_empty_response(client_factory):
     app = Response()
