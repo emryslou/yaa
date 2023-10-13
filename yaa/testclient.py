@@ -376,7 +376,9 @@ class TestClient(requests.Session):
 
     portal: typing.Optional[anyio.abc.BlockingPortal] = None
 
-    async_backend = {
+    base_url: str = "http://testserver"
+
+    async_backend: dict = {
         "backend": "asyncio",
         "backend_options": {},
     }
@@ -399,6 +401,7 @@ class TestClient(requests.Session):
         else:
             app = typing.cast(ASGI2App, app)
             asgi_app = _WrapASGI2(app)
+        self.base_url = base_url
         self.async_backend["backend"] = backend
         self.async_backend["backend_options"] = backend_options
 

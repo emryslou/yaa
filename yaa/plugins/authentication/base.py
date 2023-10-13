@@ -3,6 +3,8 @@ import functools
 import inspect
 import typing
 
+from urllib.parse import urlencode
+
 from yaa.exceptions import HttpException
 from yaa.requests import HttpConnection, Request
 from yaa.responses import RedirectResponse, Response
@@ -51,8 +53,12 @@ def requires(
                 assert isinstance(req, Request)
                 if not has_required_scope(req, scope_list):
                     if redirect is not None:
+                        origin_req_qparam = urlencode({"next": str(req.url)})
+                        next_url = "{}?{}".format(
+                            req.url_for(redirect), origin_req_qparam
+                        )
                         return RedirectResponse(
-                            url=req.url_for(redirect), status_code=303
+                            url=next_url, status_code=303
                         )
                     # endif
                     raise HttpException(status_code=status_code)
