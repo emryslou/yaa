@@ -95,6 +95,11 @@ class AuthenticationError(Exception):
     pass
 
 
+AuthenticationOnErrorCall = typing.Callable[
+    [HttpConnection, AuthenticationError], Response
+]
+
+
 class AuthenticationBackend(object):
     async def authenticate(self, conn: HttpConnection) -> typing.Any:
         raise NotImplementedError()  # pragma: nocover
