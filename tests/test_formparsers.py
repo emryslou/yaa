@@ -406,3 +406,33 @@ def test_missing_boundary_parameter(app, exception, client_factory):
         )
         assert res.status_code == 400
         assert res.text == "Missing boundary in multipart."
+
+
+@pytest.mark.parametrize(
+    "app,expectation",
+    [
+        (app, pytest.raises(MultiPartException)),
+        (Yaa(routes=[Mount("/", app=app)]), does_not_raise()),
+    ],
+)
+def test_missing_name_parameter_on_content_disposition(app, expectation, client_factory):
+    client = client_factory(app)
+    with expectation:
+        res = client.post(
+            "/",
+            data=(
+                # data
+                b"--a7f7ac8d4e2e437c877bb7b8d7cc549c\r\n"
+                b'Content-Disposition: form-data; ="field0"\r\n\r\n'
+                b"value0\r\n"
+            ),
+            headers={
+                "Content-Type": (
+                    "multipart/form-data; boundary=a7f7ac8d4e2e437c877bb7b8d7cc549c"
+                )
+            },
+        )
+        assert res.status_code == 400
+        assert (
+            res.text == 'The Content-Disposition header field "name" must be provided.'
+        )
