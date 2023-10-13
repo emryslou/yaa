@@ -75,7 +75,7 @@ class FormData(ImmutableMultiDict):
             value = kwargs.pop("items", value)
             assert not kwargs, "Unknown parameter"
 
-        super().__init__(value)
+        super().__init__(value)  # type: ignore[arg-type]
 
     async def close(self) -> None:
         for _, value in self.multi_items():

@@ -68,14 +68,14 @@ class QueryParams(ImmutableMultiDict):
                 value = value.decode("latin-1")
             super().__init__(parse_qsl(value, keep_blank_values=True))
         else:
-            super().__init__(value)
+            super().__init__(value)  # type: ignore[arg-type]
 
     def __str__(self) -> str:
         return urlencode(self._list)
 
     def __repr__(self) -> str:
         klass_name = self.__class__.__name__
-        return f"{klass_name}(query_string={repr(str(self))})"
+        return f"{klass_name}(query_string={repr(str(self))})"  # type: ignore[arg-type]
 
 
 class Secret(object):
