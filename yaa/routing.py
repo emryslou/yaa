@@ -6,7 +6,11 @@ description:
         - BaseRoute: 路由基本类，所有的路由类的实现必须是其的子类
         - Route: BaseRoute 的子类，目前所有的 API 由该类路由
         - WebSocketRoute: BaseRoute 的子类，WebSocket 相关 API 由该类路由
+        - Mount: BaseRoute 的子类，挂载其他符合 asgi3 的应用
+        - Host: 其他子域名挂载
+        - Router: 路由分组
 author: emryslou@gmail.com
+examples: test_routing.py
 """
 import enum
 import functools

@@ -1,3 +1,19 @@
+"""
+module: Response
+title: 路由控制模块
+description:
+    Http 响应对象，挂载到路由 route 的 API 均需返回响应对象， 主要包含如下:
+    - Response: 响应对象基础类，所有响应对象的实现必须继承该对象
+    - HTMLResponse: html 响应对象
+    - PlainTextResponse: text 响应对象
+    - JSONResponse: json 响应对象
+    - UJSONResponse: json 响应对象, 通过 ujson 实现
+    - StreamingResponse: 流响应对象
+    - FileResponse: 文件响应
+    - RedirectResponse: 重定向
+author: emryslou@gmail.com
+examples: test_responses.py
+"""
 import functools
 import http.cookies
 import json
@@ -51,6 +67,13 @@ class Response(object):
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
+        """Response:
+        param: content: 响应内容
+        param: status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+        param: headers: 响应头部
+        param: media_type: 媒体类型，响应数据类型
+        param: background: 响应后，后台执行的任务
+        """
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
@@ -307,6 +330,7 @@ class FileResponse(Response):
         background: typing.Optional[BackgroundTask] = None,
         filename: typing.Optional[str] = None,
         stat_result: typing.Optional[os.stat_result] = None,
+        content_disposition_type: str = "attachment",  # `inline` or `attachment` @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
     ) -> None:
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
@@ -321,11 +345,13 @@ class FileResponse(Response):
         if self.filename is not None:
             content_disposition_name = quote(self.filename)
             if content_disposition_name != self.filename:
-                content_disposition = (
-                    "attachment; filename*=utf-8''" f"{content_disposition_name}"
+                content_disposition = "{}; filename*=utf-8''{}".format(
+                    content_disposition_type, content_disposition_name
                 )
             else:
-                content_disposition = f'attachment; filename="{self.filename}"'
+                content_disposition = '{}; filename="{}"'.format(
+                    content_disposition_type, self.filename
+                )
             self.headers.setdefault("content-disposition", content_disposition)
 
         self.stat_result = stat_result
