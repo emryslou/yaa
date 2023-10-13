@@ -16,7 +16,8 @@ from yaa.datastructures import (
     QueryParams,
     State,
 )
-from yaa.formparsers import FormParser, MultiPartParser
+from yaa.exceptions import HttpException
+from yaa.formparsers import FormParser, MultiPartException, MultiPartParser
 from yaa.types import Message, P, Receive, Scope, Send
 
 try:
@@ -261,8 +262,13 @@ class Request(HttpConnection):
             content_type_header = self.headers.get("Content-Type")
             content_type, options = parse_options_header(content_type_header)
             if content_type == b"multipart/form-data":
-                parser = MultiPartParser(self.headers, self.stream)  # type: ignore
-                self._form = await parser.parse()
+                try:
+                    parser = MultiPartParser(self.headers, self.stream)  # type: ignore
+                    self._form = await parser.parse()
+                except MultiPartException as exc:
+                    if "app" in self.scope:
+                        raise HttpException(status_code=400, detail=exc.message)
+                    raise exc
             elif content_type == b"application/x-www-form-urlencoded":
                 parser = FormParser(self.headers, self.stream)  # type: ignore
                 self._form = await parser.parse()

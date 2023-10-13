@@ -378,10 +378,23 @@ def test_multipart_request_multiple_files_with_headers(tmpdir, client_factory):
         }
 
 
-def test_missing_boundary_parameter(client_factory):
+from yaa import Yaa
+from contextlib import nullcontext as does_not_raise
+from yaa.routing import Mount
+from yaa.formparsers import MultiPartException
+
+
+@pytest.mark.parametrize(
+    "app,exception",
+    [
+        (app, pytest.raises(MultiPartException)),
+        (Yaa(routes=[Mount("/", app=app)]), does_not_raise()),
+    ],
+)
+def test_missing_boundary_parameter(app, exception, client_factory):
     client = client_factory(app)
-    with pytest.raises(KeyError, match="boundary"):
-        client.post(
+    with exception:
+        res = client.post(
             "/",
             data=(
                 # file
@@ -391,3 +404,5 @@ def test_missing_boundary_parameter(client_factory):
             ),
             headers={"Content-Type": "multipart/form-data; charset=utf-8"},
         )
+        assert res.status_code == 400
+        assert res.text == "Missing boundary in multipart."
