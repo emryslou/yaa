@@ -1,10 +1,11 @@
 # cores
 anyio >= 3.4.0, < 4
-requests
 aiofiles
-ujson
-types-ujson
+databases[sqlite]
 python-multipart
+requests
+types-ujson
+ujson
 
 # session 
 itsdangerous

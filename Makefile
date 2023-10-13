@@ -61,6 +61,9 @@ http:
 http2:
 	python -m hypercorn --keyfile demo/key.pem --certfile demo/cert.pem demo.main:app --bind 0.0.0.0:5505 --reload
 
+requirements:
+	python -m pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
 dist:
 	python setup.py sdist bdist_wheel
 
