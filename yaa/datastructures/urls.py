@@ -89,6 +89,9 @@ class Secret(object):
     def __str__(self) -> str:
         return self._value
 
+    def __bool__(self) -> bool:
+        return bool(self._value)
+
 
 class URL(object):
     def __init__(
