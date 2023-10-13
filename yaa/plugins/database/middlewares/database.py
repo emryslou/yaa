@@ -4,7 +4,11 @@ import warnings
 
 from yaa.datastructures import DatabaseURL
 from yaa.middlewares.core import Middleware
-from yaa.plugins.database.drivers.base import DatabaseBackend
+from yaa.plugins.database.drivers.base import (
+    DatabaseBackend,
+    DatabaseSession,
+    DatabaseTransaction,
+)
 from yaa.plugins.lifespan.types import EventType
 from yaa.types import ASGI3App, Message, Receive, Scope, Send
 
@@ -21,8 +25,8 @@ class DatabaseMiddleware(Middleware):
         self.debug = debug
         self.backend = self.get_backend(database_url)
         self.rollback_on_shutdown = rollback_on_shutdown
-        self.session = None
-        self.transaction = None
+        self.session: typing.Optional["DatabaseSession"] = None
+        self.transaction: typing.Optional["DatabaseTransaction"] = None
 
     def get_backend(
         self, database_url: typing.Union[str, DatabaseURL]
@@ -37,7 +41,7 @@ class DatabaseMiddleware(Middleware):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "lifespan":
             await DatabaseLifespan(
-                self.app, startup=[self.startup], shutdown=[self.shutdown]
+                self.app, startup=[self.startup], shutdown=[self.shutdown]  # type: ignore
             )(scope, receive, send)
             return
 
@@ -46,7 +50,7 @@ class DatabaseMiddleware(Middleware):
         else:
             session = self.backend.session()
 
-        scope["database"] = session
+        scope["database"] = session  # type: ignore[index]
 
         await self.app(scope, receive, send)
 
@@ -66,7 +70,9 @@ class DatabaseMiddleware(Middleware):
 
 
 class DatabaseLifespan(object):
-    def __init__(self, app: ASGI3App, **handlers: typing.Callable) -> None:
+    def __init__(
+        self, app: ASGI3App, **handlers: typing.List[typing.Coroutine]
+    ) -> None:
         self.inner = app
         self.handlers = {
             event_type: handlers.get(str(event_type), [])
@@ -79,7 +85,7 @@ class DatabaseLifespan(object):
         async def receiver() -> Message:
             message = await receive()
             if message["type"] in _all_event_spans:
-                await self.run_handlers(_all_event_spans[message["type"]])
+                await self.run_handlers(str(_all_event_spans[message["type"]]))
 
             return message
 
@@ -91,6 +97,7 @@ class DatabaseLifespan(object):
                 if asyncio.iscoroutinefunction(handler):
                     await handler()
                 else:
+                    assert callable(handler)
                     handler()
             except Exception as exc:  # pragram: on cover
                 warnings.warn(

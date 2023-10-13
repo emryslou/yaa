@@ -5,5 +5,5 @@ class Middleware(object):
     def __init__(self, app: ASGI3App, *args: P.args, **kwargs: P.kwargs) -> None:
         self.app = app
 
-    def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         raise NotImplementedError()  # pragma: nocover

@@ -3,6 +3,7 @@ anyio >= 3.4.0, < 4
 requests
 aiofiles
 ujson
+types-ujson
 python-multipart
 
 # session 

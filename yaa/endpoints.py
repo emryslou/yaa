@@ -10,9 +10,9 @@ from yaa.types import Message, Receive, Scope, Send
 from yaa.websockets import WebSocket
 
 try:
-    import ujson as json  # type: ignore
+    import ujson as json  # type: ignore[no-redef]
 except ImportError:  # pragma: no cover
-    import json  # pragma: no cover
+    import json  # type: ignore[no-redef] # pragma: no cover
 
 
 class _Endpoint(object):

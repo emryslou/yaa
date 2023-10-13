@@ -15,7 +15,7 @@ class Convertor(object):
         super().__init_subclass__(*args, **kwargs)
         cls.plugins[cls.name] = cls
 
-    def convert(self, value: str) -> str:
+    def convert(self, value: str) -> T:  # type: ignore[type-var]
         raise NotImplementedError()  # pragma: no cover
 
     def to_string(self, value: T) -> str:
@@ -26,7 +26,7 @@ class StringConvertor(Convertor):
     regex = "[^/]+"
     name = "str"
 
-    def convert(self, value: str) -> typing.Any:
+    def convert(self, value: str) -> str:  # type: ignore[override]
         return value
 
     def to_string(self, value: typing.Any) -> str:

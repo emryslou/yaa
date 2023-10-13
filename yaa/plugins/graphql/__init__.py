@@ -1,3 +1,5 @@
+# type: ignore
+
 from yaa.applications import Yaa
 
 from .graphql import GraphQLApp

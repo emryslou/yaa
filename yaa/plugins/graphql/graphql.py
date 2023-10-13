@@ -1,4 +1,7 @@
-import ujson as json
+# type: ignore
+import typing
+
+import ujson as json  # type: ignore[no-redef]
 
 try:
     import graphene
@@ -6,9 +9,9 @@ try:
     from graphql.execution.executors.asyncio import AsyncioExecutor
 except ImportError:  # pragma: no cover
     graphene = None  # pragma: no cover
-    AsyncioExecutor = None  # pragma: no cover
-    format_graphql_error = None  # pragma: no cover
-    GraphQLError = None  # pragma: no cover
+    AsyncioExecutor = None  # type: ignore # pragma: no cover
+    format_graphql_error = None  # type: ignore # pragma: no cover
+    GraphQLError = None  # type: ignore # pragma: no cover
 
 import yaa.status as web_status
 from yaa.background import BackgroundTasks
@@ -27,7 +30,7 @@ class GraphQLApp(object):
     def __init__(
         self,
         schema: "graphene.Schema",
-        executor_class: type = None,
+        executor_class: typing.Optional[type] = None,
     ) -> None:
         assert graphene is not None, "python `graphene` package must be installed"
 
@@ -100,7 +103,7 @@ class GraphQLApp(object):
         req: Request,
         query,
         variable=None,
-        context: dict = None,
+        context: typing.Optional[dict] = None,
         operation_name=None,
     ):
         if self.is_async:

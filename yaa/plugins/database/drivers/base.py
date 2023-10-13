@@ -4,6 +4,8 @@ from types import TracebackType
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql import ClauseElement
 
+from yaa.types import P
+
 
 def compile(query: ClauseElement, dialect: Dialect) -> typing.Tuple[str, list]:
     compiled = query.compile(dialect=dialect)
@@ -25,7 +27,7 @@ class DatabaseBackend(object):
     name: str
     drivers: typing.Dict[str, type["DatabaseBackend"]] = {}
 
-    def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def __init_subclass__(cls, *args: P.args, **kwargs: P.kwargs) -> None:
         super().__init_subclass__(*args, **kwargs)
         names_ = []  # type: typing.List[str]
         if hasattr(cls, "name"):
