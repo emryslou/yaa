@@ -2,7 +2,6 @@ import asyncio
 import functools
 import inspect
 import typing
-
 from urllib.parse import urlencode
 
 from yaa.exceptions import HttpException
@@ -57,9 +56,7 @@ def requires(
                         next_url = "{}?{}".format(
                             req.url_for(redirect), origin_req_qparam
                         )
-                        return RedirectResponse(
-                            url=next_url, status_code=303
-                        )
+                        return RedirectResponse(url=next_url, status_code=303)
                     # endif
                     raise HttpException(status_code=status_code)
                 # endif

@@ -318,32 +318,19 @@ def control_panel(request):
     )
 
 
-def test_custom_on_error(client_factory):
-    with client_factory(other_app) as client:
-        response = client.get("/control-panel", auth=("eml", "example"))
-        assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "eml"}
-
-        response = client.get(
-            "/control-panel", headers={"Authorization": "basic foobar"}
-        )
-        assert response.status_code == 401
-        assert response.json() == {"error": "Invalid basic auth credentials"}
-
 class TestAuthentication:
-
     def _make_url(self, client, next_path: str) -> str:
         from urllib.parse import urlencode
 
-        base_path = ''.join([client.base_url, "/"])
-        next_url = ''.join([client.base_url, next_path])
-        return ''.join([base_path, '?', urlencode({'next': next_url})])
+        base_path = "".join([client.base_url, "/"])
+        next_url = "".join([client.base_url, next_path])
+        return "".join([base_path, "?", urlencode({"next": next_url})])
 
     def test_authentication_redirect(self, client_factory):
         with client_factory(app) as client:
             response = client.get("/admin")
             assert response.status_code == 200
-            assert response.url == self._make_url(client, '/admin')
+            assert response.url == self._make_url(client, "/admin")
 
             response = client.get("/admin", auth=("eml", "example"))
             assert response.status_code == 200
@@ -351,8 +338,20 @@ class TestAuthentication:
 
             response = client.get("/admin/sync")
             assert response.status_code == 200
-            assert response.url == self._make_url(client, '/admin/sync')
+            assert response.url == self._make_url(client, "/admin/sync")
 
             response = client.get("/admin/sync", auth=("eml", "example"))
             assert response.status_code == 200
             assert response.json() == {"authenticated": True, "user": "eml"}
+
+    def test_custom_on_error(self, client_factory):
+        with client_factory(other_app) as client:
+            response = client.get("/control-panel", auth=("eml", "example"))
+            assert response.status_code == 200
+            assert response.json() == {"authenticated": True, "user": "eml"}
+
+            response = client.get(
+                "/control-panel", headers={"Authorization": "basic foobar"}
+            )
+            assert response.status_code == 401
+            assert response.json() == {"error": "Invalid basic auth credentials"}

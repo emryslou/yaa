@@ -3,6 +3,7 @@ import pytest_benchmark
 
 # pytest.skip("skipping", allow_module_level=True)
 
+
 class TestDebug:
     def test_open_file(self, tmpdir):
         from yaa import Yaa

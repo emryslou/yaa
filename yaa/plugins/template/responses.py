@@ -87,7 +87,7 @@ class Jinja2Template(object):
         loader = jinja2.FileSystemLoader(str(directory))
         env_options.setdefault("loader", loader)
         env_options.setdefault("autoescape", True)
-        env = jinja2.Environment(**env_options) # nosec
+        env = jinja2.Environment(**env_options)  # nosec
         env.globals["url_for"] = url_for
 
         self.env = env
