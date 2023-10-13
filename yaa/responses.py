@@ -70,10 +70,11 @@ class Response(object):
         """Response:
         param: content: 响应内容
         param: status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-        param: headers: 响应头部
+        param: headers: 响应头
         param: media_type: 媒体类型，响应数据类型
         param: background: 响应后，后台执行的任务
         """
+
         self.status_code = status_code
         if media_type is not None:
             self.media_type = media_type
@@ -119,6 +120,9 @@ class Response(object):
         return _headers
 
     def render(self, content: typing.Any) -> bytes:
+        """设置响应内容
+        param: content: 响应内容
+        """
         if content is None:
             content = b""
         if isinstance(content, bytes):
@@ -126,6 +130,9 @@ class Response(object):
         return content.encode(self.charset)
 
     def init_headers(self, headers: typing.Optional[dict] = None) -> None:
+        """设置响应头
+        param: headers: 响应头
+        """
         if headers is None:
             raw_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
             missing_content_length = True
@@ -167,6 +174,12 @@ class Response(object):
         httponly: typing.Optional[bool] = False,
         samesite: typing.Optional[str] = "lax",
     ) -> None:
+        """添加cookie
+        param: key: cookie 键
+        param: value: cookie 值
+        param: max_age: cookie 存活时间，单位: 秒(second)，负数或者 0 则立即失效
+        param: expires: cookie 存活时间戳，单位: 秒(second), 注意: max_age 和 expires 同时设置，则 以 max_age 优先
+        """
         cookie: dict = http.cookies.SimpleCookie()
         cookie[key] = value
         if max_age is not None:

@@ -388,6 +388,8 @@ def test_empty_response(client_factory):
 
 
 def test_file_response_with_inline_disposition(tmpdir, client_factory):
+    import os
+
     content = b"file content"
     filename = "hello.txt"
     path = os.path.join(tmpdir, filename)
