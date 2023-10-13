@@ -16,5 +16,7 @@ ASGI3App = typing.Callable[[Scope, Receive, Send], typing.Awaitable[None]]
 HeaderRaw = typing.List[typing.Tuple[bytes, bytes]]
 HeaderRawOptional = typing.Optional[HeaderRaw]
 
+SameSiteEnum = typing.Literal["lax", "strict", "none"]
+
 P = typing.ParamSpec("P")
 T = typing.TypeVar("T")

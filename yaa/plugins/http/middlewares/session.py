@@ -7,7 +7,7 @@ from itsdangerous.exc import BadSignature
 from yaa.datastructures import MutableHeaders
 from yaa.middlewares.core import Middleware
 from yaa.requests import HttpConnection
-from yaa.types import ASGI3App, Message, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, SameSiteEnum, Scope, Send
 
 
 class SessionMiddleware(Middleware):
@@ -18,7 +18,7 @@ class SessionMiddleware(Middleware):
         session_cookie: str = "session",
         max_age: int = 14 * 24 * 60 * 60,  # 14 days, in seconds
         path: str = "/",
-        same_site: str = "lax",
+        same_site: SameSiteEnum = "lax",
         https_only: bool = False,
         debug: bool = False,
     ) -> None:

@@ -31,7 +31,7 @@ from yaa._compat import md5_hexdigest
 from yaa.background import BackgroundTask
 from yaa.concurrency import iterate_in_threadpool
 from yaa.datastructures import URL, MutableHeaders
-from yaa.types import Receive, Scope, Send
+from yaa.types import Receive, SameSiteEnum, Scope, Send
 
 try:
     import aiofiles  # type: ignore
@@ -172,7 +172,7 @@ class Response(object):
         domain: typing.Optional[str] = None,
         secure: typing.Optional[bool] = False,
         httponly: typing.Optional[bool] = False,
-        samesite: typing.Optional[str] = "lax",
+        samesite: typing.Optional[SameSiteEnum] = "lax",
     ) -> None:
         """添加cookie
         param: key: cookie 键
@@ -201,11 +201,6 @@ class Response(object):
         if httponly:
             cookie[key]["httponly"] = True
         if samesite is not None:
-            assert samesite.lower() in (
-                "strict",
-                "lax",
-                "none",
-            ), "samesite must be either `strict`, `lax` or `none`"
             cookie[key]["samesite"] = samesite
 
         cookie_val = cookie.output(header="").strip()  # type: ignore
@@ -218,7 +213,7 @@ class Response(object):
         domain: typing.Optional[str] = None,
         secure: bool = False,
         httponly: bool = False,
-        samesite: str = "lax",
+        samesite: SameSiteEnum = "lax",
     ) -> None:
         self.set_cookie(
             key,
