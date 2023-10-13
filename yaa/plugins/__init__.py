@@ -28,6 +28,8 @@ def load_middlewares(app: Yaa, package: str, middlewares_config: dict = {}) -> d
                 f"{package}.{mw_name}", middlewares[mw_name], mw_config
             )
         else:
-            warnings.warn(f"middleware {mw_name} not found, and skipped")
+            warnings.warn(
+                f"middleware {mw_name} not found, and skipped"
+            )  # pragma: no cover
 
     return klass

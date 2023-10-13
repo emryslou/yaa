@@ -1,5 +1,5 @@
 import os
-
+import typing
 import pytest
 
 from yaa.datastructures.form import UploadFile
@@ -20,7 +20,7 @@ FORCE_MULTIPART = ForceMultipartDict()
 async def app(scope, receive, send):
     request = Request(scope, receive)
     data = await request.form()
-    output = {}
+    output: typing.Dict[str, typing.Any] = {}
     for key, value in data.items():
         if isinstance(value, UploadFile):
             content = await value.read()
@@ -39,7 +39,7 @@ async def app(scope, receive, send):
 async def multi_items_app(scope, receive, send):
     request = Request(scope, receive)
     data = await request.form()
-    output = {}
+    output: typing.Dict[str, typing.Any] = {}
     for key, value in data.multi_items():
         if key not in output:
             output[key] = []
@@ -64,7 +64,7 @@ async def app_read_body(scope, receive, send):
     # Read bytes, to force request.stream() to return the already parsed body
     body_bytes = await request.body()
     data = await request.form()
-    output = {}
+    output: typing.Dict[str, typing.Any] = {}
     for key, value in data.items():
         output[key] = value
     await request.close()
@@ -75,7 +75,7 @@ async def app_read_body(scope, receive, send):
 async def app_with_headers(scope, receive, send):
     request = Request(scope, receive)
     data = await request.form()
-    output = {}
+    output: typing.Dict[str, typing.Any] = {}
     for key, value in data.items():
         if isinstance(value, UploadFile):
             content = await value.read()

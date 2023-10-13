@@ -58,7 +58,7 @@ class UploadFile(object):
 FormValue = typing.Union[str, "FormValue"]  # type: ignore[misc]
 
 
-class FormData(ImmutableMultiDict):
+class FormData(ImmutableMultiDict[str, typing.Union[UploadFile, str]]):
     def __init__(
         self,
         value: typing.Optional[

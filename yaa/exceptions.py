@@ -28,4 +28,4 @@ class HttpException(Exception):
 
 class NotFoundException(HttpException):
     def __init__(self, detail: typing.Optional[str] = None):
-        super().__init__(status_code=404, detail=detail)
+        super().__init__(status_code=404, detail=detail)  # pragma: no cover
