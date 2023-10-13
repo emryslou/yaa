@@ -97,9 +97,8 @@ class DatabaseLifespan(object):
                 if asyncio.iscoroutinefunction(handler):
                     await handler()
                 else:
-                    assert callable(handler)
-                    handler()
-            except Exception as exc:  # pragram: on cover
+                    handler()  # type: ignore[operator]
+            except Exception as exc:  # pragma: nocover
                 warnings.warn(
                     "database init error, may lead to unusabe, err:" + str(exc)
-                )  # pragram: on cover
+                )  # pragma: nocover

@@ -156,29 +156,41 @@ def test_websocket(client_factory):
 def test_url_for(client_factory):
     assert app.url_path_for("home") == "/"
     assert app.url_path_for("users", username="eml") == "/users/eml"
-    assert app.url_path_for("users") == "/users"
+    assert app.url_path_for("users") == "/users/"
     assert (
         app.url_path_for("home").make_absolute_url(base_url="https://ex.org/root_path/")
         == "https://ex.org/root_path/"
     )
     assert (
-        app.url_path_for("user", username="eml").make_absolute_url(
+        app.url_path_for("users", username="eml").make_absolute_url(
             base_url="https://example.org/root_path/"
         )
         == "https://example.org/root_path/users/eml"
     )
 
+    assert (
+        app.url_path_for("home").make_absolute_url(base_url="https://example.org")
+        == "https://example.org/"
+    )
+
+    assert (
+        app.url_path_for("users", username="eml").make_absolute_url(
+            base_url="https://example.org"
+        )
+        == "https://example.org/users/eml"
+    )
+    assert (
+        app.url_path_for("ws_endpoint").make_absolute_url(
+            base_url="https://example.org"
+        )
+        == "wss://example.org/ws"
+    )
+
     with pytest.raises(NoMatchFound, match="notmatched"):
         app.url_path_for("notmatched")
 
-    with pytest.raises(NoMatchFound, match="notmatched"):
-        app.url_path("notmatched")
-
     with pytest.raises(NoMatchFound, match="'a,b"):
         app.url_path_for("notmatched", a=12, b="cc")
-
-    with pytest.raises(NoMatchFound, match="'a,b'"):
-        app.url_path("notmatched", a=12, b="cc")
 
 
 def test_endpoint(client_factory):
@@ -232,26 +244,6 @@ def test_mixed_app(client_factory):
     with client.wsconnect("/") as ss:
         text = ss.receive_text()
         assert text == "Hello, Ws"
-
-
-def test_url_for(client_factory):
-    assert (
-        app.url_path_for("home").make_absolute_url(base_url="https://example.org")
-        == "https://example.org/"
-    )
-
-    assert (
-        app.url_path_for("users", username="eml").make_absolute_url(
-            base_url="https://example.org"
-        )
-        == "https://example.org/users/eml"
-    )
-    assert (
-        app.url_path_for("ws_endpoint").make_absolute_url(
-            base_url="https://example.org"
-        )
-        == "wss://example.org/ws"
-    )
 
 
 def test_mount_urls(client_factory):
@@ -509,6 +501,14 @@ def test_partial_async_endpoint(client_factory):
     assert response.status_code == 200
     assert response.json() == {"arg": "foo"}
 
+    test_client = client_factory(app)
+    response = test_client.get("/partial")
+    assert response.status_code == 200
+    assert response.json() == {"arg": "foo"}
+    cls_method_response = test_client.get("/partial/cls")
+    assert cls_method_response.status_code == 200
+    assert cls_method_response.json() == {"arg": "foo"}
+
 
 def test_duplicated_param_names(client_factory):
     with pytest.raises(
@@ -523,16 +523,6 @@ def test_duplicated_param_names(client_factory):
         Route("/{id}/{name}/{id}/{name}", users)
 
 
-def test_partial_async_endpoint(client_factory):
-    test_client = client_factory(app)
-    response = test_client.get("/partial")
-    assert response.status_code == 200
-    assert response.json() == {"arg": "foo"}
-    cls_method_response = test_client.get("/partial/cls")
-    assert cls_method_response.status_code == 200
-    assert cls_method_response.json() == {"arg": "foo"}
-
-
 def test_partial_async_ws_endpoint(client_factory):
     test_client = client_factory(app)
     with test_client.wsconnect("/partial/ws") as websocket:
@@ -545,18 +535,18 @@ def test_partial_async_ws_endpoint(client_factory):
 
 class Endpoint:
     async def my_method(self, request):
-        ...  # pragma: no cover
+        ...
 
     @classmethod
     async def my_classmethod(cls, request):
-        ...  # pragma: no cover
+        ...
 
     @staticmethod
     async def my_staticmethod(request):
-        ...  # pragma: no cover
+        ...
 
     def __call__(self, request):
-        ...  # pragma: no cover
+        ...
 
 
 async def async_homepage(req):
