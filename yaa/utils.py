@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import typing
 
 
@@ -18,3 +20,12 @@ def get_plugin_middlewares(package: str, root_path: str = "") -> typing.Dict[str
     }
 
     return middlewares
+
+
+def is_async_callable(obj: typing.Any) -> bool:
+    while isinstance(obj, functools.partial):
+        obj = obj.func
+
+    return asyncio.iscoroutinefunction(obj) or (
+        callable(obj) and asyncio.iscoroutinefunction(obj.__call__)
+    )
