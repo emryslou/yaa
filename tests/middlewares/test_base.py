@@ -171,7 +171,7 @@ def test_generate_faulty_stream(client_factory):
 def test_exception_on_mounted_apps(client_factory):
     sub_app = Yaa(routes=[Route("/", exc)])
     app.mount("/sub", sub_app)
-    client = client_factory(app)
-    with pytest.raises(Exception) as ctx:
-        client.get("/sub/")
-    assert str(ctx.value) == "Exc"
+    client = client_factory(app, raise_server_exceptions=True)
+    res = client.get("/sub/")
+    assert res.status_code == 500
+    assert "Server Error" in res.text

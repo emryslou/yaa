@@ -57,7 +57,13 @@ class BaseHttpMiddleware(Middleware):
                 async with stream_receive:
                     async for message in stream_receive:
                         assert message["type"] == "http.response.body"
-                        yield message.get("body", b"")
+                        body = message.get("body", b"")
+                        if body:
+                            yield body
+                        if not message.get("more_body", False):
+                            break
+                    # end async for
+                # end async with
                 if app_exc is not None:
                     raise app_exc
 
