@@ -105,8 +105,8 @@ class Yaa(object):
 
         key_srv = "yaa.plugins.exceptions.servererror"
         key_exc = "yaa.plugins.exceptions.exception"
-        (srv, srv_options) = pmw.middlewares.get(key_srv)
-        (exc, exc_options) = pmw.middlewares.get(key_exc)
+        (srv, srv_options) = pmw.middlewares.get(key_srv)  # type: ignore[misc]
+        (exc, exc_options) = pmw.middlewares.get(key_exc)  # type: ignore[misc]
 
         for _type, _handler in (self.exception_handlers or {}).items():
             if _type in (500, Exception):

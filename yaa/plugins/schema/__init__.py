@@ -4,10 +4,10 @@ import functools
 from yaa.applications import Yaa
 
 
-def plugin_init(app: Yaa, config: dict = {}):
+def plugin_init(app: Yaa, config: dict = {}) -> None:
     schema_generator = config.get("schema_generator", None)
 
-    def get_schema(app) -> dict:
+    def get_schema(app: Yaa) -> dict:
         schema_generator is not None
         return schema_generator.get_schema(app.routes)
 

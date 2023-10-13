@@ -3,7 +3,7 @@ import typing
 from yaa.middlewares.core import Middleware
 from yaa.requests import HttpConnection
 from yaa.responses import PlainTextResponse, Response
-from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.types import ASGI3App, Receive, Scope, Send
 
 from .base import (
     AuthCredentials,
@@ -16,7 +16,7 @@ from .base import (
 class AuthenticationMiddleware(Middleware):
     def __init__(
         self,
-        app: ASGIApp,
+        app: ASGI3App,
         backend: AuthenticationBackend,
         debug: typing.Optional[bool] = False,
         on_error: typing.Optional[
