@@ -44,6 +44,9 @@ test: test_temp
 	@export PYTHONPATH=`pwd`
 	python -m coverage run -m pytest $(pytest_params) $(pytest_fn) -s -vv
 
+bandit:
+	python -m bandit -r yaa --severity-level high
+
 precommit: test_temp
 	@export PYTHONPATH=`pwd`
 	./scripts/lint

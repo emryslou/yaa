@@ -43,8 +43,10 @@ mkdocs
 mkdocs-material
 
 # Developing
-isort
+bandit
 black
+isort
+pylint
 
 # Packaging
 twine
