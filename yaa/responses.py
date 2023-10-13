@@ -179,6 +179,12 @@ class Response(object):
         param: value: cookie 值
         param: max_age: cookie 存活时间，单位: 秒(second)，负数或者 0 则立即失效
         param: expires: cookie 存活时间戳，单位: 秒(second), 注意: max_age 和 expires 同时设置，则 以 max_age 优先
+        param: path: cookie 可访问 URL path
+        param: domain: 可访问域名
+        param: secure: 是否仅 https 使用
+        param: httponly: 是否禁止 JS 访问
+        param: samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+
         """
         cookie: dict = http.cookies.SimpleCookie()
         cookie[key] = value
