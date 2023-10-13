@@ -89,7 +89,7 @@ class CORSMiddleware(Middleware):
 
         self.simple_headers = simple_headers
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
             method = scope["method"]
             headers = Headers(scope=scope)

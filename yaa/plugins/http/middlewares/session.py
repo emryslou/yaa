@@ -32,7 +32,7 @@ class SessionMiddleware(Middleware):
         if https_only:
             self.security_flags += "; secure"
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket"):
             conn = HttpConnection(scope=scope)
             if self.session_cookie in conn.cookies:

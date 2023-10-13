@@ -55,7 +55,7 @@ class WSGIMiddleware(Middleware):
     def __init__(self, app: ASGI3App) -> None:
         super().__init__(app)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == "http"
         await WSGIResponser(self.app)(scope, receive, send)
 

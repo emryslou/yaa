@@ -9,7 +9,7 @@ class HttpsRedirectMiddleware(Middleware):
         super().__init__(app)
         self.debug = debug
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket") and scope["scheme"] in ("http", "ws"):
             url = URL(scope=scope)
             redirect_scheme = {"http": "https", "ws": "wss"}[scope["scheme"]]

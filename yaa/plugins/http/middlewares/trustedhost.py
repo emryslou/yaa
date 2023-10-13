@@ -28,7 +28,7 @@ class TrustedHostMiddleware(Middleware):
         self.allow_any = "*" in self.allowed_hosts
         self.www_redirect = www_redirect
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] in ("http", "websocket") and not self.allow_any:
             headers = Headers(scope=scope)
             host = headers.get("host", "").split(":")[0]  # type: ignore
