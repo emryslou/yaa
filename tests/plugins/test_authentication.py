@@ -1,6 +1,8 @@
 import base64
 import binascii
 
+from contextlib import nullcontext as does_not_raise
+
 import pytest
 
 from yaa.applications import Yaa
@@ -31,6 +33,14 @@ class BasicAuth(AuthenticationBackend):
 
         username, _, password = decoded.partition(":")
         return AuthCredentials(["authenticated"]), SimpleUser(username)
+
+
+class BasicAuthException(AuthenticationBackend):
+    async def authenticate(self, request):
+        if "Authorization" not in request.headers:
+            return None
+
+        raise Exception("...")
 
 
 app = Yaa(
@@ -355,3 +365,38 @@ class TestAuthentication:
             )
             assert response.status_code == 401
             assert response.json() == {"error": "Invalid basic auth credentials"}
+
+    @pytest.mark.parametrize(
+        "debug,expected",
+        [
+            pytest.param(True, pytest.raises(Exception, match="...")),
+            pytest.param(False, does_not_raise()),
+        ],
+    )
+    def test_auth_backend_exception(self, debug, expected, client_factory):
+        exc_auth_app = Yaa(
+            plugins={
+                "authentication": {
+                    "middlewares": {
+                        "authentication": dict(backend=BasicAuthException())
+                    }
+                }
+            },
+            debug=debug,
+        )
+
+        @exc_auth_app.route("/")
+        @requires("authenticated")
+        def _(request):
+            return JSONResponse(
+                {
+                    "authenticated": request.user.is_authenticated,
+                    "user": request.user.display_name,
+                }
+            )
+
+        with client_factory(exc_auth_app) as client:
+            with expected as exc:
+                res = client.get("/", auth=("eml", "example"))
+                assert res.status_code == 400
+                assert "auth server erro" in res.text

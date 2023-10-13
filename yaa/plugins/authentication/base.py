@@ -104,7 +104,7 @@ class AuthenticationBackend(object):
     async def authenticate(
         self, conn: HttpConnection
     ) -> typing.Tuple["AuthCredentials", "BaseUser"]:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
 
 class AuthCredentials(object):

@@ -33,17 +33,7 @@ class _Endpoint(object):
         return self.dispatch().__await__()
 
     async def dispatch(self) -> None:
-        req = Request(self._scope, receive=self._receive)
-        handler_name = (
-            "get" if req.method == "HEAD" and not hasattr(self, "head") else req.method
-        )
-        handler = getattr(self, handler_name, self.method_not_allowed)
-        is_async = asyncio.iscoroutine(handler)
-        if is_async:
-            res = await handler(req)
-        else:
-            res = await run_in_threadpool(handler, req)
-        await res(self._scope, self._receive, self._send)
+        raise NotImplementedError()
 
     async def method_not_allowed(self, req: Request) -> Response:
         headers = {"Allow": ", ".join(self._allow_methods)}

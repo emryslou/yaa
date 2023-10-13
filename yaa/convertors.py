@@ -16,10 +16,10 @@ class Convertor(object):
         cls.plugins[cls.name] = cls
 
     def convert(self, value: str) -> T:  # type: ignore[type-var]
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     def to_string(self, value: T) -> str:
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
 
 class StringConvertor(Convertor):

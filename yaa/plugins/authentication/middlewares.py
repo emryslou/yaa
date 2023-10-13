@@ -69,7 +69,7 @@ class AuthenticationMiddleware(Middleware):
                 raise exc
             else:
                 res = self.default_on_error(
-                    conn, AuthenticationError(f"server error: {exc}")
+                    conn, AuthenticationError(f"auth server error: {exc}")
                 )
                 await res(scope, receive, send)
                 return

@@ -40,45 +40,45 @@ class DatabaseBackend(object):
             cls.drivers[name] = cls
 
     async def startup(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def shutdown(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     def session(self) -> "DatabaseSession":
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
 
 class DatabaseSession(object):
     async def fetchall(self, query: ClauseElement) -> typing.Any:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def fetchone(self, query: ClauseElement) -> typing.Any:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def fetchfield(self, query: ClauseElement, index: int = 0) -> typing.Any:
         row = await self.fetchone(query)
         return row[index]
 
     async def execute(self, query: ClauseElement) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def executemany(self, query: ClauseElement, values: list) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     def transaction(self) -> "DatabaseTransaction":
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def acquire_connection(self) -> typing.Any:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def release_connection(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
 
 class DatabaseTransaction(object):
     async def __aenter__(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def __aexit__(
         self,
@@ -86,13 +86,13 @@ class DatabaseTransaction(object):
         exc_value: typing.Optional[BaseException] = None,
         traceback: typing.Optional[TracebackType] = None,
     ) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def start(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def commit(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
 
     async def rollback(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()

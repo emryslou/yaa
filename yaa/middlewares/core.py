@@ -6,4 +6,4 @@ class Middleware(object):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()
