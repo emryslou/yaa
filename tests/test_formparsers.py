@@ -415,7 +415,9 @@ def test_missing_boundary_parameter(app, exception, client_factory):
         (Yaa(routes=[Mount("/", app=app)]), does_not_raise()),
     ],
 )
-def test_missing_name_parameter_on_content_disposition(app, expectation, client_factory):
+def test_missing_name_parameter_on_content_disposition(
+    app, expectation, client_factory
+):
     client = client_factory(app)
     with expectation:
         res = client.post(
