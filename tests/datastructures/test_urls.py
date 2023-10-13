@@ -140,3 +140,11 @@ def test_url_blank_params():
     assert len(q.get("abc")) == 0
     assert len(q["a"]) == 3
     assert list(q.keys()) == ["a", "abc", "def", "b"]
+
+
+class TestSecret(object):
+    def test_bool(self):
+        screte = Secret("")
+        assert not bool(screte)
+        screte = Secret("abcd")
+        assert bool(screte)
