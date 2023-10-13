@@ -103,7 +103,7 @@ class WebSocketEndpoint(_Endpoint):
                     data = await self.decode(message)
                     await self.on_receive(data)
                 elif message["type"] == "websocket.disconnect":
-                    close_code = message.get("code", status.WS_1000_NORMAL_CLOSURE)
+                    close_code = int(message.get("code", status.WS_1000_NORMAL_CLOSURE))
                     break
         except Exception as exc:  # pragma: nocover
             close_code = status.WS_1011_INTERNAL_ERROR  # pragma: nocover
