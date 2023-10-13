@@ -1,4 +1,4 @@
-import os, functools, pytest
+import os, functools, pytest, typing
 
 import yaa.status as http_status
 
@@ -541,3 +541,47 @@ def test_partial_async_ws_endpoint(client_factory):
     with test_client.wsconnect("/partial/ws/cls") as websocket:
         data = websocket.receive_json()
         assert data == {"url": "ws://testserver/partial/ws/cls"}
+
+
+class Endpoint:
+    async def my_method(self, request):
+        ...  # pragma: no cover
+
+    @classmethod
+    async def my_classmethod(cls, request):
+        ...  # pragma: no cover
+
+    @staticmethod
+    async def my_staticmethod(request):
+        ...  # pragma: no cover
+
+    def __call__(self, request):
+        ...  # pragma: no cover
+
+
+async def async_homepage(req):
+    ...
+
+
+def sync_homepage(req):
+    ...
+
+
+@pytest.mark.parametrize(
+    "endpoint, expected_name",
+    [
+        pytest.param(async_homepage, "async_homepage", id="async_homepage"),
+        pytest.param(sync_homepage, "sync_homepage", id="sync_homepage"),
+        pytest.param(Endpoint().my_method, "my_method", id="method"),
+        pytest.param(Endpoint.my_classmethod, "my_classmethod", id="classmethod"),
+        pytest.param(
+            Endpoint.my_staticmethod,
+            "my_staticmethod",
+            id="staticmethod",
+        ),
+        pytest.param(Endpoint(), "Endpoint", id="object"),
+        pytest.param(lambda request: ..., "<lambda>", id="lambda"),
+    ],
+)
+def test_route_name(endpoint: typing.Callable, expected_name: str):
+    assert Route(path="/", endpoint=endpoint).name == expected_name

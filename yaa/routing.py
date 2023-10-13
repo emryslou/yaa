@@ -51,8 +51,7 @@ PARAM_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
 def compile_path(
     path: str,
 ) -> typing.Tuple[typing.Pattern, str, typing.Dict[str, Convertor]]:
-    path_regex = "^"
-    path_format = ""
+    path_regex, path_format = "^", ""
     duplicated_params: typing.Set[str] = set()
 
     idx = 0
@@ -604,7 +603,7 @@ def ws_session(func: typing.Callable) -> typing.Callable:
 
 
 def get_name(endpoint: typing.Callable) -> str:
-    if inspect.isfunction(endpoint) or inspect.isclass(endpoint):
+    if inspect.isroutine(endpoint) or inspect.isclass(endpoint):
         return endpoint.__name__
 
     return endpoint.__class__.__name__
