@@ -168,6 +168,18 @@ def test_url_for(client_factory):
         == "https://example.org/root_path/users/eml"
     )
 
+    with pytest.raises(NoMatchFound, match="notmatched"):
+        app.url_path_for("notmatched")
+
+    with pytest.raises(NoMatchFound, match="notmatched"):
+        app.url_path("notmatched")
+
+    with pytest.raises(NoMatchFound, match="'a,b"):
+        app.url_path_for("notmatched", a=12, b="cc")
+
+    with pytest.raises(NoMatchFound, match="'a,b'"):
+        app.url_path("notmatched", a=12, b="cc")
+
 
 def test_endpoint(client_factory):
     from yaa.endpoints import HttpEndPoint

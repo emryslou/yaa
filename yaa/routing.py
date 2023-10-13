@@ -1,3 +1,13 @@
+"""
+module: Routing
+title: 路由控制模块
+description:
+    路由相关控制模块，主要包含:
+        - BaseRoute: 路由基本类，所有的路由类的实现必须是其的子类
+        - Route: BaseRoute 的子类，目前所有的 API 由该类路由
+        - WebSocketRoute: BaseRoute 的子类，WebSocket 相关 API 由该类路由
+author: emryslou@gmail.com
+"""
 import enum
 import functools
 import inspect
@@ -15,7 +25,14 @@ from yaa.websockets import WebSocket, WebSocketClose
 
 
 class NoMatchFound(Exception):
-    pass
+    """
+    由 `.url_for(name, **path_params)` 和 `.url_path_for(name, **path_params)` 抛出的异常
+    原因: 没有匹配到 `route`
+    """
+
+    def __init__(self, name: str, path_params: typing.Dict[str, typing.Any]) -> None:
+        params = ",".join(path_params.keys())
+        super().__init__(f"No route exists for name {name!r} and params {params!r}.")
 
 
 class Match(enum.Enum):
@@ -157,7 +174,7 @@ class Route(BaseRoute):
         seen_params = set(path_params.keys())
         excepted_params = set(self.param_convertors.keys())
         if name != self.name or seen_params != excepted_params:
-            raise NoMatchFound()
+            raise NoMatchFound(name, path_params)
         path, remaining_params = replace_params(
             self.path_format, self.param_convertors, path_params
         )
@@ -222,7 +239,7 @@ class WebSocketRoute(BaseRoute):
         seen_params = set(path_params.keys())
         expected_params = set(self.param_convertors.keys())
         if name != self.name or seen_params != expected_params:
-            raise NoMatchFound()
+            raise NoMatchFound(name, path_params)
         path, remaining_params = replace_params(
             self.path_format, self.param_convertors, path_params
         )
@@ -322,7 +339,7 @@ class Mount(BaseRoute):
                 except NoMatchFound:
                     pass
 
-        raise NoMatchFound()
+        raise NoMatchFound(name, path_params)
 
     async def __call__(
         self, scope: Scope, receive: Receive, send: Send
@@ -392,7 +409,7 @@ class Host(BaseRoute):
                 except NoMatchFound:
                     pass
         # endelse
-        raise NoMatchFound()
+        raise NoMatchFound(name, path_params)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.app(scope, receive=receive, send=send)  # type: ignore
@@ -490,7 +507,7 @@ class Router(object):
             except NoMatchFound:
                 pass
 
-        raise NoMatchFound()
+        raise NoMatchFound(name, path_params)
 
     @property
     def lifespan(self) -> typing.Any:
