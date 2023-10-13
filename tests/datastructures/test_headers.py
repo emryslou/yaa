@@ -83,3 +83,13 @@ def test_mutable_headers_merge_not_mapping():
         h |= {"not_mapping"}  # type: ignore
     with pytest.raises(TypeError):
         h | {"not_mapping"}  # type: ignore
+
+
+def test_mutable_setdefault():
+    h = MutableHeaders(raw=[(b"aa", b"cc")])
+    h.setdefault("aa", "bb")
+    assert h.getlist("aa") == ["cc"]
+
+    h = MutableHeaders(raw=[])
+    h.setdefault("aa", "bb")
+    assert h.getlist("aa") == ["bb"]
