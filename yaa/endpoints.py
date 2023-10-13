@@ -1,7 +1,7 @@
-import asyncio
 import typing
 
 import yaa.status as status
+from yaa._utils import is_async_callable
 from yaa.concurrency import run_in_threadpool
 from yaa.exceptions import HttpException
 from yaa.requests import Request
@@ -58,7 +58,7 @@ class HttpEndPoint(_Endpoint):
             else req.method.lower()
         )
         handler = getattr(self, handler_name, self.method_not_allowed)
-        if asyncio.iscoroutinefunction(handler):
+        if is_async_callable(handler):
             res = await handler(req)
         else:
             res = await run_in_threadpool(handler, req)

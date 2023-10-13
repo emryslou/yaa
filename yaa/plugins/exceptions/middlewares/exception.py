@@ -1,7 +1,7 @@
-import asyncio
 import typing
 import warnings
 
+from yaa._utils import is_async_callable
 from yaa.concurrency import run_in_threadpool
 from yaa.exceptions import HttpException
 from yaa.middlewares.core import Middleware
@@ -82,7 +82,7 @@ class ExceptionMiddleware(Middleware):
                 )  # pragma: no cover
 
             req = Request(scope, receive)
-            if asyncio.iscoroutinefunction(handler):
+            if is_async_callable(handler):
                 res = await handler(req, exc)
             else:
                 res = await run_in_threadpool(handler, req, exc)

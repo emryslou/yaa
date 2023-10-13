@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import http
 import inspect
@@ -15,6 +14,7 @@ import anyio.abc
 import requests
 from anyio.streams.stapled import StapledObjectStream
 
+from yaa._utils import is_async_callable
 from yaa.types import P, Receive, Scope, Send
 from yaa.websockets import WebSocketDisconnect
 
@@ -65,11 +65,8 @@ def _is_asgi3(app: typing.Union[ASGI2App, ASGI3App]) -> bool:
     if inspect.isclass(app):
         if hasattr(app, "__await__"):
             return True
-    elif inspect.isfunction(app):
-        return asyncio.iscoroutinefunction(app)
 
-    call = getattr(app, "__call__", None)
-    return asyncio.iscoroutinefunction(call)
+    return is_async_callable(app)
 
 
 class _WrapASGI2:

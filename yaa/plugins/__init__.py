@@ -18,7 +18,7 @@ plugin_middlewares = _plugin_middlewares()
 
 
 def load_middlewares(app: Yaa, package: str, middlewares_config: dict = {}) -> dict:
-    from yaa.utils import get_plugin_middlewares
+    from yaa._utils import get_plugin_middlewares
 
     klass: dict = {}
     middlewares = get_plugin_middlewares(package)

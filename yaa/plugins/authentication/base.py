@@ -1,9 +1,9 @@
-import asyncio
 import functools
 import inspect
 import typing
 from urllib.parse import urlencode
 
+from yaa._utils import is_async_callable
 from yaa.exceptions import HttpException
 from yaa.requests import HttpConnection, Request
 from yaa.responses import RedirectResponse, Response
@@ -33,7 +33,7 @@ def requires(
 
     def decorator(func: typing.Callable) -> typing.Callable:
         _type = None
-        is_async_func = asyncio.iscoroutinefunction(func)
+        is_async_func = is_async_callable(func)
         signature = inspect.signature(func)
         for idx, paramter in enumerate(signature.parameters.values()):
             if paramter.name in ("request", "websocket"):

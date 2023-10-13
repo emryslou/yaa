@@ -1,7 +1,7 @@
-import asyncio
 import typing
 import warnings
 
+from yaa._utils import is_async_callable
 from yaa.datastructures import DatabaseURL
 from yaa.middlewares.core import Middleware
 from yaa.plugins.database.drivers.base import (
@@ -94,8 +94,8 @@ class DatabaseLifespan(object):
     async def run_handlers(self, event_type: str) -> None:
         for handler in self.handlers.get(EventType(event_type), []):
             try:
-                if asyncio.iscoroutinefunction(handler):
-                    await handler()
+                if is_async_callable(handler):
+                    await handler()  # type: ignore[operator]
                 else:
                     handler()  # type: ignore[operator]
             except Exception as exc:  # pragma: nocover

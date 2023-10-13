@@ -1,6 +1,6 @@
-import asyncio
 import typing
 
+from yaa._utils import is_async_callable
 from yaa.concurrency import run_in_threadpool
 from yaa.types import P
 
@@ -12,7 +12,7 @@ class BackgroundTask(object):
         self.func = func
         self.args = args
         self.kwargs = kwargs
-        self.is_async = asyncio.iscoroutinefunction(func)
+        self.is_async = is_async_callable(func)
 
     async def __call__(self) -> None:
         if self.is_async:

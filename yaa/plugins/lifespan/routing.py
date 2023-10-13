@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import functools
 import inspect
@@ -7,6 +6,7 @@ import types
 import typing
 import warnings
 
+from yaa._utils import is_async_callable
 from yaa.routing import BaseRoute, Match, Router
 from yaa.types import Receive, Scope, Send
 
@@ -123,7 +123,7 @@ class Lifespan(BaseRoute):
 
     async def handler(self, event_type: EventType) -> None:
         for handler in self.handlers.get(event_type, []):
-            if asyncio.iscoroutinefunction(handler):
+            if is_async_callable(handler):
                 await handler()
             else:
                 handler()
