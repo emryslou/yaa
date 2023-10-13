@@ -68,9 +68,10 @@ class AuthenticationMiddleware(Middleware):
             if self.debug:
                 raise exc
             else:
-                await self.default_on_error(
+                res = self.default_on_error(
                     conn, AuthenticationError(f"server error: {exc}")
-                )(scope, receive, send)
+                )
+                await res(scope, receive, send)
                 return
         if auth_result is None:
             auth_result = AuthCredentials(), UnauthenticatedUser()

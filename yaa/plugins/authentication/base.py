@@ -101,7 +101,9 @@ AuthenticationOnErrorCall = typing.Callable[
 
 
 class AuthenticationBackend(object):
-    async def authenticate(self, conn: HttpConnection) -> typing.Any:
+    async def authenticate(
+        self, conn: HttpConnection
+    ) -> typing.Tuple["AuthCredentials", "BaseUser"]:
         raise NotImplementedError()  # pragma: nocover
 
 
