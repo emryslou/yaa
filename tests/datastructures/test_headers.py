@@ -1,3 +1,4 @@
+import pytest
 from yaa.datastructures.headers import *
 
 
@@ -38,3 +39,47 @@ def test_mutabheaders():
     assert dict(mh) == {"bb": "234"}
     mh.setdefault("CC", value="xxx")
     assert dict(mh) == {"bb": "234", "cc": "xxx"}
+
+
+def test_mutable_headers_merge():
+    h = MutableHeaders()
+    h = h | MutableHeaders({"a": "1"})
+    assert isinstance(h, MutableHeaders)
+    assert dict(h) == {"a": "1"}
+    assert h.items() == [("a", "1")]
+    assert h.raw == [(b"a", b"1")]
+
+
+def test_mutable_headers_merge_dict():
+    h = MutableHeaders()
+    h = h | {"a": "1"}
+    assert isinstance(h, MutableHeaders)
+    assert dict(h) == {"a": "1"}
+    assert h.items() == [("a", "1")]
+    assert h.raw == [(b"a", b"1")]
+
+
+def test_mutable_headers_update():
+    h = MutableHeaders()
+    h |= MutableHeaders({"a": "1"})
+    assert isinstance(h, MutableHeaders)
+    assert dict(h) == {"a": "1"}
+    assert h.items() == [("a", "1")]
+    assert h.raw == [(b"a", b"1")]
+
+
+def test_mutable_headers_update_dict():
+    h = MutableHeaders()
+    h |= {"a": "1"}
+    assert isinstance(h, MutableHeaders)
+    assert dict(h) == {"a": "1"}
+    assert h.items() == [("a", "1")]
+    assert h.raw == [(b"a", b"1")]
+
+
+def test_mutable_headers_merge_not_mapping():
+    h = MutableHeaders()
+    with pytest.raises(TypeError):
+        h |= {"not_mapping"}  # type: ignore
+    with pytest.raises(TypeError):
+        h | {"not_mapping"}  # type: ignore

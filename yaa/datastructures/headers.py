@@ -116,6 +116,30 @@ class MutableHeaders(Headers):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return self._list
 
+    def __ior__(self, other: typing.Mapping) -> "MutableHeaders":
+        """
+        x = MutableHeaders(...), y = MutableHeaders(...)
+        x |= y
+        c = x | y
+        """
+        if not isinstance(other, typing.Mapping):
+            raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
+        new = self.mutablecopy()
+        new.update(other)
+        return new
+
+    def __or__(self, other: typing.Mapping) -> "MutableHeaders":
+        """
+        x = MutableHeaders(...), y = MutableHeaders(...)
+        x |= y
+        c = x | y
+        """
+        if not isinstance(other, typing.Mapping):
+            raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
+        new = self.mutablecopy()
+        new.update(other)
+        return new
+
     def setdefault(self, key: str, value: str) -> str:
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
@@ -127,7 +151,7 @@ class MutableHeaders(Headers):
         self._list.append((set_key, set_value))
         return value
 
-    def update(self, other: dict) -> None:
+    def update(self, other: typing.Mapping) -> None:
         for key, val in other.items():
             self[key] = val
 
