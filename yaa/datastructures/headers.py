@@ -1,6 +1,16 @@
+"""
+module: Headers
+title: 请求头字典操作
+description:
+    请求头字典操作， 主要包含如下对象:
+    - Header: 请求头字典
+    - MutableHeaders: 请求头字典, 可进行合并操作, 类似：a |= b; 保持 key 插入顺序
+author: emryslou@gmail.com
+examples: datastructures/test_headers.py:
+"""
 import typing
 
-from yaa.types import Scope, T
+from yaa.types import HeaderRaw, HeaderRawOptional, Scope, T
 
 
 class Headers(typing.Mapping[str, str]):
@@ -9,10 +19,15 @@ class Headers(typing.Mapping[str, str]):
     def __init__(
         self,
         headers: typing.Optional[typing.Mapping[str, str]] = None,
-        raw: typing.Optional[typing.List[typing.Tuple[bytes, bytes]]] = None,
+        raw: HeaderRawOptional = None,
         scope: typing.Optional[Scope] = None,
     ) -> None:
-        self._list = []
+        """Headers
+        param: headers: {key => value} 请求头
+        param: raw: list[(key, value)] 请求头, 直接响应的
+        param: scope: 本次请求的上下文
+        """
+        self._list: HeaderRaw = []
         if headers is not None:
             assert raw is None, "Cannot set both `headers` and `raw`"
             assert scope is None, "Cannot set both `headers` and `scope`"
@@ -50,7 +65,7 @@ class Headers(typing.Mapping[str, str]):
         return [iv.decode("latin-1") for ik, iv in self._list if ik == h_k]
 
     def mutablecopy(self) -> "MutableHeaders":
-        return MutableHeaders(raw=self._list[:])
+        return MutableHeaders(raw=self._list[:])  # type: ignore[arg-type]
 
     def __getitem__(self, key: str) -> str:
         h_k = key.lower().encode("latin-1")
@@ -82,6 +97,10 @@ class Headers(typing.Mapping[str, str]):
 
 
 class MutableHeaders(Headers):
+    """MutableHeaders
+    @see Headers
+    """
+
     def __setitem__(self, key: str, value: str) -> None:
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
@@ -92,7 +111,7 @@ class MutableHeaders(Headers):
                 pop_indexes.append(idx)
 
         """
-        retain insertion order .
+        维持 key 插入顺序
         """
         for idx in reversed(pop_indexes[1:]):
             del self._list[idx]
