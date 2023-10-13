@@ -421,3 +421,23 @@ def test_staticfiles_html_only_files(tmpdir, client_factory):
     response = client.get("/hello.html")
     assert response.status_code == 200
     assert response.text == "<h1>Hello</h1>"
+
+
+def test_staticfiles_follows_symlinks_to_break_out_of_dir(
+    tmp_path: pathlib.Path, client_factory
+):
+    statics_path = tmp_path.joinpath("statics")
+    statics_path.mkdir()
+    symlink_path = tmp_path.joinpath("symlink")
+    symlink_path.mkdir()
+    symlink_file_path = symlink_path.joinpath("index.html")
+    with open(symlink_file_path, "w") as file:
+        file.write("<h1>Hello</h1>")
+    statics_file_path = statics_path.joinpath("index.html")
+    statics_file_path.symlink_to(symlink_file_path)
+    app = StaticFiles(directory=statics_path)
+    client = client_factory(app)
+    response = client.get("/index.html")
+    assert response.url == "http://testserver/index.html"
+    assert response.status_code == 200
+    assert response.text == "<h1>Hello</h1>"

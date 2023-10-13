@@ -10,6 +10,7 @@ import os
 import stat
 import typing
 from email.utils import parsedate
+from pathlib import Path
 
 import anyio
 
@@ -57,7 +58,7 @@ class StaticFiles(object):
         self.html = html
         self.config_checked = False
 
-        if check_dir and directory is not None and not os.path.isdir(directory):
+        if check_dir and directory is not None and not Path(directory).is_dir():
             raise RuntimeError(f'Directory "{directory}" does not exists')
 
     def get_directories(
@@ -71,7 +72,6 @@ class StaticFiles(object):
             directories.append(directory)
 
         if packages is not None:
-            import os
             from importlib import util
 
             for package in packages or []:
@@ -80,10 +80,15 @@ class StaticFiles(object):
                 else:
                     statics_dir = "statics"
                 spec = util.find_spec(package)
-                package_directory = os.path.normpath(
-                    os.path.join(spec.submodule_search_locations[0], "..", statics_dir)  # type: ignore
+                # package_directory = os.path.normpath(
+                #     os.path.join(spec.submodule_search_locations[0], "..", statics_dir)  # type: ignore
+                # )
+                package_directory = (
+                    Path(spec.submodule_search_locations[0])  # type: ignore[union-attr,index]
+                    .joinpath("..", statics_dir)
+                    .resolve()
                 )
-                assert os.path.isdir(package_directory), (
+                assert package_directory.is_dir(), (
                     f"Directory `{statics_dir!r}` "
                     f"in package `{package}` could not be found\n"
                     f"{package_directory}"
@@ -101,12 +106,12 @@ class StaticFiles(object):
         res = await self.get_response(path, scope)
         await res(scope, receive=receive, send=send)
 
-    def get_path(self, scope: Scope) -> str:
-        return os.path.normpath(os.path.join(*scope["path"].split("/")))
+    def get_path(self, scope: Scope) -> Path:
+        return Path(*scope["path"].split("/"))
 
     async def get_response(
         self,
-        path: PathLike,
+        path: Path,
         scope: Scope,
     ) -> Response:
         if scope["method"] not in ("GET", "HEAD"):
@@ -128,7 +133,7 @@ class StaticFiles(object):
             return self.file_response(full_path, stat_result, scope=scope)
 
         elif stat_result and stat.S_ISDIR(stat_result.st_mode) and self.html:
-            index_path = os.path.join(path, "index.html")
+            index_path = path.joinpath("index.html")
             full_path, stat_result = await anyio.to_thread.run_sync(
                 self.lookup_path, index_path
             )
@@ -152,19 +157,24 @@ class StaticFiles(object):
         raise HttpException(status_code=404)
 
     def lookup_path(
-        self, path: str
-    ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
+        self, path: Path
+    ) -> typing.Tuple[Path, typing.Optional[os.stat_result]]:
         for directory in self.all_directories:
-            full_path = os.path.realpath(os.path.join(directory, path))
-            directory = os.path.realpath(directory)
-            if os.path.commonprefix([full_path, directory]) != directory:
-                continue
+            original_path = Path(directory).joinpath(path)
+            full_path = original_path.resolve()
+            directory = Path(directory).resolve()
             try:
-                return full_path, os.stat(full_path)
+                stat_result = os.lstat(original_path)
+                full_path.relative_to(directory)
+                return full_path, stat_result
+            except ValueError:
+                if stat.S_ISLNK(stat_result.st_mode):
+                    stat_result = os.lstat(full_path)
+                    return full_path, stat_result
             except (FileNotFoundError, NotADirectoryError):
                 continue
 
-        return "", None
+        return Path(), None
 
     def file_response(
         self,
