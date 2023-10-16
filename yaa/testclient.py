@@ -9,7 +9,7 @@ import types
 import typing
 import warnings
 from concurrent.futures import Future
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import unquote, urljoin
 
 import anyio.abc
 import httpx
@@ -93,7 +93,7 @@ class WebSocketTestSession(object):
         self.extra_headers = message.get("headers", None)
         return self
 
-    def __exit__(self, *args: P.args) -> None:
+    def __exit__(self, *args: P.args, **kwargs: P.kwargs) -> None:
         try:
             self.close(1000)
         finally:
@@ -246,7 +246,7 @@ class _TestClientTransport(httpx.BaseTransport):
             "headers": headers,
             "client": ["testclient", 50000],
             "server": [host, port],
-            "extensions": {"http.response.template": {}},
+            "extensions": {"http.response.template": {}},  # type: ignore[dict-item]
         }
 
         request_complete = False
@@ -338,8 +338,8 @@ class _TestClientTransport(httpx.BaseTransport):
         raw_kwargs["stream"] = httpx.ByteStream(raw_kwargs["stream"].read())
         res = httpx.Response(**raw_kwargs, request=request)
         if template is not None:
-            res.template = template
-            res.context = context
+            res.template = template  # type: ignore[attr-defined]
+            res.context = context  # type: ignore[attr-defined]
 
         return res
 
@@ -348,7 +348,7 @@ class TestClient(httpx.Client):
     __test__ = False
 
     user_agent: str = "testclient"
-    base_url: str = "http://testserver"
+    base_url: str = "http://testserver"  # type: ignore[assignment]
 
     portal: typing.Optional[anyio.abc.BlockingPortal] = None
 
@@ -432,7 +432,7 @@ class TestClient(httpx.Client):
 
         return redirect
 
-    def request(
+    def request(  # type: ignore[override]
         self,
         method: str,
         url: httpx._types.URLTypes,
@@ -454,7 +454,7 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
-        url = urljoin(self.base_url, url)
+        url = urljoin(self.base_url, url)  # type: ignore
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().request(
             method,
@@ -472,7 +472,7 @@ class TestClient(httpx.Client):
             extensions=extensions,
         )
 
-    def get(
+    def get(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
@@ -495,13 +495,13 @@ class TestClient(httpx.Client):
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth,
+            auth=auth,  # type: ignore[arg-type]
             follow_redirects=redirect,
             timeout=timeout,
             extensions=extensions,
         )
 
-    def options(
+    def options(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
@@ -530,7 +530,7 @@ class TestClient(httpx.Client):
             extensions=extensions,
         )
 
-    def head(
+    def head(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
@@ -559,7 +559,7 @@ class TestClient(httpx.Client):
             extensions=extensions,
         )
 
-    def post(
+    def post(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
@@ -590,13 +590,13 @@ class TestClient(httpx.Client):
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth,
+            auth=auth,  # type: ignore[arg-type]
             follow_redirects=redirect,
             timeout=timeout,
             extensions=extensions,
         )
 
-    def put(
+    def put(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
@@ -627,13 +627,13 @@ class TestClient(httpx.Client):
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth,
+            auth=auth,  # type: ignore[arg-type]
             follow_redirects=redirect,
             timeout=timeout,
             extensions=extensions,
         )
 
-    def patch(
+    def patch(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
@@ -664,21 +664,21 @@ class TestClient(httpx.Client):
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth,
+            auth=auth,  # type: ignore[arg-type]
             follow_redirects=redirect,
             timeout=timeout,
             extensions=extensions,
         )
 
-    def delete(
+    def delete(  # type: ignore[override]
         self,
         url: httpx._types.URLTypes,
         *,
         params: typing.Optional[httpx._types.QueryParamTypes] = None,
         headers: typing.Optional[httpx._types.HeaderTypes] = None,
         cookies: typing.Optional[httpx._types.CookieTypes] = None,
-        auth: typing.Optional[
-            typing.Union[httpx._types.AuthTypes, httpx._client.UseClientDefault]
+        auth: typing.Union[
+            httpx._types.AuthTypes, httpx._client.UseClientDefault
         ] = httpx._client.USE_CLIENT_DEFAULT,
         follow_redirects: typing.Optional[bool] = None,
         allow_redirects: typing.Optional[bool] = None,
