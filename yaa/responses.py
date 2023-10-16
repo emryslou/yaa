@@ -81,11 +81,11 @@ class Response(object):
             content: 响应内容
 
             status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-            
+
             headers: 响应头
-            
+
             media_type: 媒体类型，响应数据类型
-            
+
             background: 响应后，后台执行的任务
 
         Returns:
@@ -542,12 +542,12 @@ class RedirectResponse(Response):
             url: 重定向URL
 
             status_code: http code, 默认 307
-            
+
             headers: 自定义的 http header {key:value}
-        
+
         Returns:
             None
-        
+
         Raises:
             None
         """

@@ -1,4 +1,5 @@
 import inspect
+import re
 import typing
 
 try:
@@ -18,48 +19,87 @@ class EndPointInfo(typing.NamedTuple):
 
 
 class BaseSchemaGenerator(object):
+    """文档生成器"""
+
     def get_schema(self, routes: typing.List[BaseRoute]) -> dict:
+        """获取 scheme 字典
+        Args:
+            routes: 路由列表
+
+        Return:
+            dict
+
+        Raise:
+            NotImplementedError
+        """
         raise NotImplementedError()  # pragma: no cover
 
     def get_endpoints(
         self, routes: typing.List[BaseRoute], parent_path: str = ""
     ) -> typing.List[EndPointInfo]:
+        """获取节点信息
+        Args:
+            routes: 路由列表
+            parent_path: 上级path
+
+        Return:
+            list[EndPointInfo]
+
+        Raise:
+            None
+
+        """
         endpoints_info = []
         for route in routes:
             if isinstance(route, Mount):
-                sub_routes = route.routes or []
+                path = self.__remove_converter(route.path)
                 endpoints_info.extend(
-                    self.get_endpoints(routes=sub_routes, parent_path=route.path)  # type: ignore
+                    [
+                        EndPointInfo(
+                            path="".join((path, sub_endpoint.path)),
+                            http_method=sub_endpoint.http_method,
+                            func=sub_endpoint.func,
+                        )
+                        for sub_endpoint in self.get_endpoints(
+                            routes=(route.routes or [])  # type: ignore[arg-type]
+                        )
+                    ]
                 )
 
             elif not isinstance(route, Route) or not route.include_in_schema:
                 continue
 
             elif inspect.isfunction(route.endpoint) or inspect.ismethod(route.endpoint):
+                path = self.__remove_converter(route.path)
                 for method in route.methods or ["GET"]:
                     if method == "HEAD":
                         continue
                     endpoints_info.append(
                         EndPointInfo(
-                            "".join((parent_path, route.path)),
+                            "".join((parent_path, path)),
                             method.lower(),
                             route.endpoint,
                         )
                     )
             else:
+                path = self.__remove_converter(route.path)
                 methods = ["get", "post", "put", "patch", "delete", "options"]
                 for method in methods:
                     if not hasattr(route.endpoint, method):
                         continue
                     func = getattr(route.endpoint, method)
                     endpoints_info.append(
-                        EndPointInfo(
-                            "".join((parent_path, route.path)), method.lower(), func
-                        )
+                        EndPointInfo("".join((parent_path, path)), method.lower(), func)
                     )
             # endif
         # endfor
         return endpoints_info
+
+    def __remove_converter(self, path: str) -> str:
+        """
+        replace /a/b/{a:int} => /a/b/{a}
+        """
+        return re.sub(r":\w+}", "}", path)
 
     def parse_docstring(self, func_or_method: typing.Callable) -> dict:
         docstring = func_or_method.__doc__
@@ -82,7 +122,24 @@ class BaseSchemaGenerator(object):
 
 
 class SchemaGenerator(BaseSchemaGenerator):
+    """Api文档生成器
+    Attrs:
+        base_schema: 基本数据
+
+    """
+
     def __init__(self, base_schema: dict) -> None:
+        """Api文档生成器
+        Args:
+            base_schema: 基本数据
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
+
         self.base_schema = base_schema
 
     def get_schema(self, routes: typing.List[BaseRoute]) -> dict:

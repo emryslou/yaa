@@ -98,6 +98,18 @@ def subapp_endpoint(req):
     pass  # pragma: no cover
 
 
+@app.route("/users/{id:int}", name="user_by_id")
+def get_user(request):
+    """
+    responses:
+        200:
+            description: A user.
+            examples:
+              {"username": "eml"}
+    """
+    pass  # pragma: no cover
+
+
 def test_schema_generation():
     schema = schemas.get_schema(routes=app.routes)
     assert schema == {
@@ -155,6 +167,13 @@ def test_schema_generation():
                     }
                 }
             },
+            "/users/{id}": {
+                "get": {
+                    "responses": {
+                        200: {"description": "A user.", "examples": {"username": "eml"}}
+                    }
+                }
+            },
         },
     }
 
@@ -208,6 +227,13 @@ paths:
           description: A user.
           examples:
             username: ZS
+  /users/{id}:
+    get:
+      responses:
+        200:
+          description: A user.
+          examples:
+            username: eml
 """
 
 

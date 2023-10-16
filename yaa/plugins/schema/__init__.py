@@ -1,7 +1,11 @@
-__name__ = "schema"
+"""schema
+examples: plugins/test_schemas.py
+"""
 import functools
 
 from yaa.applications import Yaa
+
+__name__ = "schema"
 
 
 def plugin_init(app: Yaa, config: dict = {}) -> None:
