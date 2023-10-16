@@ -38,7 +38,6 @@ def test_staticfiles_with_pathlib(tmpdir, client_factory):
     assert response.text == "<file content>"
 
 
-@pytest.mark.skip("skip head test case, it will be fixed later")
 def test_staticfiles_head_with_middleware(tmpdir, client_factory):
     path = os.path.join(tmpdir, "example.txt")
     with open(path, "w") as file:
@@ -176,7 +175,6 @@ def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
     assert exc_info.value.detail == "Not Found"
 
 
-@pytest.mark.skip("skip head test case, it will be fixed later")
 def test_staticfiles_never_read_file_for_head_method(tmpdir, client_factory):
     path = os.path.join(tmpdir, "example.txt")
     with open(path, "w") as file:

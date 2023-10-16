@@ -107,7 +107,7 @@ class Response(object):
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": self.get_send_headers(scope),
+                "headers": self.raw_headers,
             }
         )
         if scope["method"] not in ("HEAD"):
@@ -117,27 +117,6 @@ class Response(object):
 
         if self.background is not None:
             await self.background()
-
-    def get_send_headers(self, scope: Scope) -> typing.List:
-        import warnings
-
-        warnings.warn(
-            "know issue: `AttributeError: '_MockOriginalResponse' object has no attribute 'close'. Did you mean: 'closed'?` when content-length not eq 0 at request of head method"
-        )
-        _headers = []
-        for key in self.headers:
-            if scope["method"] in ("HEAD"):
-                if key.encode().lower() == b"content-length":
-                    value = "0"
-                else:
-                    value = self.headers[key]
-            else:
-                value = self.headers[key]
-            if isinstance(value, bytes):
-                value = value.decode()  # type: ignore
-            _headers.append([key.encode(), value.encode()])  # type: ignore
-
-        return _headers
 
     def render(self, content: typing.Optional[Content]) -> bytes:
         """设置响应内容
@@ -376,7 +355,7 @@ class StreamingResponse(Response):
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": self.get_send_headers(scope),
+                "headers": self.raw_headers,
             }
         )
         if scope["method"] not in ("HEAD"):
@@ -506,7 +485,7 @@ class FileResponse(Response):
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": self.get_send_headers(scope),
+                "headers": self.raw_headers,
             }
         )
         if scope["method"] in ("HEAD"):
