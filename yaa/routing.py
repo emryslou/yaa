@@ -2,15 +2,16 @@
 module: Routing
 title: 路由控制模块
 description:
-    路由相关控制模块，主要包含:
-        - BaseRoute: 路由基本类，所有的路由类的实现必须是其的子类
-        - Route: BaseRoute 的子类，目前所有的 API 由该类路由
-        - WebSocketRoute: BaseRoute 的子类，WebSocket 相关 API 由该类路由
-        - Mount: BaseRoute 的子类，挂载其他符合 asgi3 的应用
-        - Host: 其他子域名挂载
-        - Router: 路由分组
+    路由相关控制模块
 author: emryslou@gmail.com
 examples: test_routing.py
+exposes:
+    - BaseRoute
+    - Route
+    - WebSocketRoute
+    - Mount
+    - Host
+    - Router
 """
 import enum
 import functools
@@ -91,6 +92,7 @@ def compile_path(
 
 
 class BaseRoute(object):
+    """路由基本类，所有的路由类的实现必须是其的子类"""
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         raise NotImplementedError()
 
@@ -123,6 +125,7 @@ class BaseRoute(object):
 
 
 class Route(BaseRoute):
+    """API 路由"""
     def __init__(
         self,
         path: str,
@@ -206,6 +209,8 @@ class Route(BaseRoute):
 
 
 class WebSocketRoute(BaseRoute):
+    """WebSocket 路由"""
+
     def __init__(
         self, path: str, endpoint: typing.Callable, *, name: typing.Optional[str] = None
     ) -> None:
@@ -261,6 +266,7 @@ class WebSocketRoute(BaseRoute):
 
 
 class Mount(BaseRoute):
+    """挂载其他符合 asgi3 的应用"""
     def __init__(
         self,
         path: str,
@@ -358,6 +364,7 @@ class Mount(BaseRoute):
 
 
 class Host(BaseRoute):
+    """其他子域名挂载"""
     def __init__(
         self, host: str, app: ASGIApp, name: typing.Optional[str] = None
     ) -> None:
@@ -426,6 +433,7 @@ class Host(BaseRoute):
 
 
 class Router(object):
+    """路由分组"""
     def __init__(
         self,
         routes: typing.Optional[typing.List[BaseRoute]] = None,

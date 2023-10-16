@@ -4,6 +4,10 @@ title: StaticFiles
 description:
     静态文件处理模块，例如: js, html, css, 图片等
 author: emryslou@gmail.com
+examples: test_staticfiles.py
+exposes:
+    - StaticFiles
+    - NotModifiedResponse
 """
 
 import os
@@ -23,6 +27,8 @@ PathLike = typing.Union[str, "os.PathLike[str]"]
 
 
 class NotModifiedResponse(Response):
+    """文件未修改响应对象=304
+    """
     NOT_MODIFIED_HEADERS = (
         "cache-control",
         "content-location",
