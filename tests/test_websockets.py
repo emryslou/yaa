@@ -443,3 +443,45 @@ def test_receive_wrong_message_type(client_factory):
     with pytest.raises(RuntimeError):
         with client.wsconnect("/") as websocket:
             websocket.send({"type": "websocket.connect"})
+
+
+def test_raise_exc(client_factory):
+    import anyio
+    from yaa.applications import Yaa
+    from yaa.exceptions import WebSocketException
+
+    class CustomWSException(Exception):
+        pass
+
+    def custom_ws_exception_handler(websocket: WebSocket, exc: CustomWSException):
+        anyio.from_thread.run(websocket.close, status.WS_1013_TRY_AGAIN_LATER)
+
+    app = Yaa(exception_handlers={CustomWSException: custom_ws_exception_handler})
+
+    @app.ws_route("/ws-raise-customexc")
+    async def websocket_raise_custom(websocket: WebSocket):
+        await websocket.accept()
+        raise CustomWSException()
+
+    @app.ws_route("/ws-raise-wsexc")
+    async def websocket_raise_websocket(websocket: WebSocket):
+        await websocket.accept()
+        raise WebSocketException(code=status.WS_1003_UNSUPPORTED_DATA)
+
+    client = client_factory(app)
+
+    with client.wsconnect("/ws-raise-wsexc") as session:
+        response = session.receive()
+        assert response == {
+            "type": "websocket.close",
+            "code": status.WS_1003_UNSUPPORTED_DATA,
+            "reason": "",
+        }
+
+    with client.wsconnect("/ws-raise-customexc") as session:
+        response = session.receive()
+        assert response == {
+            "type": "websocket.close",
+            "code": status.WS_1013_TRY_AGAIN_LATER,
+            "reason": "",
+        }

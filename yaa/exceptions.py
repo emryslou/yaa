@@ -1,6 +1,8 @@
 import http
 import typing
 
+__all__ = ("HttpException", "NotFoundException", "WebSocketException")
+
 
 class HttpException(Exception):
     def __init__(
@@ -29,3 +31,13 @@ class HttpException(Exception):
 class NotFoundException(HttpException):
     def __init__(self, detail: typing.Optional[str] = None):
         super().__init__(status_code=404, detail=detail)  # pragma: no cover
+
+
+class WebSocketException(Exception):
+    def __init__(self, code: int, reason: typing.Optional[str] = None) -> None:
+        self.code = code
+        self.reason = reason or ""
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return f"{class_name}(code={self.code!r}, reason={self.reason!r})"

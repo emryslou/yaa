@@ -3,14 +3,23 @@ import warnings
 
 from yaa._utils import is_async_callable
 from yaa.concurrency import run_in_threadpool
-from yaa.exceptions import HttpException
+from yaa.exceptions import HttpException, WebSocketException
 from yaa.middlewares.core import Middleware
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse, Response
 from yaa.types import ASGI3App, Message, Receive, Scope, Send
+from yaa.websockets import WebSocket
+
+ExceptionHandlerDict = typing.Dict[
+    typing.Union[int, typing.Type[Exception]], typing.Callable
+]
+StatusHanlerDict = typing.Dict[int, typing.Callable]
 
 
 class ExceptionMiddleware(Middleware):
+    _status_handlers: StatusHanlerDict = {}
+    _exception_handlers: ExceptionHandlerDict = {}
+
     def __init__(
         self,
         app: ASGI3App,
@@ -21,11 +30,17 @@ class ExceptionMiddleware(Middleware):
     ) -> None:
         self.app = app
         self.debug = debug
-        self._status_handlers: typing.Dict[int, typing.Callable] = {}
-        self._exception_handlers = {
-            HttpException: self.http_exception,
-        }
-        for _type, _handler in (handlers or {}).items():
+        self._status_handlers = {}
+        self._exception_handlers = {}
+
+        handlers = handlers or {}
+        handlers.update(
+            {
+                HttpException: self.http_exception,
+                WebSocketException: self.websocket_exception,
+            }
+        )
+        for _type, _handler in handlers.items():
             self.add_exception_handler(_type, _handler)
 
     def add_exception_handler(
@@ -47,13 +62,12 @@ class ExceptionMiddleware(Middleware):
         self, exc: Exception
     ) -> typing.Optional[typing.Callable]:
         for cls in type(exc).__mro__:
-            handler = self._exception_handlers.get(cls)  # type: ignore
-            if handler:
-                return handler
+            if cls in self._exception_handlers:
+                return self._exception_handlers[cls]
         return None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore
-        if scope["type"] != "http":
+        if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive=receive, send=send)  # type: ignore
             return
 
@@ -79,15 +93,22 @@ class ExceptionMiddleware(Middleware):
             if responsed_started:
                 raise RuntimeError(
                     "Caught handled exception, but response already started"
-                )  # pragma: no cover
+                ) from exc  # pragma: no cover
 
-            req = Request(scope, receive)
-            if is_async_callable(handler):
-                res = await handler(req, exc)
-            else:
-                res = await run_in_threadpool(handler, req, exc)
+            if scope["type"] == "http":
+                req = Request(scope, receive)
+                if is_async_callable(handler):
+                    res = await handler(req, exc)
+                else:
+                    res = await run_in_threadpool(handler, req, exc)
 
-            await res(scope, receive, sender)
+                await res(scope, receive, sender)
+            elif scope["type"] == "websocket":
+                websocket = WebSocket(scope, receive, send)
+                if is_async_callable(handler):
+                    await handler(websocket, exc)
+                else:
+                    await run_in_threadpool(handler, websocket, exc)
         # end except
 
     def http_exception(self, req: Request, exc: type) -> Response:
@@ -98,3 +119,6 @@ class ExceptionMiddleware(Middleware):
         return PlainTextResponse(
             exc.detail, status_code=exc.status_code, headers=exc.headers
         )
+
+    async def websocket_exception(self, ws: WebSocket, exc: WebSocketException) -> None:
+        await ws.close(code=exc.code, reason=exc.reason)

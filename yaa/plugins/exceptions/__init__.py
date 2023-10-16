@@ -23,7 +23,8 @@ def plugin_init(app: Yaa, config: dict = {}) -> None:
         app.build_middleware_stack()
 
     def exception_handler(
-        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]], app: Yaa
+        exc_class_or_status_code: typing.Union[int, typing.Type[Exception]],
+        app: Yaa,
     ) -> typing.Callable:
         def decorator(func: typing.Callable) -> typing.Callable:
             app.add_exception_handler(exc_class_or_status_code, func)  # type: ignore

@@ -30,13 +30,19 @@ pymysql
 cryptography
 
 # Testing
+flake8
 mypy
 pytest
 pytest-asyncio
 coverage >= 5.3
 pytest-timeout
 pytest-benchmark
-flake8
+typing_extensions==4.2.0
+types-requests==2.26.3
+types-contextvars==2.4.7
+types-PyYAML==6.0.4
+types-dataclasses==0.6.6
+
 
 # Documentation
 mkautodoc
