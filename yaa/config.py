@@ -99,7 +99,7 @@ class Config(object):
             )
 
         if default is not Undefined:
-            return default
+            return self._cast(key, default, cast)
 
         raise KeyError(f"'Config '{key}' is missing, and has no default'")
 
@@ -110,7 +110,7 @@ class Config(object):
         cast: typing.Optional[typing.Callable] = None,
         default: typing.Any = Undefined,
     ) -> typing.Any:
-        if cast is None:
+        if cast is None or value is None:
             return value
         elif cast is bool and isinstance(value, str):
             _bool_map = {
@@ -119,6 +119,7 @@ class Config(object):
                 "false": False,
                 "0": False,
             }
+            value = value.lower()
             if value not in _bool_map:
                 raise ValueError(
                     f'Config "{key}" has value "{value}". ' "But not a valid bool"
@@ -134,17 +135,27 @@ class Config(object):
             )
 
     @typing.overload
-    def __call__(self, key: str, cast: typing.Type[T], default: T = ...) -> T:
+    def __call__(
+        self, key: str, *, default: None
+    ) -> typing.Optional[str]:  # pragma: no cover
+        ...
+
+    @typing.overload
+    def __call__(
+        self, key: str, cast: typing.Type[T], default: T = ...
+    ) -> T:  # pragma: no cover
         ...
 
     @typing.overload
     def __call__(
         self, key: str, cast: typing.Type[str] = ..., default: str = ...
-    ) -> str:
+    ) -> str:  # pragma: no cover
         ...
 
     @typing.overload
-    def __call__(self, key: str, cast: typing.Type[str] = ..., default: T = ...) -> T:
+    def __call__(
+        self, key: str, cast: typing.Type[str] = ..., default: T = ...
+    ) -> T:  # pragma: no cover
         ...
 
     @typing.overload

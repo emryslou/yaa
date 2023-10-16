@@ -89,3 +89,34 @@ def test_environ(client_factory):
     environ = Environ()
     assert list(iter(environ)) == list(iter(os.environ))
     assert len(environ) == len(os.environ)
+
+
+def test_config_types() -> None:
+    from typing_extensions import assert_type
+    from typing import Optional, Any
+
+    """
+    We use `assert_type` to test the types returned by Config via mypy.
+    """
+    config = Config(
+        environ={"STR": "some_str_value", "STR_CAST": "some_str_value", "BOOL": "true"}
+    )
+    assert_type(config("STR"), str)
+    assert_type(config("STR_DEFAULT", default=""), str)
+    assert_type(config("STR_CAST", cast=str), str)
+    assert_type(config("STR_NONE", default=None), Optional[str])
+    assert_type(config("STR_CAST_NONE", cast=str, default=None), Optional[str])
+    assert_type(config("STR_CAST_STR", cast=str, default=""), str)
+    assert_type(config("BOOL", cast=bool), bool)
+    assert_type(config("BOOL_DEFAULT", cast=bool, default=False), bool)
+    assert_type(config("BOOL_NONE", cast=bool, default=None), Optional[bool])
+
+    def cast_to_int(v: Any) -> int:
+        return int(v)
+
+    # our type annotations allow these `cast` and `default` configurations, but
+    # the code will error at runtime.
+    with pytest.raises(ValueError):
+        config("INT_CAST_DEFAULT_STR", cast=cast_to_int, default="true")
+    with pytest.raises(ValueError):
+        config("INT_DEFAULT_STR", cast=int, default="true")
