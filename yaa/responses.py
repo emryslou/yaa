@@ -32,7 +32,15 @@ from yaa._compat import md5_hexdigest
 from yaa.background import BackgroundTask
 from yaa.concurrency import iterate_in_threadpool
 from yaa.datastructures import URL, MutableHeaders
-from yaa.types import Receive, SameSiteEnum, Scope, Send
+from yaa.types import (
+    AsyncContentStream,
+    Content,
+    ContentStream,
+    Receive,
+    SameSiteEnum,
+    Scope,
+    Send,
+)
 
 try:
     import aiofiles  # type: ignore
@@ -71,9 +79,13 @@ class Response(object):
         """Response
         Args:
             content: 响应内容
+
             status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+            
             headers: 响应头
+            
             media_type: 媒体类型，响应数据类型
+            
             background: 响应后，后台执行的任务
 
         Returns:
@@ -127,7 +139,7 @@ class Response(object):
 
         return _headers
 
-    def render(self, content: typing.Any) -> bytes:
+    def render(self, content: typing.Optional[Content]) -> bytes:
         """设置响应内容
         Args:
             content: 响应内容
@@ -307,12 +319,6 @@ class UJSONResponse(JSONResponse):
         ).encode("utf-8")
 
 
-Content = typing.Union[str, bytes]
-SyncContentStream = typing.Iterator[Content]
-AsyncContentStream = typing.AsyncIterator[Content]
-ContentStream = typing.Union[SyncContentStream, AsyncContentStream]
-
-
 class StreamingResponse(Response):
     """数据流响应对象
 
@@ -403,7 +409,7 @@ class FileResponse(Response):
 
     """
 
-    chunk_size = 64 * 1024
+    chunk_size: int = 64 * 1024
 
     def __init__(
         self,
@@ -534,8 +540,16 @@ class RedirectResponse(Response):
         """重定向
         Args:
             url: 重定向URL
+
             status_code: http code, 默认 307
+            
             headers: 自定义的 http header {key:value}
+        
+        Returns:
+            None
+        
+        Raises:
+            None
         """
         super().__init__(
             b"", status_code=status_code, headers=headers, background=background
