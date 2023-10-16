@@ -162,12 +162,12 @@ def test_response_phrase(client_factory):
     app = Response(status_code=204)
     client = client_factory(app)
     response = client.get("/")
-    assert response.reason == "No Content"
+    assert response.reason_phrase == "No Content"
 
     app = Response(b"", status_code=123)
     client = client_factory(app)
     response = client.get("/")
-    assert response.reason == ""
+    assert response.reason_phrase == ""
 
 
 def test_file_response(tmpdir, client_factory):

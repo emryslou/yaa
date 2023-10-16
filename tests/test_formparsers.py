@@ -110,7 +110,7 @@ def test_multipart_request_files(tmpdir, client_factory):
             "test": {
                 "filename": "test.txt",
                 "content": "<file content>",
-                "content_type": "",
+                "content_type": "text/plain",  # todo: content-type
             }
         }
 
@@ -150,7 +150,7 @@ def test_multipart_request_multiple_files(tmpdir, client_factory):
             "test1": {
                 "filename": "test1.txt",
                 "content": "<file1 content>",
-                "content_type": "",
+                "content_type": "text/plain",
             },
             "test2": {
                 "filename": "test2.txt",
@@ -173,7 +173,7 @@ def test_multi_items(tmpdir, client_factory):
     with open(path1, "rb") as f1, open(path2, "rb") as f2:
         response = client.post(
             "/",
-            data=[("test1", "abc")],
+            data={"test1": "abc"},
             files=[("test1", f1), ("test1", ("test2.txt", f2, "text/plain"))],
         )
         assert response.json() == {
@@ -182,7 +182,7 @@ def test_multi_items(tmpdir, client_factory):
                 {
                     "filename": "test1.txt",
                     "content": "<file1 content>",
-                    "content_type": "",
+                    "content_type": "text/plain",
                 },
                 {
                     "filename": "test2.txt",
@@ -371,8 +371,8 @@ def test_multipart_request_multiple_files_with_headers(tmpdir, client_factory):
                         "content-disposition",
                         'form-data; name="test2"; filename="test2.txt"',
                     ],
-                    ["content-type", "text/plain"],
                     ["x-custom", "f2"],
+                    ["content-type", "text/plain"],
                 ],
             },
         }

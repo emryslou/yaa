@@ -2,8 +2,8 @@
 anyio >= 3.4.0, < 4
 aiofiles
 databases[sqlite]
+httpx
 python-multipart
-requests
 types-ujson
 ujson
 

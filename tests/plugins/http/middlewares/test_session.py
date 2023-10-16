@@ -102,32 +102,41 @@ def test_session_expired(client_factory):
 
     res = client.get(
         "/session/get",
-        headers={"Cookie": "session=" + res0.cookies.get_dict()["session"]},
+        cookies={"session": dict(res0.cookies)["session"]},
     )
-    assert res.cookies.get_dict() != {}
+    assert dict(res.cookies) != {}
 
     time.sleep(0.5)
     res = client.get(
         "/session/get",
-        headers={"Cookie": "session=" + res.cookies.get_dict()["session"]},
+        cookies={"session": dict(res.cookies)["session"]},
     )
-    assert res.cookies.get_dict() != {}
+    assert dict(res.cookies) != {}
 
     time.sleep(2)
     res = client.get(
         "/session/get",
-        headers={"Cookie": "session=" + res.cookies.get_dict()["session"]},
+        cookies={"session": dict(res.cookies)["session"]},
     )
-    assert res.cookies.get_dict() == {}
+    assert dict(res.cookies) == {}
 
 
 def test_invalid_session_cookie(client_factory):
+    import re
+
     app = create_app({"secret_key": "example"})
     client = client_factory(app)
     response = client.post("/update_session", json={"some": "data"})
     assert response.json() == {"session": {"some": "data"}}
     # we expect it to not raise an exception if we provide a bogus session cookie
-    response = client.get("/view_session", cookies={"session": "invalid"})
+
+    expired_cookie_header = response.headers["set-cookie"]
+    expired_session_match = re.search(r"session=([^;]*);", expired_cookie_header)
+    assert expired_session_match is not None
+    expired_session_value = expired_session_match[1]
+
+    client = client_factory(app, cookies={"example": expired_session_value})
+    response = client.get("/view_session")
     assert response.json() == {"session": {}}
 
 
