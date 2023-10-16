@@ -9,6 +9,8 @@ from yaa.requests import HttpConnection, Request
 from yaa.responses import RedirectResponse, Response
 from yaa.types import P
 
+_CallableType = typing.TypeVar("_CallableType", bound=typing.Callable)
+
 
 def has_required_scope(conn: HttpConnection, scopes: typing.Sequence[str]) -> bool:
     try:
@@ -28,7 +30,21 @@ def requires(
     scopes: typing.Union[str, typing.Sequence[str]],
     status_code: int = 403,
     redirect: typing.Optional[str] = None,
-) -> typing.Callable:
+) -> typing.Callable[[_CallableType], _CallableType]:
+    """授权装饰器
+    Args:
+        scopes: 授权名称 #todo: 在实际授权检测需要
+
+        status_code: 授权失败时，响应 http status code
+
+        redirect: 响应链接
+
+    Returns:
+        typing.Callable[[__CallableType], _CallableType]
+
+    Raises:
+        None
+    """
     scope_list = [scopes] if isinstance(scopes, str) else scopes
 
     def decorator(func: typing.Callable) -> typing.Callable:
@@ -88,7 +104,7 @@ def requires(
             raise RuntimeError(f"unknown type {_type!r}")
 
     # end def decorator
-    return decorator
+    return decorator  # type: ignore[return-value]
 
 
 class AuthenticationError(Exception):

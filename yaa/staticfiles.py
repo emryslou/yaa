@@ -27,8 +27,8 @@ PathLike = typing.Union[str, "os.PathLike[str]"]
 
 
 class NotModifiedResponse(Response):
-    """文件未修改响应对象=304
-    """
+    """文件未修改响应对象=304"""
+
     NOT_MODIFIED_HEADERS = (
         "cache-control",
         "content-location",
@@ -51,8 +51,9 @@ class NotModifiedResponse(Response):
 
 class StaticFiles(object):
     """静态文件
-    用于需要直接下发的文件，例如：js，html，图片，视频等 
+    用于需要直接下发的文件，例如：js，html，图片，视频等
     """
+
     def __init__(
         self,
         *,
@@ -64,21 +65,21 @@ class StaticFiles(object):
         """初始化方法
         Args:
             directory: 静态文件存放根目录
-            
+
             packages: 包列表，会扫描对应包名的同级别 `statics` 目录
                 例如：['aa', 'bb']，假设 aa 所在目录 /some/packages/aa, bb 所在目录 /other/path/packages/bb
                 则扫描目录分别为 /some/packages/aa/statics, /other/path/packages/statics
-            
+
             html: 是否加载 html 默认为 `False`，
-                html=False，如果访问目录或文件不存在或不可访问，则会响应 404 
+                html=False，如果访问目录或文件不存在或不可访问，则会响应 404
                 html=True，如果访问路径为路径为目录，则会尝试加载对应目录的 index.html
                 如果访问目录或文件不存在或不可访问， 则会尝试加载 404.html
-            
+
             check_dir: 是否需要检测 `directory` 是否存在
-        
+
         Returns:
             None
-        
+
         Raises:
             RuntimeError: check_dir = True 且 directory 不是目录
         """

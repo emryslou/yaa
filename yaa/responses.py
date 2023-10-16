@@ -2,7 +2,10 @@
 module: Response
 title: 路由控制模块
 description:
-    Http 响应对象，挂载到路由 route 的 API 均需返回响应对象， 主要包含如下:
+    Http 响应对象
+author: emryslou@gmail.com
+examples: test_responses.py
+exposes:
     - Response: 响应对象基础类，所有响应对象的实现必须继承该对象
     - HTMLResponse: html 响应对象
     - PlainTextResponse: text 响应对象
@@ -11,8 +14,6 @@ description:
     - StreamingResponse: 流响应对象
     - FileResponse: 文件响应
     - RedirectResponse: 重定向
-author: emryslou@gmail.com
-examples: test_responses.py
 """
 import functools
 import http.cookies
@@ -67,12 +68,19 @@ class Response(object):
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
-        """Response:
-        param: content: 响应内容
-        param: status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-        param: headers: 响应头
-        param: media_type: 媒体类型，响应数据类型
-        param: background: 响应后，后台执行的任务
+        """Response
+        Args:
+            content: 响应内容
+            status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+            headers: 响应头
+            media_type: 媒体类型，响应数据类型
+            background: 响应后，后台执行的任务
+
+        Returns:
+            None
+
+        Raises:
+            None
         """
 
         self.status_code = status_code
@@ -121,7 +129,14 @@ class Response(object):
 
     def render(self, content: typing.Any) -> bytes:
         """设置响应内容
-        param: content: 响应内容
+        Args:
+            content: 响应内容
+
+        Returns:
+            bytes
+
+        Raises:
+            None
         """
         if content is None:
             content = b""
@@ -175,16 +190,30 @@ class Response(object):
         samesite: typing.Optional[SameSiteEnum] = "lax",
     ) -> None:
         """添加cookie
-        param: key: cookie 键
-        param: value: cookie 值
-        param: max_age: cookie 存活时间，单位: 秒(second)，负数或者 0 则立即失效
-        param: expires: cookie 存活时间戳，单位: 秒(second), 注意: max_age 和 expires 同时设置，则 以 max_age 优先
-        param: path: cookie 可访问 URL path
-        param: domain: 可访问域名
-        param: secure: 是否仅 https 使用
-        param: httponly: 是否禁止 JS 访问
-        param: samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+        Args:
+            key: cookie 键
 
+            value: cookie 值
+
+            max_age: cookie 存活时间，单位: 秒(second)，负数或者 0 则立即失效
+
+            expires: cookie 存活时间戳，单位: 秒(second), 注意: max_age 和 expires 同时设置，则 以 max_age 优先
+
+            path: cookie 可访问 URL path
+
+            domain: 可访问域名
+
+            secure: 是否仅 https 使用
+
+            httponly: 是否禁止 JS 访问
+
+            samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`,
+            更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+        Returns:
+            None
+
+        Raises:
+            None
         """
         cookie: dict = http.cookies.SimpleCookie()
         cookie[key] = value
@@ -215,6 +244,9 @@ class Response(object):
         httponly: bool = False,
         samesite: SameSiteEnum = "lax",
     ) -> None:
+        """删除 cookie
+        @see self.set_cookie
+        """
         self.set_cookie(
             key,
             expires=0,
@@ -275,15 +307,49 @@ class UJSONResponse(JSONResponse):
         ).encode("utf-8")
 
 
+Content = typing.Union[str, bytes]
+SyncContentStream = typing.Iterator[Content]
+AsyncContentStream = typing.AsyncIterator[Content]
+ContentStream = typing.Union[SyncContentStream, AsyncContentStream]
+
+
 class StreamingResponse(Response):
+    """数据流响应对象
+
+    Attrs:
+        body_iter: 响应体
+
+    """
+
+    body_iter: AsyncContentStream
+
     def __init__(
         self,
-        content: typing.Any,
+        content: ContentStream,
         status_code: int = 200,
         headers: typing.Optional[dict] = None,
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
+        """数据流响应对象
+        Args:
+            content: 数据流
+
+            status_code: http 响应码
+
+            headers: http 自定义响应头部{key:value}
+
+            media_type: 数据流类型
+
+            background: 响应后后台任务
+
+        Return:
+            None
+
+        Raises:
+            None
+
+        """
         if isinstance(content, typing.AsyncIterable):
             self.body_iter = content
         else:
@@ -319,7 +385,7 @@ class StreamingResponse(Response):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async with anyio.create_task_group() as tg:
 
-            async def wrap(func: typing.Callable[[], typing.Coroutine]) -> None:
+            async def wrap(func: "typing.Callable[[], typing.Awaitable[None]]") -> None:
                 await func()
                 tg.cancel_scope.cancel()
 
@@ -331,7 +397,11 @@ class StreamingResponse(Response):
 
 
 class FileResponse(Response):
-    """File Response"""
+    """文件响应
+    Attrs:
+        chunk_size: 文件块大小，默认 64K
+
+    """
 
     chunk_size = 64 * 1024
 
@@ -344,8 +414,33 @@ class FileResponse(Response):
         background: typing.Optional[BackgroundTask] = None,
         filename: typing.Optional[str] = None,
         stat_result: typing.Optional[os.stat_result] = None,
-        content_disposition_type: str = "attachment",  # `inline` or `attachment` @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+        content_disposition_type: str = "attachment",
     ) -> None:
+        """文件响应
+        Args:
+            path: 需要响应的文件路径
+
+            status_code: http 响应码
+
+            headers: 响应头部字典 {key:value}
+
+            media_type: 响应文件类型
+
+            background: 响应完成后后台任务
+
+            filename: 响应文件名
+
+            stat_result: 文件存储信息
+
+            content_disposition_type: # `inline` or `attachment` @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+
+        Returns:
+            None
+
+        Raises:
+            None
+
+        """
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
         self.path = path
         self.status_code = status_code
@@ -436,6 +531,12 @@ class RedirectResponse(Response):
         headers: typing.Optional[dict] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
+        """重定向
+        Args:
+            url: 重定向URL
+            status_code: http code, 默认 307
+            headers: 自定义的 http header {key:value}
+        """
         super().__init__(
             b"", status_code=status_code, headers=headers, background=background
         )

@@ -1,3 +1,6 @@
+"""授权组件
+examples: plugins/test_authentication.py
+"""
 from yaa.applications import Yaa
 from yaa.plugins import load_middlewares
 
