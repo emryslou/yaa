@@ -227,8 +227,8 @@ class Response(object):
         Raises:
             None
         """
-        cookie: dict = http.cookies.SimpleCookie()
-        cookie[key] = value
+        cookie: "http.cookies.BaseCookie[str]" = http.cookies.SimpleCookie()
+        cookie[key] = value  # type: ignore[assignment]
         if max_age is not None:
             cookie[key]["max-age"] = max_age
         if expires is not None:
@@ -292,7 +292,7 @@ class JSONResponse(Response):
         self,
         content: typing.Any,
         status_code: int = 200,
-        headers: typing.Optional[dict] = None,
+        headers: typing.Optional[typing.Dict[str, str]] = None,
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
