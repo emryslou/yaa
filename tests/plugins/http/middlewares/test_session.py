@@ -34,12 +34,19 @@ def test_session(client_factory):
 
 
 def test_session_expires(client_factory):
+    import re
+
     app = create_app({"secret_key": "example", "max_age": -1})
     client = client_factory(app)
 
     response = client.post("/update_session", json={"some": "data"})
     assert response.json() == {"session": {"some": "data"}}
 
+    expired_cookie_header = response.headers["set-cookie"]
+    expired_session_match = re.search(r"session=([^;]*);", expired_cookie_header)
+    assert expired_session_match is not None
+    expired_session_value = expired_session_match[1]
+    client = client_factory(app, cookies={"session": expired_session_value})
     response = client.get("/view_session")
     assert response.json() == {"session": {}}
 
@@ -76,6 +83,7 @@ def test_session_cookie_subpath(client_factory):
     app.mount("/second_app", second_app)
     client = client_factory(app, base_url="http://testserver/second_app")
     response = client.post("second_app/update_session", json={"some": "data"})
+    assert response.status_code == 200
     cookie = response.headers["set-cookie"]
     cookie_path = re.search(r"; path=(\S+);", cookie).groups()[0]
     assert cookie_path == "/second_app_aaa"
@@ -146,3 +154,28 @@ def test_session_path(client_factory):
     response = client.post("/update_session", json={"some": "data"})
     assert response.json() == {"session": {"some": "data"}}
     assert "path=/my_path" in response.headers["set-cookie"]
+
+
+def test_session_cookie(client_factory):
+    from yaa.routing import Route
+
+    app = Yaa(
+        routes=[
+            Route("/view_session", endpoint=view_session),
+            Route("/update_session", endpoint=update_session, methods=["POST"]),
+        ],
+        plugins={
+            "http": {
+                "middlewares": {"session": dict(secret_key="example", max_age=None)}
+            }
+        },
+    )
+    client = client_factory(app)
+    response = client.post("/update_session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data"}}
+    # check cookie max-age
+    set_cookie = response.headers["set-cookie"]
+    assert "Max-Age=0;" in set_cookie
+    client.cookies.delete("session")
+    response = client.get("/view_session")
+    assert response.json() == {"session": {}}

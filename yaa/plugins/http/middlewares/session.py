@@ -27,7 +27,7 @@ class SessionMiddleware(Middleware):
         self.signer = itsdangerous.TimestampSigner(secret_key)
         self.session_cookie = session_cookie
         self.path = path
-        self.max_age = max_age
+        self.max_age = max_age or 0
         self.security_flags = "httponly; samesite=" + same_site
         if https_only:
             self.security_flags += "; secure"
