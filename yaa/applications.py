@@ -3,7 +3,7 @@ import typing
 from yaa.datastructures import State, URLPath
 from yaa.middlewares import BaseHttpMiddleware, Middleware
 from yaa.routing import BaseRoute, Router
-from yaa.types import ASGIApp, Receive, Scope, Send
+from yaa.types import ASGI3App, Receive, Scope, Send
 
 
 class Yaa(object):
@@ -144,11 +144,13 @@ class Yaa(object):
     def debug(self, val: bool) -> None:
         self._debug = val
 
-    def mount(self, path: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
+    def mount(
+        self, path: str, app: ASGI3App, name: typing.Optional[str] = None
+    ) -> None:
         assert app != self
         self.router.mount(path, app=app, name=name)
 
-    def host(self, host: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
+    def host(self, host: str, app: ASGI3App, name: typing.Optional[str] = None) -> None:
         self.router.host(host, app=app, name=name)
 
     def add_route(

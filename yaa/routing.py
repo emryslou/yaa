@@ -23,9 +23,10 @@ from yaa.concurrency import run_in_threadpool
 from yaa.convertors import CONVERTOR_TYPES, Convertor
 from yaa.datastructures import URL, Headers, URLPath
 from yaa.exceptions import HttpException
+from yaa.middlewares import Middleware
 from yaa.requests import Request
 from yaa.responses import PlainTextResponse, RedirectResponse
-from yaa.types import ASGIApp, P, Receive, Scope, Send
+from yaa.types import ASGI3App, ASGIApp, P, Receive, Scope, Send
 from yaa.websockets import WebSocket, WebSocketClose
 
 
@@ -273,19 +274,43 @@ class Mount(BaseRoute):
     def __init__(
         self,
         path: str,
-        app: typing.Optional[ASGIApp] = None,
+        app: typing.Optional[ASGI3App] = None,
         routes: typing.Optional[typing.List[BaseRoute]] = None,
         name: typing.Optional[str] = None,
+        *,
+        middlewares: typing.Optional[
+            typing.Sequence[typing.Tuple[Middleware, dict]]
+        ] = None,
     ) -> None:
+        """挂载其他符合 asgi3 的应用
+        Args:
+            path: 挂载 url 路径
+            app: ASGI3App 处理回调函数
+            routes: 挂载 route 列表
+            name: route name
+            middleware: 处理中间件列表
+        Returns:
+            None
+
+        Raises:
+            None
+        """
         assert path == "" or path.startswith("/"), 'Routed paths must always start "/"'
         assert (
             app is not None or routes is not None
         ), "`app=...` or `routes=[...]` must be specified one of them"
         self.path = path.rstrip("/")
-        if routes is None:
-            self.app = app  # type: ignore
+        if app is not None:
+            self._base_app: ASGI3App = app
         else:
-            self.app = Router(routes=routes)  # type: ignore
+            self._base_app = Router(routes=routes)
+
+        self.app = self._base_app  # type: ignore
+
+        for cls, options in reversed(middlewares or ()):
+            if "debug" not in options:
+                options["debug"] = False
+            self.app = cls(app=self.app, **options)  # type: ignore
 
         self.name = name
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(
@@ -293,8 +318,8 @@ class Mount(BaseRoute):
         )
 
     @property
-    def routes(self) -> typing.Optional[typing.List[Route]]:
-        return getattr(self.app, "routes", None)
+    def routes(self) -> typing.List[Route]:
+        return getattr(self._base_app, "routes", [])
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
         if scope["type"] in ("http", "websocket"):
@@ -370,7 +395,7 @@ class Host(BaseRoute):
     """其他子域名挂载"""
 
     def __init__(
-        self, host: str, app: ASGIApp, name: typing.Optional[str] = None
+        self, host: str, app: ASGI3App, name: typing.Optional[str] = None
     ) -> None:
         self.host = host
         self.app = app
@@ -450,11 +475,13 @@ class Router(object):
         self.default = self.not_found if default is None else default
         self._lifespan = None
 
-    def mount(self, path: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
+    def mount(
+        self, path: str, app: ASGI3App, name: typing.Optional[str] = None
+    ) -> None:
         prefix = Mount(path, app=app, name=name)
         self.routes.append(prefix)
 
-    def host(self, host: str, app: ASGIApp, name: typing.Optional[str] = None) -> None:
+    def host(self, host: str, app: ASGI3App, name: typing.Optional[str] = None) -> None:
         route = Host(host, app=app, name=name)
         self.routes.append(route)
 
