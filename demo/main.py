@@ -1,7 +1,7 @@
 import graphene
 
 from yaa import Yaa
-from yaa.responses import Response, FileResponse, RedirectResponse, HTMLResponse, JSONResponse
+from yaa.responses import Response, FileResponse, RedirectResponse, HTMLResponse, PlainTextResponse, JSONResponse
 from yaa.requests import Request
 from yaa.staticfiles import StaticFiles
 from yaa.endpoints import HttpEndPoint, WebSocketEndpoint
@@ -47,12 +47,25 @@ app.mount('/static', StaticFiles(directory='demo/static'))
 app.mount('/docs', StaticFiles(directory='demo/docs', html=True))
 
 @app.route('/')
+async def links(req) -> Response:
+    links = [
+        str(r)
+        for r in app.routes
+    ]
+
+    links_text = ',\n'.join(links)
+
+    return PlainTextResponse(links_text)
+
+@app.route('/home')
 async def home(request: Request) -> Response:
-    await request.send_push_promise('static/js/ws.js')
+    from random import randint
+    await request.send_push_promise('/static/js/ws.js')
+    await request.send_push_promise('/static/css/ws_css.css')
     res = templates.response('home.html', request=request, context={
         'greeting': 'template',
         'ws_host': 'localhost:5505/ws',
-        'js_version': '130'
+        'js_version': randint(0, 1000)
     })
     return res
     

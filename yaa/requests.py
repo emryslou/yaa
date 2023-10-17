@@ -294,6 +294,7 @@ class Request(HttpConnection):
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
+        print("debug -- 01", self.scope["extensions"])
         if "http.response.push" in self.scope.get("extensions", {}):
             raw_headers: "typing.List[typing.Tuple[bytes, bytes]]" = []
             for name in SERVER_PUSH_HEADERS_TO_COPY:
@@ -301,6 +302,7 @@ class Request(HttpConnection):
                     raw_headers.append(
                         (name.encode("latin-1"), value.encode("latin-1"))
                     )
+            print("debug -- 02", raw_headers, path)
             await self._send(
                 {"type": "http.response.push", "path": path, "headers": raw_headers}
             )

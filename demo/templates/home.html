@@ -1,5 +1,8 @@
 <h1>Hello, {{greeting}}</h1>
+<head>
+    <link rel="stylesheet" href="/static/css/ws_css.css">
+</head>
 <input id="ws_host" value="{{ws_host}}" />
 <button id="send">send</button>
 <span id="receive_msg"></span>
-<script src="/static/js/ws.js?_no={{js_version}}"></script>
+<script src="/static/js/ws.js" ref="preload"></script>
