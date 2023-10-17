@@ -143,3 +143,18 @@ def test_query_params(client_factory, param: str):
     client = client_factory(app)
     response = client.get("/", params={"param": param})
     assert response.text == param
+
+
+
+def test_testclient_headers_behavior():
+    from yaa.testclient import TestClient
+
+    client = TestClient(mock_service)
+    assert client.headers.get("user-agent") == "testclient"
+
+    client = TestClient(mock_service, headers={"user-agent": "non-default-agent"})
+    assert client.headers.get("user-agent") == "non-default-agent"
+
+    client = TestClient(mock_service, headers={"Authentication": "Bearer 123"})
+    assert client.headers.get("user-agent") == "testclient"
+    assert client.headers.get("Authentication") == "Bearer 123"

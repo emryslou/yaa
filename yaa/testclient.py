@@ -367,7 +367,8 @@ class TestClient(httpx.Client):
         root_path: str = "",
         backend: str = "asyncio",
         backend_options: dict = {},
-        cookies: httpx._client.CookieTypes = None,
+        cookies: typing.Optional[httpx._client.CookieTypes] = None,
+        headers: typing.Optional[typing.Dict[str, str]] = None,
     ) -> None:
         self.async_backend["backend"] = backend
         self.async_backend["backend_options"] = backend_options
@@ -388,10 +389,14 @@ class TestClient(httpx.Client):
             raise_server_exceptions=raise_server_exceptions,
             root_path=root_path,
         )
+        if headers is None:
+            headers = {}
+        
+        headers.setdefault('user-agent', self.user_agent)
         super().__init__(
             app=self.app,
             base_url=self.base_url,
-            headers={"user-agent": self.user_agent},
+            headers=headers,
             transport=transport,
             follow_redirects=True,
             cookies=cookies,
