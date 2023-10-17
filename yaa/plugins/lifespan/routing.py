@@ -86,7 +86,7 @@ class Lifespan(BaseRoute):
         else:
             self.context = context  # type: ignore
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         started = False
         app = scope.get("app")
         try:

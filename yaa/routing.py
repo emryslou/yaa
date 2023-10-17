@@ -378,7 +378,7 @@ class Mount(BaseRoute):
 
         raise NoMatchFound(name, path_params)
 
-    async def __call__(
+    async def handle(
         self, scope: Scope, receive: Receive, send: Send
     ) -> None:  # type: ignore
         await self.app(scope, receive, send)  # type: ignore
@@ -450,7 +450,7 @@ class Host(BaseRoute):
         # endelse
         raise NoMatchFound(name, path_params)
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.app(scope, receive=receive, send=send)  # type: ignore
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -565,6 +565,10 @@ class Router(object):
 
         if "router" not in scope:
             scope["router"] = self  # type: ignore
+        
+        if scope["type"] == "lifespan" and self._lifespan is not None:
+            await self._lifespan(scope, receive=receive, send=send)
+            return
 
         partial = None
 
@@ -572,7 +576,7 @@ class Router(object):
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
                 scope.update(child_scope)  # type: ignore
-                await route(scope, receive=receive, send=send)
+                await route.handle(scope, receive=receive, send=send)
                 return
             elif match == Match.PARTIAL and partial is None:
                 partial = route
@@ -580,7 +584,7 @@ class Router(object):
 
         if partial is not None:
             scope.update(partial_scope)  # type: ignore
-            await partial(scope, receive=receive, send=send)
+            await partial.handle(scope, receive=receive, send=send)
             return
 
         if scope["type"] == "http" and self.redirect_slashes:
@@ -600,10 +604,6 @@ class Router(object):
                         res = RedirectResponse(url=str(redirect_url))
                         await res(scope=scope, receive=receive, send=send)
                         return
-
-        if scope["type"] == "lifespan" and self._lifespan is not None:
-            await self._lifespan(scope, receive=receive, send=send)
-            return
 
         await self.default(scope, receive=receive, send=send)  # type: ignore
 
