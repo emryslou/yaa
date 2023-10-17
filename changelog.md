@@ -8,6 +8,7 @@
 7. StaticFiles: os.PathLike for directory
 8. anyio integration
 9. ensure testclient run into same eventloop
+10. Add Mount (..., middlewares=[...])
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

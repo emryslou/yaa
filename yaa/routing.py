@@ -565,7 +565,7 @@ class Router(object):
 
         if "router" not in scope:
             scope["router"] = self  # type: ignore
-        
+
         if scope["type"] == "lifespan" and self._lifespan is not None:
             await self._lifespan(scope, receive=receive, send=send)
             return

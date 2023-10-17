@@ -575,3 +575,149 @@ def sync_homepage(req):
 )
 def test_route_name(endpoint: typing.Callable, expected_name: str):
     assert Route(path="/", endpoint=endpoint).name == expected_name
+
+
+"""
+###############################################################
+"""
+
+
+class AddHeadersMiddleware:
+    def __init__(self, app, *args, **kwargs) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        scope["add_headers_middleware"] = True
+
+        async def modified_send(msg) -> None:
+            if msg["type"] == "http.response.start":
+                msg["headers"].append((b"X-Test", b"Set by middleware"))
+            await send(msg)
+
+        await self.app(scope, receive, modified_send)
+
+
+def homepage(_):
+    return Response()
+
+
+def assert_middleware_header_route(request):
+    assert request.scope["add_headers_middleware"] is True
+    return Response()
+
+
+mounted_routes_with_middleware = Yaa(
+    routes=[
+        Mount(
+            "/http",
+            routes=[
+                Route(
+                    "/",
+                    endpoint=assert_middleware_header_route,
+                    methods=["GET"],
+                    name="route",
+                ),
+            ],
+            middlewares=[(AddHeadersMiddleware, {})],
+        ),
+        Route("/home", homepage),
+    ]
+)
+mounted_app_with_middleware = Yaa(
+    routes=[
+        Mount(
+            "/http",
+            app=Route(
+                "/",
+                endpoint=assert_middleware_header_route,
+                methods=["GET"],
+                name="route",
+            ),
+            middlewares=[(AddHeadersMiddleware, {})],
+        ),
+        Route("/home", homepage),
+    ]
+)
+
+
+@pytest.mark.parametrize(
+    "app",
+    [
+        mounted_routes_with_middleware,
+        mounted_app_with_middleware,
+    ],
+)
+def test_mount_middleware(client_factory, app) -> None:
+    test_client = client_factory(app)
+    response = test_client.get("/home")
+    assert response.status_code == 200
+    assert "X-Test" not in response.headers
+    response = test_client.get("/http")
+    assert response.status_code == 200
+    assert response.headers["X-Test"] == "Set by middleware"
+
+
+def test_mount_routes_with_middleware_url_path_for() -> None:
+    """Checks that url_path_for still works with mounted routes with Middleware"""
+    assert mounted_routes_with_middleware.url_path_for("route") == "/http/"
+
+
+def test_mount_asgi_app_with_middleware_url_path_for() -> None:
+    """Mounted ASGI apps do not work with url path for,
+    middleware does not change this
+    """
+    with pytest.raises(NoMatchFound):
+        mounted_app_with_middleware.url_path_for("route")
+
+
+def test_mounted_middleware_does_not_catch_exception(client_factory) -> None:
+    from yaa.exceptions import HttpException as HTTPException
+
+    def exc(request) -> Response:
+        raise HTTPException(status_code=403, detail="auth")
+
+    class NamedMiddleware:
+        def __init__(self, app, name: str, **kwargs) -> None:
+            self.app = app
+            self.name = name
+
+        async def __call__(self, scope, receive, send) -> None:
+            async def modified_send(msg) -> None:
+                if msg["type"] == "http.response.start":
+                    msg["headers"].append((f"X-{self.name}".encode(), b"true"))
+                await send(msg)
+
+            await self.app(scope, receive, modified_send)
+
+    app = Yaa(
+        routes=[
+            Mount(
+                "/mount",
+                routes=[
+                    Route("/err", exc),
+                    Route("/home", homepage),
+                ],
+                middlewares=[(NamedMiddleware, dict(name="Mounted"))],
+            ),
+            Route("/err", exc),
+            Route("/home", homepage),
+        ],
+        middlewares=[(NamedMiddleware, dict(name="Outer"))],
+    )
+    client = client_factory(app)
+    resp = client.get("/home")
+    assert resp.status_code == 200, resp.content
+    assert "X-Outer" in resp.headers
+    resp = client.get("/err")
+    assert resp.status_code == 403, resp.content
+    assert "X-Outer" in resp.headers
+    resp = client.get("/mount/home")
+    assert resp.status_code == 200, resp.content
+    assert "X-Mounted" in resp.headers
+    # this is the "surprising" behavior bit
+    # the middleware on the mount never runs because there
+    # is nothing to catch the HTTPException
+    # since Mount middlweare is not wrapped by ExceptionMiddleware
+    resp = client.get("/mount/err")
+    assert resp.status_code == 403, resp.content
+    assert "X-Mounted" not in resp.headers
