@@ -6,6 +6,8 @@ from yaa.requests import Request
 from yaa.responses import Response
 from yaa.types import Receive, Scope, Send
 
+from .types import TempleteContextProcessor
+
 try:
     import jinja2
 
@@ -62,19 +64,21 @@ class Jinja2Template(object):
     def __init__(
         self,
         directory: typing.Optional[typing.Union[str, os.PathLike]] = None,
+        context_processors: typing.Optional[
+            typing.List[TempleteContextProcessor]
+        ] = None,
         **env_options: typing.Any,
     ) -> None:
         assert (
             jinja2 is not None
         ), "package `jinja2` must be installed if use jinja2 template"
 
-        self.env: jinja2.Environment
-        if directory is not None:
-            self.load_env(directory, **env_options)
+        self.context_processors = context_processors or []
+        self.env: jinja2.Environment = self.load_env(directory, **env_options)  # type: ignore[arg-type]
 
     def load_env(
         self, directory: typing.Union[str, os.PathLike], **env_options: typing.Any
-    ) -> None:
+    ) -> jinja2.Environment:
         assert os.path.isdir(
             directory
         ), f"template directory `{directory}` is not a directory"
@@ -90,7 +94,7 @@ class Jinja2Template(object):
         env = jinja2.Environment(**env_options)  # nosec
         env.globals["url_for"] = url_for
 
-        self.env = env
+        return env
 
     def get_template(self, name: str) -> jinja2.Template:
         assert self.env is not None
@@ -108,6 +112,12 @@ class Jinja2Template(object):
     ) -> TemplateResponse:
         if "request" not in context:
             context["request"] = request
+            # raise ValueError('context must include a `request` key')
+
+        req = typing.cast(Request, context["request"])
+        for ctxt_proc in self.context_processors:
+            context.update(ctxt_proc(req))
+
         template = self.get_template(name)
         return TemplateResponse(
             template=template,

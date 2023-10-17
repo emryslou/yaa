@@ -64,6 +64,7 @@ def test_default_float_convertor(client_factory, param: str, status_code: int):
         param = request.path_params["param"]
         assert isinstance(param, float)
         return JSONResponse({"float": param})
+
     app = Router(routes=[Route("/{param:float}", endpoint=float_convertor)])
     client = client_factory(app)
     response = client.get(f"/{param}")

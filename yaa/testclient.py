@@ -391,8 +391,8 @@ class TestClient(httpx.Client):
         )
         if headers is None:
             headers = {}
-        
-        headers.setdefault('user-agent', self.user_agent)
+
+        headers.setdefault("user-agent", self.user_agent)
         super().__init__(
             app=self.app,
             base_url=self.base_url,

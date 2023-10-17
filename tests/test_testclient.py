@@ -145,7 +145,6 @@ def test_query_params(client_factory, param: str):
     assert response.text == param
 
 
-
 def test_testclient_headers_behavior():
     from yaa.testclient import TestClient
 

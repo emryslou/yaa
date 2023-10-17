@@ -60,7 +60,7 @@ class IntegerConvertor(Convertor):
 
 
 class FloatConvertor(Convertor):
-    regex = "[0-9]+(\.[0-9]+)?"
+    regex = "[0-9]+(\\.[0-9]+)?"
     name = "float"
 
     def convert(self, value: str) -> typing.Any:

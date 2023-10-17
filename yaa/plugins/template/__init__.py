@@ -7,13 +7,21 @@ from yaa.applications import Yaa
 
 from .responses import Jinja2Template
 
-templates = Jinja2Template()
+templates: Jinja2Template = None  # type: ignore[assignment]
 
 
 def plugin_init(app: Yaa, config: dict = {}) -> None:
-    templates.load_env(config.get("template_directory", None))
+    if not config:
+        return
+    global templates
+    templates = Jinja2Template(**config)
 
     def get_template(app: Yaa, name: str) -> typing.Any:
         return templates.get_template(name)  # pragma: no cover
 
     app.get_template = functools.partial(get_template, app=app)  # type: ignore[attr-defined]
+
+
+def get_templates() -> Jinja2Template:
+    global templates
+    return templates
