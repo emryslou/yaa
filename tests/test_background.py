@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 
 import pytest
 
@@ -16,7 +16,7 @@ def test_async_task(client_factory):
         count = 0
         for num in range(2):
             count += 1
-            await asyncio.sleep(1)
+            await anyio.sleep(1)
         TASK_DONE = True
         return count
 

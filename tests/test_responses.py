@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 import os
 
 import pytest
@@ -69,7 +69,7 @@ def test_streaming_response(client_factory):
                 yield str(i)
                 if i != maximum:
                     yield ", "
-                await asyncio.sleep(0)
+                await anyio.sleep(0)
 
         async def numbers_for_cleanup(start=1, stop=5):
             nonlocal filled_by_bg_task
@@ -183,7 +183,7 @@ def test_file_response(tmpdir, client_factory):
             yield str(i)
             if i != maximum:
                 yield ", "
-            await asyncio.sleep(0)
+            await anyio.sleep(0)
 
     async def numbers_for_cleanup(start=1, stop=5):
         nonlocal filled_by_bg_task

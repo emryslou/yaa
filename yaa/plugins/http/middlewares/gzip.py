@@ -45,7 +45,7 @@ class GZipResponder(object):
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        self.send = send  #
+        self.send = send
         await self.inner(scope, receive, self._send)
 
     async def _send(self, message: Message) -> None:

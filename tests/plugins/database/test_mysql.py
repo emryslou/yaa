@@ -130,7 +130,7 @@ async def note_field(req: Request):
 
 
 @pytest.mark.timeout(40)
-def test_database(client_factory):
+def test_database(no_trio_support, client_factory):
     with client_factory(app) as client:
         data = {"text": "add", "complete": True}
         res = client.post("/notes", json=data)
@@ -163,7 +163,7 @@ def test_database(client_factory):
         assert res.json() == {"text": "add"}
 
 
-def test_database_isolated_during_test_cases(client_factory):
+def test_database_isolated_during_test_cases(no_trio_support, client_factory):
     """
     Using `TestClient` as a context manager
     """
@@ -185,7 +185,7 @@ def test_database_isolated_during_test_cases(client_factory):
         assert response.json() == [{"text": "just two note", "complete": True}]
 
 
-def test_database_executemany(client_factory):
+def test_database_executemany(no_trio_support, client_factory):
     with client_factory(app) as client:
         data = [
             {"text": "buy the milk", "complete": True},

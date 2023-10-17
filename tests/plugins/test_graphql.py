@@ -131,7 +131,7 @@ async_schema = graphene.Schema(query=AsyncQuery)
 
 
 @pytest.mark.timeout(20)
-def test_graphql_async(client_factory):
+def test_graphql_async(no_trio_support, client_factory):
     app = Yaa()
     app.add_route("/", GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor))
     client = client_factory(app)
@@ -140,7 +140,7 @@ def test_graphql_async(client_factory):
     assert response.json() == {"data": {"hello": "Hello stranger"}}
 
 
-def test_graphql_async_cls(client_factory):
+def test_graphql_async_cls(no_trio_support, client_factory):
     client = client_factory(
         GraphQLApp(schema=async_schema, executor_class=AsyncioExecutor)
     )

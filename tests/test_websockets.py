@@ -265,7 +265,7 @@ def test_websocket_iter_json(client_factory):
         assert data == {"message": {"hello": "world"}}
 
 
-def test_websocket_concurrency_pattern(client_factory):
+def test_websocket_concurrency_pattern(no_trio_support, client_factory):
     import asyncio
     from yaa.concurrency import run_until_first_complete
 
