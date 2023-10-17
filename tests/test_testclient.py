@@ -129,3 +129,17 @@ def test_client(client_factory):
     client = client_factory(app)
     response = client.get("/")
     assert response.json() == {"host": "testclient", "port": 50000}
+
+
+@pytest.mark.parametrize("param", ("2020-07-14T00:00:00+00:00", "España", "voilà"))
+def test_query_params(client_factory, param: str):
+    from yaa.routing import Route
+    from yaa.responses import Response
+
+    def homepage(request):
+        return Response(request.query_params["param"])
+
+    app = Yaa(routes=[Route("/", endpoint=homepage)])
+    client = client_factory(app)
+    response = client.get("/", params={"param": param})
+    assert response.text == param
