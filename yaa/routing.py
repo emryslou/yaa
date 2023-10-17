@@ -138,6 +138,24 @@ class Route(BaseRoute):
         name: typing.Optional[str] = None,
         include_in_schema: typing.Optional[bool] = True,
     ) -> None:
+        """API 路由
+        Args:
+            path: 要挂载的 url path
+
+            endpoint: url path 匹配的路由方法
+
+            methods: http 请求方法，默认 ['GET']
+
+            name: 路由名称
+
+            include_in_schema: 是否要生成 OpenAPI 文档
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
         assert path.startswith("/"), 'Routed paths must always start "/"'
         self.path = path
         self.endpoint = endpoint

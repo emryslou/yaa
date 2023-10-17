@@ -38,6 +38,7 @@ class GZipResponder(object):
         self.send: Send = unattached_send
         self.init_message: Message = {}
         self.started = False
+        self.content_encoding_set = False
         self.gzip_buffer = io.BytesIO()
         self.gzip_file = gzip.GzipFile(
             mode="wb", fileobj=self.gzip_buffer, compresslevel=compresslevel
@@ -50,46 +51,65 @@ class GZipResponder(object):
     async def _send(self, message: Message) -> None:
         if message["type"] == "http.response.start":
             self.init_message = message
-        elif message["type"] == "http.response.body":
+
+            headers = Headers(raw=self.init_message["headers"])
+            self.content_encoding_set = "content-encoding" in headers
+        elif message["type"] == "http.response.body" and self.content_encoding_set:
             if not self.started:
                 self.started = True
-                body = message.get("body", b"")
-                more_body = message.get("more_body", False)
-                if len(body) < self.minimum_size and not more_body:
-                    pass
-                elif not more_body:
-                    self.gzip_file.write(body)
-                    self.gzip_file.close()
-                    body = self.gzip_buffer.getbuffer()
-                    headers = MutableHeaders(raw=self.init_message["headers"])
-                    headers["Content-Encoding"] = "gzip"
-                    headers["Content-Length"] = str(len(body))
-                    headers.add_vary_header("Accept-Encoding")
-                    message["body"] = body  # type: ignore[index]
-                else:
-                    headers = MutableHeaders(raw=self.init_message["headers"])
-                    headers["Content-Encoding"] = "gzip"
-                    headers.add_vary_header("Accept-Encoding")
-                    del headers["Content-Length"]
-                    self.gzip_file.write(body)
-                    message["body"] = self.gzip_buffer.getvalue()  # type: ignore[index]
-                    self.gzip_buffer.seek(0)
-                    self.gzip_buffer.truncate()
-                # endif
-
                 await self.send(self.init_message)
-                await self.send(message)
+
+            await self.send(message)
+        elif message["type"] == "http.response.body" and not self.started:
+            self.started = True
+            body = message.get("body", b"")
+            more_body = message.get("more_body", False)
+            if len(body) < self.minimum_size and not more_body:
+                pass
+            elif not more_body:
+                self.gzip_file.write(body)
+                self.gzip_file.close()
+
+                body = self.gzip_buffer.getbuffer()
+
+                headers = MutableHeaders(raw=self.init_message["headers"])
+                headers["Content-Encoding"] = "gzip"
+                headers["Content-Length"] = str(len(body))
+                headers.add_vary_header("Accept-Encoding")
+
+                message["body"] = body  # type: ignore[index]
             else:
-                body = message.get("body", b"")
-                more_body = message.get("more_body", False)
+                headers = MutableHeaders(raw=self.init_message["headers"])
+                headers["Content-Encoding"] = "gzip"
+                headers.add_vary_header("Accept-Encoding")
+                del headers["Content-Length"]
 
                 self.gzip_file.write(body)
-                if not more_body:
-                    self.gzip_file.close()
+
                 message["body"] = self.gzip_buffer.getvalue()  # type: ignore[index]
+
                 self.gzip_buffer.seek(0)
                 self.gzip_buffer.truncate()
-                await self.send(message)
+            # endif
+
+            await self.send(self.init_message)
+
+            await self.send(message)
+        elif message["type"] == "http.response.body":
+            body = message.get("body", b"")
+            more_body = message.get("more_body", False)
+
+            self.gzip_file.write(body)
+            if not more_body:
+                self.gzip_file.close()
+
+            message["body"] = self.gzip_buffer.getvalue()  # type: ignore[index]
+
+            self.gzip_buffer.seek(0)
+            self.gzip_buffer.truncate()
+
+            await self.send(message)
+        # end if
 
 
 async def unattached_send(_: Message) -> None:

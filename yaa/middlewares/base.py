@@ -5,7 +5,7 @@ import anyio
 from yaa.middlewares.core import Middleware
 from yaa.requests import Request
 from yaa.responses import Response, StreamingResponse
-from yaa.types import ASGI3App, Receive, Scope, Send
+from yaa.types import ASGI3App, Message, Receive, Scope, Send, T
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
@@ -28,21 +28,50 @@ class BaseHttpMiddleware(Middleware):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
+        response_sent = anyio.Event()
 
         async def call_next(req: Request) -> Response:
             app_exc: typing.Optional[Exception] = None
             stream_send, stream_receive = anyio.create_memory_object_stream()
 
+            async def receive_or_disconnect() -> Message:
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+                async with anyio.create_task_group() as _tg:
+
+                    async def wrap(func: typing.Callable[[], typing.Awaitable[T]]) -> T:
+                        result = await func()
+                        _tg.cancel_scope.cancel()
+                        return result
+
+                    _tg.start_soon(wrap, response_sent.wait)
+                    message = await wrap(req.receive)
+
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+
+                return message
+
+            async def close_recv_stream_on_response_sent() -> None:
+                await response_sent.wait()
+                stream_receive.close()
+
+            async def send_no_error(message: Message) -> None:
+                try:
+                    await stream_send.send(message)
+                except anyio.BrokenResourceError:
+                    return
+
             async def coro() -> None:
                 nonlocal app_exc
                 async with stream_send:
                     try:
-                        await self.app(scope, req.receive, stream_send.send)
+                        await self.app(scope, receive_or_disconnect, send_no_error)
                     except Exception as exc:
                         app_exc = exc
 
             # end coro
-
+            tg.start_soon(close_recv_stream_on_response_sent)
             tg.start_soon(coro)
             try:
                 message = await stream_receive.receive()
@@ -79,7 +108,7 @@ class BaseHttpMiddleware(Middleware):
             req = Request(scope, receive=receive)
             res = await self.dispatch_func(req, call_next)
             await res(scope, receive, send)
-            tg.cancel_scope.cancel()
+            response_sent.set()
         # end async with
 
     async def dispatch(

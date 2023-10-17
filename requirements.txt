@@ -42,7 +42,7 @@ types-requests==2.26.3
 types-contextvars==2.4.7
 types-PyYAML==6.0.4
 types-dataclasses==0.6.6
-
+importlib-metadata
 
 # Documentation
 mkautodoc
