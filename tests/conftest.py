@@ -6,7 +6,7 @@ from yaa import TestClient
 @pytest.fixture(
     params=[
         pytest.param(("asyncio", {"use_uvloop": False}), id="asyncio"),
-        pytest.param(('trio', {}), id='trio')
+        pytest.param(("trio", {}), id="trio"),
     ],
     autouse=True,
 )

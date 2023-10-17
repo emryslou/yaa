@@ -72,14 +72,17 @@ def test_gzip_ignored_for_responses_with_encoding_set(client_factory):
         async def generator(bytes, count):
             for index in range(count):
                 yield bytes
+
         streaming = generator(bytes=b"x" * 400, count=10)
         return StreamingResponse(
             streaming, status_code=200, headers={"Content-Encoding": "br"}
         )
+
     from yaa.routing import Route
+
     app = Yaa(
         routes=[Route("/", endpoint=homepage)],
-        plugins={"http": {"middlewares": {"gzip": {}}}}
+        plugins={"http": {"middlewares": {"gzip": {}}}},
     )
     client = client_factory(app)
     response = client.get("/", headers={"accept-encoding": "gzip, br"})
