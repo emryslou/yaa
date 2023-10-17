@@ -10,6 +10,7 @@
 9. ensure testclient run into same eventloop
 10. Add Mount (..., middlewares=[...])
 11. testclient: requests -> httpx
+12. Add template context processors
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class
