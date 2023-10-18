@@ -426,21 +426,60 @@ def test_staticfiles_html_only_files(tmpdir, client_factory):
     assert response.text == "<h1>Hello</h1>"
 
 
-def test_staticfiles_follows_symlinks_to_break_out_of_dir(
-    tmp_path: pathlib.Path, client_factory
-):
-    statics_path = tmp_path.joinpath("statics")
-    statics_path.mkdir()
-    symlink_path = tmp_path.joinpath("symlink")
-    symlink_path.mkdir()
-    symlink_file_path = symlink_path.joinpath("index.html")
-    with open(symlink_file_path, "w") as file:
+def test_staticfiles_follows_symlinks(tmpdir, client_factory):
+    import tempfile
+
+    statics_path = os.path.join(tmpdir, "statics")
+    os.mkdir(statics_path)
+    source_path = tempfile.mkdtemp()
+    source_file_path = os.path.join(source_path, "page.html")
+    with open(source_file_path, "w") as file:
         file.write("<h1>Hello</h1>")
-    statics_file_path = statics_path.joinpath("index.html")
-    statics_file_path.symlink_to(symlink_file_path)
-    app = StaticFiles(directory=statics_path)
+    statics_file_path = os.path.join(statics_path, "index.html")
+    os.symlink(source_file_path, statics_file_path)
+    app = StaticFiles(directory=statics_path, follow_symlink=True)
     client = client_factory(app)
     response = client.get("/index.html")
     assert response.url == "http://testserver/index.html"
     assert response.status_code == 200
     assert response.text == "<h1>Hello</h1>"
+
+
+def test_staticfiles_follows_symlink_directories(tmpdir, client_factory):
+    import tempfile
+
+    statics_path = os.path.join(tmpdir, "statics")
+    statics_html_path = os.path.join(statics_path, "html")
+    os.mkdir(statics_path)
+    source_path = tempfile.mkdtemp()
+    source_file_path = os.path.join(source_path, "page.html")
+    with open(source_file_path, "w") as file:
+        file.write("<h1>Hello</h1>")
+    os.symlink(source_path, statics_html_path)
+    app = StaticFiles(directory=statics_path, follow_symlink=True)
+    client = client_factory(app)
+    response = client.get("/html/page.html")
+    assert response.url == "http://testserver/html/page.html"
+    assert response.status_code == 200
+    assert response.text == "<h1>Hello</h1>"
+
+
+def test_staticfiles_disallows_path_traversal_with_symlinks(tmpdir):
+    import tempfile
+
+    statics_path = os.path.join(tmpdir, "statics")
+    root_source_path = tempfile.mkdtemp()
+    source_path = os.path.join(root_source_path, "statics")
+    os.mkdir(source_path)
+    source_file_path = os.path.join(root_source_path, "index.html")
+    with open(source_file_path, "w") as file:
+        file.write("<h1>Hello</h1>")
+    os.symlink(source_path, statics_path)
+    app = StaticFiles(directory=statics_path, follow_symlink=True)
+    # We can't test this with 'httpx', so we test the app directly here.
+    path = app.get_path({"path": "/../index.html"})
+    scope = {"method": "GET"}
+    with pytest.raises(HttpException) as exc_info:
+        anyio.run(app.get_response, path, scope)
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Not Found"

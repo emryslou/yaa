@@ -29,20 +29,6 @@ def test_formdata():
     assert FormData({"a": "123", "b": "789"}) != {"a": "123", "b": "789"}
 
 
-class _TestUploadFile(UploadFile):
-    spool_max_size = 1024
-
-
-@pytest.mark.asyncio
-async def test_upload_file():
-    big_file = _TestUploadFile("big-file")
-    await big_file.write(b"big-data" * 512)
-    await big_file.write(b"big-data")
-    await big_file.seek(0)
-    assert await big_file.read(1024) == b"big-data" * 128
-    await big_file.close()
-
-
 @pytest.mark.anyio
 async def test_upload_file_file_input():
     import io
@@ -55,3 +41,27 @@ async def test_upload_file_file_input():
     assert await file.read() == b""
     await file.seek(0)
     assert await file.read() == b"data and more data!"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("max_size", [1, 1024], ids=["rolled", "unrolled"])
+async def test_uploadfile_rolling(max_size: int) -> None:
+    """Test that we can r/w to a SpooledTemporaryFile
+    managed by UploadFile before and after it rolls to disk
+    """
+    from tempfile import SpooledTemporaryFile
+
+    stream: BinaryIO = SpooledTemporaryFile(
+        max_size=max_size
+    )
+    file = UploadFile(filename="file", file=stream)
+    assert await file.read() == b""
+    await file.write(b"data")
+    assert await file.read() == b""
+    await file.seek(0)
+    assert await file.read() == b"data"
+    await file.write(b" more")
+    assert await file.read() == b""
+    await file.seek(0)
+    assert await file.read() == b"data more"
+    await file.close()

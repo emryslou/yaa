@@ -53,7 +53,7 @@ class Config(object):
         self,
         env_file: typing.Optional[str] = None,
         environ: typing.Mapping[str, str] = environ,
-        env_prefix: str = '',
+        env_prefix: str = "",
     ) -> None:
         self.environ = environ
         self.env_prefix = env_prefix

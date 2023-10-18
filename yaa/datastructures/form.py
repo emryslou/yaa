@@ -8,23 +8,23 @@ from .types import ImmutableMultiDict
 
 
 class UploadFile(object):
-    spool_max_size = 1024 * 1024
-    headers: "Headers"
+    # spool_max_size = 1024 * 1024
+    # headers: "Headers"
 
     def __init__(
         self,
-        filename: str,
-        file: typing.Optional[typing.IO] = None,
-        content_type: str = "",
+        file: typing.BinaryIO,
         *,
-        headers: Headers = Headers(),
+        filename: typing.Optional[str] = None,
+        headers: typing.Optional[Headers] = None,
     ) -> None:
         self.filename = filename
-        self.content_type = content_type
-        if file is None:
-            file = tempfile.SpooledTemporaryFile(max_size=self.spool_max_size)
         self.file = file
-        self.headers = headers
+        self.headers = headers or Headers()
+    
+    @property
+    def content_type(self) -> typing.Optional[str]:
+        return self.headers.get('content-type', None)
 
     @property
     def _in_memory(self) -> bool:

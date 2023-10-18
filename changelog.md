@@ -11,6 +11,8 @@
 10. Add Mount (..., middlewares=[...])
 11. testclient: requests -> httpx
 12. Add template context processors
+13. Add StaticFiles follow symlinks
+14. Make the file argument to UploadFile required
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

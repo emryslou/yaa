@@ -1,4 +1,5 @@
 import enum
+from tempfile import SpooledTemporaryFile
 import typing
 from urllib.parse import unquote_plus
 
@@ -111,6 +112,8 @@ class FormParser(object):
 
 
 class MultiPartParser(object):
+    max_file_size = 1024 * 1024
+
     def __init__(
         self,
         headers: typing.Optional[Headers] = None,
@@ -148,7 +151,7 @@ class MultiPartParser(object):
         self.messages.append((MultiPartMessage.END, b""))
 
     async def parse(self) -> FormData:
-        content_type, params = parse_options_header(self.headers["Content-Type"])  # type: ignore
+        _, params = parse_options_header(self.headers["Content-Type"])  # type: ignore
         charset = params.get(b"charset", "utf-8")
         if isinstance(charset, bytes):
             charset = charset.decode("utf-8")
@@ -164,7 +167,6 @@ class MultiPartParser(object):
         parser = multipart.MultipartParser(boundary, callbacks)
         header_field, header_value = b"", b""
         content_disposition = None
-        content_type = b""
         field_name = ""
         data = b""
         _file = None
@@ -181,7 +183,6 @@ class MultiPartParser(object):
                 for msg_type, msg_bytes in messages:
                     if msg_type == MultiPartMessage.PART_BEGIN:
                         content_disposition = None
-                        content_type = b""
                         data = b""
                         item_headers = []
                     elif msg_type == MultiPartMessage.HEADER_FIELD:
@@ -193,8 +194,6 @@ class MultiPartParser(object):
                         field = header_field.lower()
                         if field == b"content-disposition":
                             content_disposition = header_value
-                        elif field == b"content-type":
-                            content_type = header_value
                         item_headers.append((field, header_value))
                         header_field, header_value = b"", b""
                     elif msg_type == MultiPartMessage.HEADERS_FINISHED:
@@ -207,9 +206,10 @@ class MultiPartParser(object):
                             )
                         if b"filename" in options:
                             filename = _user_safe_decode(options[b"filename"], charset)
+                            tmpfile = SpooledTemporaryFile(max_size=self.max_file_size)
                             _file = UploadFile(
+                                file=tmpfile,
                                 filename=filename,
-                                content_type=content_type.decode("latin-1"),
                                 headers=Headers(raw=item_headers),
                             )
                         else:

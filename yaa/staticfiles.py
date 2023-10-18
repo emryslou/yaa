@@ -61,6 +61,7 @@ class StaticFiles(object):
         packages: typing.Optional[typing.List[str]] = None,
         html: bool = False,
         check_dir: bool = True,
+        follow_symlink: bool = False,
     ) -> None:
         """初始化方法
         Args:
@@ -88,6 +89,7 @@ class StaticFiles(object):
         self.all_directories = self.get_directories(directory, packages)
         self.html = html
         self.config_checked = False
+        self.follow_symlink = follow_symlink
 
         if check_dir and directory is not None and not Path(directory).is_dir():
             raise RuntimeError(f'Directory "{directory}" does not exists')
@@ -188,24 +190,25 @@ class StaticFiles(object):
         raise HttpException(status_code=404)
 
     def lookup_path(
-        self, path: Path
-    ) -> typing.Tuple[Path, typing.Optional[os.stat_result]]:
+        self, path: str
+    ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         for directory in self.all_directories:
-            original_path = Path(directory).joinpath(path)
-            full_path = original_path.resolve()
-            directory = Path(directory).resolve()
+            joined_path = os.path.join(directory, path)
+            if self.follow_symlink:
+                full_path = os.path.abspath(joined_path)
+            else:
+                full_path = os.path.realpath(joined_path)
+            directory = os.path.realpath(directory)
+
+            if os.path.commonpath([full_path, directory]) != directory:
+                continue
+
             try:
-                stat_result = os.lstat(original_path)
-                full_path.relative_to(directory)
-                return full_path, stat_result
-            except ValueError:
-                if stat.S_ISLNK(stat_result.st_mode):
-                    stat_result = os.lstat(full_path)
-                    return full_path, stat_result
+                return full_path, os.stat(full_path)
             except (FileNotFoundError, NotADirectoryError):
                 continue
 
-        return Path(), None
+        return "", None
 
     def file_response(
         self,
