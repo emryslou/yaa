@@ -120,3 +120,12 @@ def test_config_types() -> None:
         config("INT_CAST_DEFAULT_STR", cast=cast_to_int, default="true")
     with pytest.raises(ValueError):
         config("INT_DEFAULT_STR", cast=int, default="true")
+
+
+def test_config_with_env_prefix(tmpdir, monkeypatch):
+    config = Config(
+        environ={"APP_DEBUG": "value", "ENVIRONMENT": "dev"}, env_prefix="APP_"
+    )
+    assert config.get("DEBUG") == "value"
+    with pytest.raises(KeyError):
+        config.get("ENVIRONMENT")
