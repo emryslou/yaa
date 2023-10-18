@@ -246,7 +246,7 @@ class _TestClientTransport(httpx.BaseTransport):
             "headers": headers,
             "client": ["testclient", 50000],
             "server": [host, port],
-            "extensions": {"http.response.template": {}, 'http.response.debug': {}},  # type: ignore[dict-item]
+            "extensions": {"http.response.template": {}, "http.response.debug": {}},  # type: ignore[dict-item]
         }
 
         request_complete = False
@@ -319,8 +319,8 @@ class _TestClientTransport(httpx.BaseTransport):
                 template = message["template"]
                 context = message["context"]
             elif message["type"] == "http.response.debug":
-                template = message['info']["template"]
-                context = message['info']["context"]
+                template = message["info"]["template"]
+                context = message["info"]["context"]
 
         try:
             with self.portal_factory() as portal:

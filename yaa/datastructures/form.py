@@ -1,4 +1,3 @@
-import tempfile
 import typing
 
 from yaa.concurrency import run_in_threadpool
@@ -21,10 +20,10 @@ class UploadFile(object):
         self.filename = filename
         self.file = file
         self.headers = headers or Headers()
-    
+
     @property
     def content_type(self) -> typing.Optional[str]:
-        return self.headers.get('content-type', None)
+        return self.headers.get("content-type", None)
 
     @property
     def _in_memory(self) -> bool:

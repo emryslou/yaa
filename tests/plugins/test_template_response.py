@@ -109,21 +109,21 @@ def test_template_with_middleware(tmpdir, client_factory):
     path = os.path.join(tmpdir, "index.html")
     with open(path, "w") as file:
         file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
-    
+
     async def homepage(request):
         return get_templates().response("index.html", request=request, context={})
-    
+
     class CustomMiddleware(BaseHttpMiddleware):
         async def dispatch(self, request, call_next):
             return await call_next(request)
-    
+
     app = Yaa(
         debug=True,
         routes=[Route("/", endpoint=homepage)],
         middlewares=[(CustomMiddleware, {})],
         plugins={"template": {"directory": tmpdir}},
     )
-    
+
     client = client_factory(app)
     response = client.get("/")
     assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>"

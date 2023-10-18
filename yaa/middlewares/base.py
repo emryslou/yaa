@@ -77,8 +77,8 @@ class BaseHttpMiddleware(Middleware):
 
             try:
                 message = await stream_receive.receive()
-                info = message.get('info', None)
-                if message['type'] == 'http.response.debug' and info is not None:
+                info = message.get("info", None)
+                if message["type"] == "http.response.debug" and info is not None:
                     message = await stream_receive.receive()
             except anyio.EndOfStream:
                 if app_exc is not None:
@@ -136,12 +136,12 @@ class _StreamingResponse(StreamingResponse):
         super().__init__(
             content=content,
             status_code=status_code,
-            headers=headers,
+            headers=headers,  # type: ignore[arg-type]
             media_type=media_type,
-            background=background
+            background=background,
         )
-    
+
     async def response(self, send: Send, scope: Scope) -> None:
         await super().response(send, scope)
         if self._info:
-            await send({'type': 'http.response.debug', 'info': self._info})
+            await send({"type": "http.response.debug", "info": self._info})

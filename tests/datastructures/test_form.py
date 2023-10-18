@@ -51,9 +51,7 @@ async def test_uploadfile_rolling(max_size: int) -> None:
     """
     from tempfile import SpooledTemporaryFile
 
-    stream: BinaryIO = SpooledTemporaryFile(
-        max_size=max_size
-    )
+    stream: BinaryIO = SpooledTemporaryFile(max_size=max_size)
     file = UploadFile(filename="file", file=stream)
     assert await file.read() == b""
     await file.write(b"data")

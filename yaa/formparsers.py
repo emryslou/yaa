@@ -1,6 +1,6 @@
 import enum
-from tempfile import SpooledTemporaryFile
 import typing
+from tempfile import SpooledTemporaryFile
 from urllib.parse import unquote_plus
 
 try:
