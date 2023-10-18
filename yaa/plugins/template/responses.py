@@ -49,7 +49,17 @@ class TemplateResponse(Response):
         req = self.context["request"]
         assert isinstance(req, Request)
         extensions = req.get("extensions", {})
-        if "http.response.template" in extensions:
+        if 'http.response.debug' in extensions:
+            await send(
+                {
+                    "type": "http.response.debug",
+                    'info': {
+                        "template": self.template,
+                        "context": self.context,
+                    }
+                }
+            )
+        elif "http.response.template" in extensions:
             await send(
                 {
                     "type": "http.response.template",
@@ -57,6 +67,7 @@ class TemplateResponse(Response):
                     "context": self.context,
                 }
             )
+        
         await super().__call__(scope, receive, send)
 
 

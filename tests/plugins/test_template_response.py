@@ -1,8 +1,12 @@
-import pytest
+import os, pytest
 
+from yaa.applications import Yaa
+from yaa.middlewares import BaseHttpMiddleware
+from yaa.plugins.template import get_templates, Jinja2Template
 from yaa.plugins.template.responses import TemplateResponse
 from yaa.requests import Request
 from yaa.responses import Response
+from yaa.routing import Route
 
 
 def test_template_response(client_factory):
@@ -35,9 +39,6 @@ def test_template_require_request():
 
 
 def test_template_jinja2_response(tmpdir, client_factory):
-    import os
-    from yaa.applications import Yaa
-
     path = os.path.join(tmpdir, "tpl.example.1.html")
     with open(path, "w") as tpl:
         tpl.write('<html>{{hello}}{{url_for("home")}}</html>')
@@ -61,10 +62,6 @@ def test_template_jinja2_response(tmpdir, client_factory):
 
 
 def test_calls_context_processors(tmp_path, client_factory):
-    from yaa.applications import Yaa
-    from yaa.plugins.template import Jinja2Template, get_templates
-    from yaa.routing import Route
-
     path = tmp_path / "index.html"
     path.write_text("<html>Hello {{ username }}</html>")
 
@@ -90,3 +87,44 @@ def test_calls_context_processors(tmp_path, client_factory):
     assert response.text == "<html>Hello World</html>"
     assert response.template.name == "index.html"
     assert set(response.context.keys()) == {"request", "username"}
+
+
+def test_templates(tmpdir, client_factory):
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as f:
+        f.write("<h1>Hello</h1>" "<a href=\"{{url_for('homepage')}}\">Template</a>")
+
+    app = Yaa(plugins={"template": {"directory": tmpdir}})
+
+    @app.route("/")
+    async def homepage(req):
+        return get_templates().response("index.html", request=req)
+
+    client = client_factory(app)
+    res = client.get("/")
+    assert res.text == '<h1>Hello</h1><a href="http://testserver/">Template</a>'
+
+
+def test_template_with_middleware(tmpdir, client_factory):
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
+    
+    async def homepage(request):
+        return get_templates().response("index.html", request=request, context={})
+    
+    class CustomMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            return await call_next(request)
+    
+    app = Yaa(
+        debug=True,
+        routes=[Route("/", endpoint=homepage)],
+        middlewares=[(CustomMiddleware, {})],
+        plugins={"template": {"directory": tmpdir}},
+    )
+    
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>"
+    assert response.template.name == "index.html"

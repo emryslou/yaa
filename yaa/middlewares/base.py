@@ -2,10 +2,11 @@ import typing
 
 import anyio
 
+from yaa.background import BackgroundTask
 from yaa.middlewares.core import Middleware
 from yaa.requests import Request
 from yaa.responses import Response, StreamingResponse
-from yaa.types import ASGI3App, Message, Receive, Scope, Send, T
+from yaa.types import ASGI3App, ContentStream, Message, Receive, Scope, Send, T
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
@@ -73,8 +74,12 @@ class BaseHttpMiddleware(Middleware):
             # end coro
             tg.start_soon(close_recv_stream_on_response_sent)
             tg.start_soon(coro)
+
             try:
                 message = await stream_receive.receive()
+                info = message.get('info', None)
+                if message['type'] == 'http.response.debug' and info is not None:
+                    message = await stream_receive.receive()
             except anyio.EndOfStream:
                 if app_exc is not None:
                     raise app_exc
@@ -96,8 +101,8 @@ class BaseHttpMiddleware(Middleware):
                 if app_exc is not None:
                     raise app_exc
 
-            res = StreamingResponse(
-                status_code=message["status"], content=body_stream()
+            res = _StreamingResponse(
+                status_code=message["status"], content=body_stream(), info=info
             )
             res.raw_headers = message["headers"]
             return res
@@ -115,3 +120,28 @@ class BaseHttpMiddleware(Middleware):
         self, req: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         raise NotImplementedError()
+
+
+class _StreamingResponse(StreamingResponse):
+    def __init__(
+        self,
+        content: ContentStream,
+        status_code: int = 200,
+        headers: typing.Optional[typing.Mapping[str, str]] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
+        info: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+    ) -> None:
+        self._info = info
+        super().__init__(
+            content=content,
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background
+        )
+    
+    async def response(self, send: Send, scope: Scope) -> None:
+        await super().response(send, scope)
+        if self._info:
+            await send({'type': 'http.response.debug', 'info': self._info})
