@@ -193,11 +193,11 @@ class URL(object):
 
             if hostname is None:
                 netloc = self.netloc
-                _, _, hostname = netloc.rpartition('@')
+                _, _, hostname = netloc.rpartition("@")
 
-                if hostname[-1] != ']':
-                    hostname = hostname.rsplit(':', 1)[0]
-                
+                if hostname[-1] != "]":
+                    hostname = hostname.rsplit(":", 1)[0]
+
             netloc = hostname
 
             if port is not None:
