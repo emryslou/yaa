@@ -186,11 +186,18 @@ class URL(object):
             or "username" in kwargs
             or "password" in kwargs
         ):
-            hostname = kwargs.pop("hostname", self.hostname)
+            hostname = kwargs.pop("hostname", None)
             port = kwargs.pop("port", self.port)
             username = kwargs.pop("username", self.username)
             password = kwargs.pop("password", self.password)
 
+            if hostname is None:
+                netloc = self.netloc
+                _, _, hostname = netloc.rpartition('@')
+
+                if hostname[-1] != ']':
+                    hostname = hostname.rsplit(':', 1)[0]
+                
             netloc = hostname
 
             if port is not None:
