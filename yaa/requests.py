@@ -7,6 +7,10 @@ from urllib.parse import unquote
 
 import anyio
 
+from yaa._utils import (
+    AwaitableOrContextManager,
+    AwaitableOrContextManagerWrapper,
+)
 from yaa.datastructures import (
     URL,
     Address,
@@ -181,6 +185,8 @@ class ClientDisconnect(Exception):
 
 
 class Request(HttpConnection):
+    _form: typing.Optional[FormData]
+
     def __init__(
         self, scope: Scope, receive: Receive = empty_receive, send: Send = empty_send
     ):
@@ -189,6 +195,7 @@ class Request(HttpConnection):
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
+        self._form = None
 
     # def set_receive_channel(self, receive: Receive) -> None:
     #     self._receive = receive
@@ -252,8 +259,8 @@ class Request(HttpConnection):
             self._json = json.loads(body)
         return self._json
 
-    async def form(self) -> FormData:
-        if not hasattr(self, "_form"):
+    async def _get_form(self) -> FormData:
+        if self._form is None:
             assert (
                 parse_options_header is not None
             ), "The `python-multipart` library must be installed to use form parsing"
@@ -276,8 +283,11 @@ class Request(HttpConnection):
                 self._form = FormData()
         return self._form
 
+    def form(self) -> AwaitableOrContextManager[FormData]:
+        return AwaitableOrContextManagerWrapper(self._get_form())
+
     async def close(self) -> None:
-        if hasattr(self, "_form"):
+        if self._form is not None:
             await self._form.close()
 
     async def is_disconnected(self) -> bool:

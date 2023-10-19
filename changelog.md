@@ -14,6 +14,8 @@
 13. Add StaticFiles follow symlinks
 14. Make the file argument to UploadFile required
 15. support debug extension
+16. [TODO]: lazily build middleware stack
+17. allow using Request.form() as a context manager
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

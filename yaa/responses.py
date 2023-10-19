@@ -22,7 +22,8 @@ import os
 import stat
 import sys
 import typing
-from email.utils import formatdate
+from datetime import datetime
+from email.utils import format_datetime, formatdate
 from mimetypes import guess_type as mimetypes_guess_type
 from urllib.parse import quote
 
@@ -173,7 +174,7 @@ class Response(object):
         key: str,
         value: typing.Optional[str] = "",
         max_age: typing.Optional[int] = None,
-        expires: typing.Optional[int] = None,
+        expires: typing.Optional[typing.Union[datetime, str, int]] = None,
         path: typing.Optional[str] = None,
         domain: typing.Optional[str] = None,
         secure: typing.Optional[bool] = False,
@@ -211,7 +212,10 @@ class Response(object):
         if max_age is not None:
             cookie[key]["max-age"] = max_age
         if expires is not None:
-            cookie[key]["expires"] = expires
+            if isinstance(expires, datetime):
+                cookie[key]["expires"] = format_datetime(expires, usegmt=True)
+            else:
+                cookie[key]["expires"] = expires
         if path is not None:
             cookie[key]["path"] = path
         if domain is not None:

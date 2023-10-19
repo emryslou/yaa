@@ -483,3 +483,15 @@ def test_request_client(scope: Scope, expected_client: typing.Optional[Address])
     scope.update({"type": "http"})  # required by Request's constructor
     client = Request(scope).client
     assert client == expected_client
+
+
+def test_request_form_context_manager(client_factory):
+    async def app(scope, receive, send):
+        request = Request(scope, receive)
+        async with request.form() as form:
+            response = JSONResponse({"form": dict(form)})
+            await response(scope, receive, send)
+
+    client = client_factory(app)
+    response = client.post("/", data={"abc": "123 @"})
+    assert response.json() == {"form": {"abc": "123 @"}}
