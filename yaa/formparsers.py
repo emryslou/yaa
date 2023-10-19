@@ -143,6 +143,7 @@ class MultiPartParser(object):
 
         self._file_parts_to_write: typing.List[typing.Tuple[MultipartPart, bytes]] = []
         self._file_parts_to_finish: typing.List[MultipartPart] = []
+        self._files_to_close_on_error: typing.List[SpooledTemporaryFile] = []
 
     def on_part_begin(self) -> None:
         self._current_part = MultipartPart()
@@ -207,6 +208,7 @@ class MultiPartParser(object):
                 )
             filename = _user_safe_decode(options[b"filename"], self._charset)
             tmpfile = SpooledTemporaryFile(max_size=self.max_file_size)
+            self._files_to_close_on_error.append(tmpfile)
             self._current_part.file = UploadFile(
                 file=tmpfile,  # type: ignore[arg-type]
                 size=0,
@@ -250,20 +252,24 @@ class MultiPartParser(object):
 
         # import logging
         # parser.logger.setLevel(logging.DEBUG)
+        try:
+            async for chunk in self.stream:
+                parser.write(chunk)
 
-        async for chunk in self.stream:
-            parser.write(chunk)
+                for part, data in self._file_parts_to_write:
+                    assert part.file
+                    await part.file.write(data)
 
-            for part, data in self._file_parts_to_write:
-                assert part.file
-                await part.file.write(data)
+                for part in self._file_parts_to_finish:
+                    assert part.file
+                    await part.file.seek(0)
 
-            for part in self._file_parts_to_finish:
-                assert part.file
-                await part.file.seek(0)
-
-            self._file_parts_to_write.clear()
-            self._file_parts_to_finish.clear()
+                self._file_parts_to_write.clear()
+                self._file_parts_to_finish.clear()
+        except MultiPartException as exc:
+            for file in self._files_to_close_on_error:
+                file.close()
+            raise exc
         # end for
 
         parser.finalize()
