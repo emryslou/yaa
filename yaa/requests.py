@@ -259,7 +259,12 @@ class Request(HttpConnection):
             self._json = json.loads(body)
         return self._json
 
-    async def _get_form(self) -> FormData:
+    async def _get_form(
+        self,
+        *,
+        max_files: typing.Union[int, float] = 1000,
+        max_fields: typing.Union[int, float] = 1000,
+    ) -> FormData:
         if self._form is None:
             assert (
                 parse_options_header is not None
@@ -270,7 +275,12 @@ class Request(HttpConnection):
             content_type, _ = parse_options_header(content_type_header)
             if content_type == b"multipart/form-data":
                 try:
-                    parser = MultiPartParser(self.headers, self.stream)  # type: ignore
+                    parser = MultiPartParser(
+                        self.headers,
+                        self.stream(),  # type: ignore[arg-type]
+                        max_files=max_files,
+                        max_fields=max_fields,
+                    )  # type: ignore
                     self._form = await parser.parse()
                 except MultiPartException as exc:
                     if "app" in self.scope:
@@ -283,8 +293,15 @@ class Request(HttpConnection):
                 self._form = FormData()
         return self._form
 
-    def form(self) -> AwaitableOrContextManager[FormData]:
-        return AwaitableOrContextManagerWrapper(self._get_form())
+    def form(
+        self,
+        *,
+        max_files: typing.Union[int, float] = 1000,
+        max_fields: typing.Union[int, float] = 1000,
+    ) -> AwaitableOrContextManager[FormData]:
+        return AwaitableOrContextManagerWrapper(
+            self._get_form(max_files=max_files, max_fields=max_fields)
+        )
 
     async def close(self) -> None:
         if self._form is not None:
@@ -304,7 +321,6 @@ class Request(HttpConnection):
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
-        print("debug -- 01", self.scope["extensions"])
         if "http.response.push" in self.scope.get("extensions", {}):
             raw_headers: "typing.List[typing.Tuple[bytes, bytes]]" = []
             for name in SERVER_PUSH_HEADERS_TO_COPY:
@@ -312,7 +328,6 @@ class Request(HttpConnection):
                     raw_headers.append(
                         (name.encode("latin-1"), value.encode("latin-1"))
                     )
-            print("debug -- 02", raw_headers, path)
             await self._send(
                 {"type": "http.response.push", "path": path, "headers": raw_headers}
             )

@@ -1,5 +1,6 @@
 import enum
 import typing
+from dataclasses import dataclass, field
 from tempfile import SpooledTemporaryFile
 from urllib.parse import unquote_plus
 
@@ -21,15 +22,13 @@ class FormMessage(enum.Enum):
     END = 5
 
 
-class MultiPartMessage(enum.Enum):
-    PART_BEGIN = 1
-    PART_DATA = 2
-    PART_END = 3
-    HEADER_FIELD = 4
-    HEADER_VALUE = 5
-    HEADER_END = 6
-    HEADERS_FINISHED = 7
-    END = 8
+@dataclass
+class MultipartPart(object):
+    content_disposition: typing.Optional[bytes] = None
+    field_name: str = ""
+    data: bytes = b""
+    file: typing.Optional[UploadFile] = None
+    item_headers: typing.List[typing.Tuple[bytes, bytes]] = field(default_factory=list)
 
 
 def _user_safe_decode(src: bytes, codec: str) -> str:
@@ -116,121 +115,157 @@ class MultiPartParser(object):
 
     def __init__(
         self,
-        headers: typing.Optional[Headers] = None,
-        stream: typing.Optional[typing.AsyncGenerator[bytes, None]] = None,
+        headers: Headers,
+        stream: typing.AsyncGenerator[bytes, None],
+        *,
+        max_files: typing.Union[int, float] = 1000,
+        max_fields: typing.Union[int, float] = 1000,
     ) -> None:
         assert (
             multipart is not None
         ), "The `python-multipart` library must be installed to use form parsing"
         self.headers = headers
         self.stream = stream
-        self.messages = []  # type: typing.List[typing.Tuple[MultiPartMessage, bytes]]
+
+        self.max_files = max_files
+        self.max_fields = max_fields
+
+        self.items: typing.List[typing.Tuple[str, typing.Union[str, UploadFile]]] = []
+
+        self._current_files = 0
+        self._current_fields = 0
+
+        self._current_partial_header_name: bytes = b""
+        self._current_partial_header_value: bytes = b""
+        self._current_part = MultipartPart()
+
+        self._charset = ""
+
+        self._file_parts_to_write: typing.List[typing.Tuple[MultipartPart, bytes]] = []
+        self._file_parts_to_finish: typing.List[MultipartPart] = []
 
     def on_part_begin(self) -> None:
-        self.messages.append((MultiPartMessage.PART_BEGIN, b""))
+        self._current_part = MultipartPart()
 
     def on_part_data(self, data: bytes, start: int, end: int) -> None:
-        self.messages.append((MultiPartMessage.PART_DATA, data[start:end]))
+        message_bytes = data[start:end]
+        if self._current_part.file is None:
+            self._current_part.data += message_bytes
+        else:
+            self._file_parts_to_write.append((self._current_part, message_bytes))
 
     def on_part_end(self) -> None:
-        self.messages.append((MultiPartMessage.PART_END, b""))
+        if self._current_part.file is None:
+            self.items.append(
+                (
+                    self._current_part.field_name,
+                    _user_safe_decode(self._current_part.data, self._charset),
+                )
+            )
+        else:
+            self._file_parts_to_finish.append(self._current_part)
+            self.items.append((self._current_part.field_name, self._current_part.file))
 
     def on_header_field(self, data: bytes, start: int, end: int) -> None:
-        self.messages.append((MultiPartMessage.HEADER_FIELD, data[start:end]))
+        self._current_partial_header_name += data[start:end]
 
     def on_header_value(self, data: bytes, start: int, end: int) -> None:
-        self.messages.append((MultiPartMessage.HEADER_VALUE, data[start:end]))
+        self._current_partial_header_value += data[start:end]
 
     def on_header_end(self) -> None:
-        self.messages.append((MultiPartMessage.HEADER_END, b""))
+        field = self._current_partial_header_name.lower()
+
+        if field == b"content-disposition":
+            self._current_part.content_disposition = self._current_partial_header_value
+
+        self._current_part.item_headers.append(
+            (field, self._current_partial_header_value)
+        )
+        self._current_partial_header_name = b""
+        self._current_partial_header_value = b""
 
     def on_headers_finished(self) -> None:
-        self.messages.append((MultiPartMessage.HEADERS_FINISHED, b""))
+        assert self._current_part.content_disposition is not None
+        disposition, options = parse_options_header(
+            self._current_part.content_disposition
+        )
+
+        try:
+            self._current_part.field_name = _user_safe_decode(
+                options[b"name"], self._charset
+            )
+        except KeyError:
+            raise MultiPartException(
+                'The Content-Disposition header field "name" must be provided.'
+            )
+
+        if b"filename" in options:
+            self._current_files += 1
+            if self._current_files > self.max_files:
+                raise MultiPartException(
+                    f"Too many files. Maximum number of files is {self.max_files}."
+                )
+            filename = _user_safe_decode(options[b"filename"], self._charset)
+            tmpfile = SpooledTemporaryFile(max_size=self.max_file_size)
+            self._current_part.file = UploadFile(
+                file=tmpfile,  # type: ignore[arg-type]
+                size=0,
+                filename=filename,
+                headers=Headers(raw=self._current_part.item_headers),
+            )
+        else:
+            self._current_fields += 1
+            if self._current_fields > self.max_fields:
+                raise MultiPartException(
+                    f"Too many fields. Maximum number of fields is {self.max_fields}."
+                )
+            self._current_part.file = None
 
     def on_end(self) -> None:
-        self.messages.append((MultiPartMessage.END, b""))
+        pass
 
     async def parse(self) -> FormData:
         _, params = parse_options_header(self.headers["Content-Type"])  # type: ignore
         charset = params.get(b"charset", "utf-8")
         if isinstance(charset, bytes):
             charset = charset.decode("utf-8")
+
+        self._charset = charset
         try:
             boundary = params[b"boundary"]
         except KeyError:
             raise MultiPartException("Missing boundary in multipart.")
 
-        _mpm_attrs = [f"on_{fm.name.lower()}" for fm in list(MultiPartMessage)]
         callbacks = {
-            attr: getattr(self, attr) for attr in self.__dir__() if attr in _mpm_attrs
+            "on_part_begin": self.on_part_begin,
+            "on_part_data": self.on_part_data,
+            "on_part_end": self.on_part_end,
+            "on_header_field": self.on_header_field,
+            "on_header_value": self.on_header_value,
+            "on_header_end": self.on_header_end,
+            "on_headers_finished": self.on_headers_finished,
+            "on_end": self.on_end,
         }
         parser = multipart.MultipartParser(boundary, callbacks)
-        header_field, header_value = b"", b""
-        content_disposition = None
-        field_name = ""
-        data = b""
-        _file = None
 
-        items: list = []
-        item_headers: list = []
+        # import logging
+        # parser.logger.setLevel(logging.DEBUG)
 
-        if callable(self.stream):
-            async for chunk in self.stream():
-                parser.write(chunk)
-                messages = list(self.messages)
-                self.messages.clear()
+        async for chunk in self.stream:
+            parser.write(chunk)
 
-                for msg_type, msg_bytes in messages:
-                    if msg_type == MultiPartMessage.PART_BEGIN:
-                        content_disposition = None
-                        data = b""
-                        item_headers = []
-                    elif msg_type == MultiPartMessage.HEADER_FIELD:
-                        header_field += msg_bytes
-                    elif msg_type == MultiPartMessage.HEADER_VALUE:
-                        header_value += msg_bytes
-                    elif msg_type == MultiPartMessage.HEADER_END:
-                        # raw_headers.append((header_field.lower(), header_value))
-                        field = header_field.lower()
-                        if field == b"content-disposition":
-                            content_disposition = header_value
-                        item_headers.append((field, header_value))
-                        header_field, header_value = b"", b""
-                    elif msg_type == MultiPartMessage.HEADERS_FINISHED:
-                        disposition, options = parse_options_header(content_disposition)
-                        try:
-                            field_name = _user_safe_decode(options[b"name"], charset)
-                        except KeyError:
-                            raise MultiPartException(
-                                'The Content-Disposition header field "name" must be provided.'
-                            )
-                        if b"filename" in options:
-                            filename = _user_safe_decode(options[b"filename"], charset)
-                            tmpfile = SpooledTemporaryFile(max_size=self.max_file_size)
-                            _file = UploadFile(
-                                file=tmpfile,
-                                size=0,
-                                filename=filename,
-                                headers=Headers(raw=item_headers),
-                            )
-                        else:
-                            _file = None
+            for part, data in self._file_parts_to_write:
+                assert part.file
+                await part.file.write(data)
 
-                    elif msg_type == MultiPartMessage.PART_DATA:
-                        if _file is None:
-                            data += msg_bytes
-                        else:
-                            await _file.write(msg_bytes)
-                    elif msg_type == MultiPartMessage.PART_END:
-                        if _file is None:
-                            items.append((field_name, _user_safe_decode(data, charset)))
-                        else:
-                            await _file.seek(0)
-                            items.append((field_name, _file))
-                    # elif msg_type == MultiPartMessage.END:
-                    #     pass
-                # end for
-            # end for
-            parser.finalize()
-        # end if
-        return FormData(items=items)
+            for part in self._file_parts_to_finish:
+                assert part.file
+                await part.file.seek(0)
+
+            self._file_parts_to_write.clear()
+            self._file_parts_to_finish.clear()
+        # end for
+
+        parser.finalize()
+
+        return FormData(self.items)
