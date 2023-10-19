@@ -209,6 +209,7 @@ class MultiPartParser(object):
                             tmpfile = SpooledTemporaryFile(max_size=self.max_file_size)
                             _file = UploadFile(
                                 file=tmpfile,
+                                size=0,
                                 filename=filename,
                                 headers=Headers(raw=item_headers),
                             )

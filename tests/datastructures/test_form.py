@@ -1,5 +1,5 @@
 import pytest
-
+import io
 from yaa.datastructures.form import *
 
 
@@ -28,17 +28,38 @@ def test_formdata():
     assert FormData({"a": "123", "b": "789"}) == FormData([("a", "123"), ("b", "789")])
     assert FormData({"a": "123", "b": "789"}) != {"a": "123", "b": "789"}
 
+    stream = io.BytesIO(b"data")
+    upload = UploadFile(filename="file", file=stream, size=4)
+    form = FormData([("a", "123"), ("a", "456"), ("b", upload)])
+    assert "a" in form
+    assert "A" not in form
+
 
 @pytest.mark.anyio
 async def test_upload_file_file_input():
-    import io
-
     """Test passing file/stream into the UploadFile constructor"""
+
+    stream = io.BytesIO(b"data")
+    file = UploadFile(filename="file", file=stream, size=4)
+    assert await file.read() == b"data"
+    assert file.size == 4
+    await file.write(b" and more data!")
+    assert await file.read() == b""
+    assert file.size == 19
+    await file.seek(0)
+    assert await file.read() == b"data and more data!"
+
+
+@pytest.mark.anyio
+async def test_upload_file_without_size():
+    """Test passing file/stream into the UploadFile constructor without size"""
     stream = io.BytesIO(b"data")
     file = UploadFile(filename="file", file=stream)
     assert await file.read() == b"data"
+    assert file.size is None
     await file.write(b" and more data!")
     assert await file.read() == b""
+    assert file.size is None
     await file.seek(0)
     assert await file.read() == b"data and more data!"
 
@@ -52,14 +73,18 @@ async def test_uploadfile_rolling(max_size: int) -> None:
     from tempfile import SpooledTemporaryFile
 
     stream: BinaryIO = SpooledTemporaryFile(max_size=max_size)
-    file = UploadFile(filename="file", file=stream)
+    file = UploadFile(filename="file", file=stream, size=0)
     assert await file.read() == b""
+    assert file.size == 0
     await file.write(b"data")
     assert await file.read() == b""
+    assert file.size == 4
     await file.seek(0)
     assert await file.read() == b"data"
     await file.write(b" more")
     assert await file.read() == b""
+    assert file.size == 9
     await file.seek(0)
     assert await file.read() == b"data more"
+    assert file.size == 9
     await file.close()
