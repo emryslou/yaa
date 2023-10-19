@@ -2,6 +2,7 @@ import os
 import typing
 
 from yaa.background import BackgroundTask
+from yaa.datastructures import URL
 from yaa.requests import Request
 from yaa.responses import Response
 from yaa.types import Receive, Scope, Send
@@ -95,7 +96,7 @@ class Jinja2Template(object):
         ), f"template directory `{directory}` is not a directory"
 
         @pass_context
-        def url_for(context: dict, name: str, **path_params: typing.Any) -> str:
+        def url_for(context: dict, name: str, **path_params: typing.Any) -> URL:
             req = context["request"]
             return req.url_for(name, **path_params)
 
