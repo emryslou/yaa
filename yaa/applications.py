@@ -3,7 +3,7 @@ import typing
 from yaa.datastructures import State, URLPath
 from yaa.middlewares import BaseHttpMiddleware, Middleware
 from yaa.routing import BaseRoute, Router
-from yaa.types import ASGI3App, Receive, Scope, Send
+from yaa.types import ASGI3App, Lifespan, Receive, Scope, Send
 
 
 class Yaa(object):
@@ -19,15 +19,36 @@ class Yaa(object):
         ] = None,
         on_startup: typing.Optional[typing.List[typing.Callable]] = None,
         on_shutdown: typing.Optional[typing.List[typing.Callable]] = None,
-        lifespan: typing.Optional[
-            typing.Callable[["Yaa"], typing.AsyncContextManager]
-        ] = None,
+        lifespan: typing.Optional[Lifespan] = None,
         **kwargs,
     ) -> None:
         self._debug = debug
         self.state = State()
         self.router = Router(routes=routes)
         self.app = self.router
+        self.config: typing.Dict[str, typing.Any]
+        self.init_config(
+            lifespan=lifespan, on_startup=on_startup, on_shutdown=on_shutdown
+        )
+
+        self.exception_handlers = (
+            {} if exception_handlers is None else dict(exception_handlers)
+        )
+        self.user_middlewares = [] if middlewares is None else list(middlewares)
+        for _k, _cfg in kwargs.pop("plugins", {}).items():
+            if _k in self.config["plugins"]:
+                self.config["plugins"][_k].update(_cfg)  # type: ignore
+            else:
+                self.config["plugins"][_k] = _cfg  # type: ignore
+        self.init_plugins(self.config.get("plugins", {}))
+        self.build_middleware_stack()
+
+    def init_config(
+        self,
+        lifespan: typing.Optional[Lifespan] = None,
+        on_startup: typing.Optional[list] = None,
+        on_shutdown: typing.Optional[list] = None,
+    ) -> None:
         self.config = {
             "plugins": {
                 "exceptions": {
@@ -61,18 +82,6 @@ class Yaa(object):
                 self.config["plugins"]["lifespan"]["event_handlers"][  # type: ignore
                     "shutdown"
                 ] += on_shutdown
-
-        self.exception_handlers = (
-            {} if exception_handlers is None else dict(exception_handlers)
-        )
-        self.user_middlewares = [] if middlewares is None else list(middlewares)
-        for _k, _cfg in kwargs.pop("plugins", {}).items():
-            if _k in self.config["plugins"]:
-                self.config["plugins"][_k].update(_cfg)  # type: ignore
-            else:
-                self.config["plugins"][_k] = _cfg  # type: ignore
-        self.init_plugins(self.config.get("plugins", {}))
-        self.build_middleware_stack()
 
     def init_plugins(self, plugins_config: dict = {}) -> None:
         _all_plugins = {}

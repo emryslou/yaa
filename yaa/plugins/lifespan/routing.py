@@ -8,11 +8,18 @@ import warnings
 
 from yaa._utils import is_async_callable
 from yaa.routing import BaseRoute, Match, Router
-from yaa.types import Receive, Scope, Send
+from yaa.types import (
+    Lifespan as LifespanType,
+    Receive,
+    Scope,
+    Send,
+    StatelessLifespan,
+)
 
 from .types import EventType
 
 _T = typing.TypeVar("_T")
+_TDefaultLifespan = typing.TypeVar("_TDefaultLifespan", bound="_DefaultLifespan")
 
 
 class _AsyncLiftContextManager(typing.AsyncContextManager[_T]):
@@ -43,24 +50,30 @@ def _wrap_gen_lifespan_context(
     return wrapper
 
 
-class _DefaultLifespan:
+class _DefaultLifespan(object):
     def __init__(self, router: "Router"):
         self._router = router
+        self._state: typing.Optional[typing.Dict[str, typing.Any]] = None
 
     async def __aenter__(self) -> None:
-        await self._router.handler(EventType.STARTUP)  # type: ignore
+        await self._router.handler(EventType.STARTUP, state=self._state)  # type: ignore
 
     async def __aexit__(self, *exc_info: object) -> None:
-        await self._router.handler(EventType.SHUTDOWN)  # type: ignore
+        await self._router.handler(EventType.SHUTDOWN, state=self._state)  # type: ignore
 
-    def __call__(self: _T, app: object) -> _T:
+    def __call__(
+        self: _TDefaultLifespan,
+        app: object,
+        state: typing.Optional[typing.Dict[str, typing.Any]],
+    ) -> _TDefaultLifespan:
+        self._state = state
         return self
 
 
 class Lifespan(BaseRoute):
     def __init__(
         self,
-        context: typing.Optional[typing.AsyncContextManager] = None,
+        context: typing.Optional[LifespanType] = None,
         **handlers: typing.List[typing.Callable],
     ) -> None:
         assert not (
@@ -68,7 +81,7 @@ class Lifespan(BaseRoute):
         ), "Use either `context` or `**handlers`"
         self.handlers = {et: handlers.get(str(et), []) for et in list(EventType)}
         if context is None:
-            self.context = _DefaultLifespan(self)  # type: ignore
+            self.context: LifespanType = _DefaultLifespan(self)  # type: ignore
         elif inspect.isasyncgenfunction(context):
             warnings.warn(
                 "async generator function lifespans are deprecated, "
@@ -89,9 +102,24 @@ class Lifespan(BaseRoute):
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         started = False
         app = scope.get("app")
+
+        state = scope.get("state", None)
+        await receive()
+        lifespan_needs_state = len(inspect.signature(self.context).parameters) == 2
+        server_supports_state = state is not None
+        if lifespan_needs_state and not server_supports_state:
+            raise RuntimeError(
+                'The server does not support "state" in the lifespan scope'
+            )
+
         try:
-            await receive()
-            async with self.context(app):
+            context: LifespanType
+            if lifespan_needs_state:
+                context = functools.partial(self.context, state=state)
+            else:
+                context = typing.cast(StatelessLifespan, self.context)
+
+            async with context(app):
                 await send({"type": EventType.STARTUP.complete})
                 started = True
                 await receive()
@@ -121,8 +149,15 @@ class Lifespan(BaseRoute):
 
         return decorator
 
-    async def handler(self, event_type: EventType) -> None:
+    async def handler(
+        self,
+        event_type: EventType,
+        state: typing.Optional[typing.Dict[str, typing.Any]],
+    ) -> None:
         for handler in self.handlers.get(event_type, []):
+            handler_sig = inspect.signature(handler)
+            if len(handler_sig.parameters) == 1 and state is not None:
+                handler = functools.partial(handler, state)
             if is_async_callable(handler):
                 await handler()
             else:

@@ -24,3 +24,10 @@ Content = typing.Union[str, bytes]
 SyncContentStream = typing.Iterator[Content]
 AsyncContentStream = typing.AsyncIterator[Content]
 ContentStream = typing.Union[SyncContentStream, AsyncContentStream]
+
+
+StatelessLifespan = typing.Callable[[object], typing.AsyncContextManager[typing.Any]]
+StateLifespan = typing.Callable[
+    [typing.Any, typing.Dict[str, typing.Any]], typing.AsyncContextManager[typing.Any]
+]
+Lifespan = typing.Union[StatelessLifespan, StateLifespan]
