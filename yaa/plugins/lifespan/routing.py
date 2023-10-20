@@ -8,13 +8,7 @@ import warnings
 
 from yaa._utils import is_async_callable
 from yaa.routing import BaseRoute, Match, Router
-from yaa.types import (
-    Lifespan as LifespanType,
-    Receive,
-    Scope,
-    Send,
-    StatelessLifespan,
-)
+from yaa.types import Lifespan as LifespanType, Receive, Scope, Send, StatelessLifespan
 
 from .types import EventType
 

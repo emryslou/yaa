@@ -30,19 +30,19 @@ pymysql
 cryptography
 
 # Testing
-flake8
+coverage >= 5.3
 mypy
+importlib-metadata
 pytest
 pytest-asyncio
-coverage >= 5.3
-pytest-timeout
 pytest-benchmark
-typing_extensions==4.2.0
-types-requests==2.26.3
+pytest-timeout
 types-contextvars==2.4.7
-types-PyYAML==6.0.4
 types-dataclasses==0.6.6
-importlib-metadata
+types-PyYAML==6.0.4
+types-requests==2.26.3
+typing_extensions==4.2.0
+
 
 # Documentation
 mkautodoc
@@ -52,8 +52,8 @@ mkdocs-material
 # Developing
 bandit
 black
-isort
 pylint
+ruff
 
 # Packaging
 twine

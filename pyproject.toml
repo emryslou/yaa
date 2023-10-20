@@ -1,3 +1,12 @@
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 120
+select = ['I', 'E']
+ignore = ['E501']
+
+[tool.ruff.isort]
+# @doc_see: https://docs.astral.sh/
+combine-as-imports = true

@@ -23,12 +23,7 @@ from yaa.datastructures import DatabaseURL
 from yaa.plugins import load_middlewares
 from yaa.types import P
 
-from .drivers.base import (
-    DatabaseBackend,
-    DatabaseSession,
-    DatabaseTransaction,
-    compile,
-)
+from .drivers.base import DatabaseBackend, DatabaseSession, DatabaseTransaction, compile
 
 
 def register_db_type(

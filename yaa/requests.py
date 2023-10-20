@@ -7,18 +7,8 @@ from urllib.parse import unquote
 
 import anyio
 
-from yaa._utils import (
-    AwaitableOrContextManager,
-    AwaitableOrContextManagerWrapper,
-)
-from yaa.datastructures import (
-    URL,
-    Address,
-    FormData,
-    Headers,
-    QueryParams,
-    State,
-)
+from yaa._utils import AwaitableOrContextManager, AwaitableOrContextManagerWrapper
+from yaa.datastructures import URL, Address, FormData, Headers, QueryParams, State
 from yaa.exceptions import HttpException
 from yaa.formparsers import FormParser, MultiPartException, MultiPartParser
 from yaa.types import Message, P, Receive, Scope, Send
