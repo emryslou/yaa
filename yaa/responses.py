@@ -73,7 +73,7 @@ class Response(object):
         self,
         content: typing.Optional[typing.Any] = None,
         status_code: int = 200,
-        headers: typing.Optional[dict] = None,
+        headers: typing.Optional[typing.Mapping[str, str]] = None,
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
@@ -136,7 +136,9 @@ class Response(object):
             return content
         return content.encode(self.charset)
 
-    def init_headers(self, headers: typing.Optional[dict] = None) -> None:
+    def init_headers(
+        self, headers: typing.Optional[typing.Mapping[str, str]] = None
+    ) -> None:
         """设置响应头
         param: headers: 响应头
         """

@@ -102,7 +102,7 @@ class Jinja2Template(object):
         request: Request,
         context: dict = {},
         status_code: int = 200,
-        headers: typing.Optional[dict] = None,
+        headers: typing.Optional[typing.Mapping[str, str]] = None,
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> TemplateResponse:

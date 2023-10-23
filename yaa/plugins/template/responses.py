@@ -16,7 +16,7 @@ class TemplateResponse(Response):
         template: typing.Any,
         context: dict,
         status_code: int = 200,
-        headers: typing.Optional[dict] = None,
+        headers: typing.Optional[typing.Mapping[str, str]] = None,
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
@@ -48,8 +48,8 @@ class TemplateResponse(Response):
                     },
                 }
             )
-        elif "http.response.template" in extensions:
-            await send(
+        elif "http.response.template" in extensions:  # pragma: no cover
+            await send(  # pragma: no cover
                 {
                     "type": "http.response.template",
                     "template": self.template,
