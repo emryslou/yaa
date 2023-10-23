@@ -165,7 +165,6 @@ def test_templates_with_environment(tmpdir):
     assert template.render({}) == "Hello"
 
 
-
 def test_templates_with_kwargs_only(tmpdir, client_factory):
     # MAINTAINERS: remove after 1.0
     path = os.path.join(tmpdir, "index.html")
@@ -173,6 +172,7 @@ def test_templates_with_kwargs_only(tmpdir, client_factory):
         file.write("value: {{ a }}")
     templates = Jinja2Template(directory=str(tmpdir))
     spy = mock.MagicMock()
+
     def page(request):
         return templates.response(
             request=request,
@@ -183,6 +183,7 @@ def test_templates_with_kwargs_only(tmpdir, client_factory):
             media_type="text/plain",
             background=BackgroundTask(func=spy),
         )
+
     app = Yaa(routes=[Route("/", page)])
     client = client_factory(app)
     response = client.get("/")
@@ -191,6 +192,7 @@ def test_templates_with_kwargs_only(tmpdir, client_factory):
     assert response.headers["x-key"] == "value"
     assert response.headers["content-type"] == "text/plain; charset=utf-8"
     spy.assert_called()
+
 
 def test_templates_with_kwargs_only_requires_request_in_context(tmpdir):
     # MAINTAINERS: remove after 1.0
@@ -202,6 +204,7 @@ def test_templates_with_kwargs_only_requires_request_in_context(tmpdir):
         with pytest.raises(ValueError):
             templates.response(name="index.html", context={"a": "b"})
 
+
 def test_templates_with_kwargs_only_warns_when_no_request_keyword(
     tmpdir, client_factory
 ):
@@ -210,10 +213,10 @@ def test_templates_with_kwargs_only_warns_when_no_request_keyword(
     with open(path, "w") as file:
         file.write("Hello")
     templates = Jinja2Template(directory=str(tmpdir))
+
     def page(request):
-        return templates.response(
-            name="index.html", context={"request": request}
-        )
+        return templates.response(name="index.html", context={"request": request})
+
     app = Yaa(routes=[Route("/", page)])
     client = client_factory(app)
     with pytest.warns(
@@ -238,6 +241,7 @@ def test_templates_warns_when_first_argument_isnot_request(tmpdir, client_factor
         file.write("value: {{ a }}")
     templates = Jinja2Template(directory=str(tmpdir))
     spy = mock.MagicMock()
+
     def page(request):
         return templates.response(
             "index.html",
@@ -247,6 +251,7 @@ def test_templates_warns_when_first_argument_isnot_request(tmpdir, client_factor
             media_type="text/plain",
             background=BackgroundTask(func=spy),
         )
+
     app = Yaa(routes=[Route("/", page)])
     client = client_factory(app)
     with pytest.warns(DeprecationWarning):
@@ -257,6 +262,7 @@ def test_templates_warns_when_first_argument_isnot_request(tmpdir, client_factor
     assert response.headers["content-type"] == "text/plain; charset=utf-8"
     spy.assert_called()
 
+
 def test_templates_when_first_argument_is_request(tmpdir, client_factory):
     # MAINTAINERS: remove after 1.0
     path = os.path.join(tmpdir, "index.html")
@@ -264,6 +270,7 @@ def test_templates_when_first_argument_is_request(tmpdir, client_factory):
         file.write("value: {{ a }}")
     templates = Jinja2Template(directory=str(tmpdir))
     spy = mock.MagicMock()
+
     def page(request):
         return templates.response(
             request,
@@ -274,6 +281,7 @@ def test_templates_when_first_argument_is_request(tmpdir, client_factory):
             media_type="text/plain",
             background=BackgroundTask(func=spy),
         )
+
     app = Yaa(routes=[Route("/", page)])
     client = client_factory(app)
     response = client.get("/")
@@ -281,4 +289,3 @@ def test_templates_when_first_argument_is_request(tmpdir, client_factory):
     assert response.status_code == 201
     assert response.headers["x-key"] == "value"
     assert response.headers["content-type"] == "text/plain; charset=utf-8"
-
