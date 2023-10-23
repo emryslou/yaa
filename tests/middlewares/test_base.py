@@ -1,12 +1,15 @@
-import anyio, pytest
+import anyio, pytest, typing
 from contextlib import AsyncExitStack
 
 from yaa.applications import Yaa
 from yaa.background import BackgroundTask
 from yaa.middlewares import Middleware, BaseHttpMiddleware
-from yaa.responses import PlainTextResponse, StreamingResponse
+from yaa.responses import Response, PlainTextResponse, StreamingResponse
 from yaa.routing import Route
 from yaa.types import Scope, Receive, Send
+from yaa._utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class CustomMiddleware(BaseHttpMiddleware):
@@ -187,7 +190,7 @@ async def test_run_background_tasks_even_if_client_disconnects():
     background_task_run = anyio.Event()
 
     async def sleep_and_set():
-        # small delay to give BaseHTTPMiddleware a chance to cancel us
+        # small delay to give BaseHttpMiddleware a chance to cancel us
         # this is required to make the test fail prior to fixing the issue
         # so do not be surprised if you remove it and the test still passes
         await anyio.sleep(0.1)
@@ -235,7 +238,7 @@ async def test_run_context_manager_exit_even_if_client_disconnects():
     context_manager_exited = anyio.Event()
 
     async def sleep_and_set():
-        # small delay to give BaseHTTPMiddleware a chance to cancel us
+        # small delay to give BaseHttpMiddleware a chance to cancel us
         # this is required to make the test fail prior to fixing the issue
         # so do not be surprised if you remove it and the test still passes
         await anyio.sleep(0.1)
@@ -245,7 +248,7 @@ async def test_run_context_manager_exit_even_if_client_disconnects():
         def __init__(self, app, **kwargs):
             self.app = app
 
-        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        async def __call__(self, scope, receive, send):
             async with AsyncExitStack() as stack:
                 stack.push_async_callback(sleep_and_set)
                 await self.app(scope, receive, send)
@@ -373,3 +376,395 @@ def test_app_receives_http_disconnect_after_sending_if_discarded(client_factory)
     client = client_factory(app)
     response = client.get("/does_not_exist")
     assert response.text == "Custom"
+
+
+def test_read_request_stream_in_app_after_middleware_calls_stream(
+    client_factory,
+) -> None:
+    async def homepage(request):
+        expected = [b""]
+        async for chunk in request.stream():
+            logger.debug(f"diff: {chunk!r} {expected[0]!r}")
+            assert chunk == expected.pop(0)
+        assert expected == []
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            expected = [b"a", b""]
+            async for chunk in request.stream():
+                assert chunk == expected.pop(0)
+            assert expected == []
+            return await call_next(request)
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middlewares=[(ConsumingMiddleware, {})],
+    )
+
+    client = client_factory(app)
+
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+def test_read_request_stream_in_app_after_middleware_calls_body(client_factory) -> None:
+    async def homepage(request):
+        expected = [b"a", b""]
+        async for chunk in request.stream():
+            assert chunk == expected.pop(0)
+        assert expected == []
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            logger.debug(f"{self.__class__.__name__}::dispatch is calling ...")
+            assert await request.body() == b"a"
+            return await call_next(request)
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middlewares=[(ConsumingMiddleware, {})],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+def test_read_request_body_in_app_after_middleware_calls_stream(client_factory) -> None:
+    async def homepage(request):
+        assert await request.body() == b""
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            expected = [b"a", b""]
+            async for chunk in request.stream():
+                assert chunk == expected.pop(0)
+            assert expected == []
+            return await call_next(request)
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middlewares=[(ConsumingMiddleware, {})],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+def test_read_request_body_in_app_after_middleware_calls_body(client_factory) -> None:
+    async def homepage(request):
+        assert await request.body() == b"a"
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            assert await request.body() == b"a"
+            return await call_next(request)
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middleware=[Middleware(ConsumingMiddleware)],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+def test_read_request_stream_in_dispatch_after_app_calls_stream(client_factory) -> None:
+    async def homepage(request):
+        expected = [b"a", b""]
+        async for chunk in request.stream():
+            assert chunk == expected.pop(0)
+        assert expected == []
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            resp = await call_next(request)
+            with pytest.raises(RuntimeError, match="Stream consumed"):
+                async for _ in request.stream():
+                    raise AssertionError("should not be called")  # pragma: no cover
+            return resp
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middleware=[Middleware(ConsumingMiddleware)],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+def test_read_request_stream_in_dispatch_after_app_calls_body(client_factory) -> None:
+    async def homepage(request):
+        assert await request.body() == b"a"
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            resp = await call_next(request)
+            with pytest.raises(RuntimeError, match="Stream consumed"):
+                async for _ in request.stream():
+                    raise AssertionError("should not be called")  # pragma: no cover
+            return resp
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middleware=[Middleware(ConsumingMiddleware)],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_read_request_stream_in_dispatch_wrapping_app_calls_body() -> None:
+    async def endpoint(scope, receive, send) -> None:
+        request = Request(scope, receive)
+        async for chunk in request.stream():
+            assert chunk == b"2"
+            break
+        await Response()(scope, receive, send)
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            expected = b"1"
+            response = None
+            async for chunk in request.stream():
+                assert chunk == expected
+                if expected == b"1":
+                    response = await call_next(request)
+                    expected = b"3"
+                else:
+                    break
+            assert response is not None
+            return response
+
+    async def rcv():
+        yield {"type": "http.request", "body": b"1", "more_body": True}
+        yield {"type": "http.request", "body": b"2", "more_body": True}
+        yield {"type": "http.request", "body": b"3"}
+        await anyio.sleep(float("inf"))
+
+    sent = []
+
+    async def send(msg) -> None:
+        sent.append(msg)
+
+    app = endpoint
+    app = ConsumingMiddleware(app)
+    rcv_stream = rcv()
+    await app({"type": "http"}, rcv_stream.__anext__, send)
+    assert sent == [
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [(b"content-length", b"0")],
+        },
+        {"type": "http.response.body", "body": b"", "more_body": False},
+    ]
+    await rcv_stream.aclose()
+
+
+def test_read_request_stream_in_dispatch_after_app_calls_body_with_middleware_calling_body_before_call_next(  # noqa: E501
+    client_factory,
+) -> None:
+    async def homepage(request):
+        assert await request.body() == b"a"
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            assert (
+                await request.body() == b"a"
+            )  # this buffers the request body in memory
+            resp = await call_next(request)
+            async for chunk in request.stream():
+                if chunk:
+                    assert chunk == b"a"
+            return resp
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middleware=[Middleware(ConsumingMiddleware)],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+def test_read_request_body_in_dispatch_after_app_calls_body_with_middleware_calling_body_before_call_next(  # noqa: E501
+    client_factory,
+) -> None:
+    async def homepage(request):
+        assert await request.body() == b"a"
+        return PlainTextResponse("Homepage")
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            assert (
+                await request.body() == b"a"
+            )  # this buffers the request body in memory
+            resp = await call_next(request)
+            assert await request.body() == b"a"  # no problem here
+            return resp
+
+    app = Yaa(
+        routes=[Route("/", homepage, methods=["POST"])],
+        middleware=[Middleware(ConsumingMiddleware)],
+    )
+    client = client_factory(app)
+    response = client.post("/", content=b"a")
+    assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_read_request_disconnected_client() -> None:
+    """If we receive a disconnect message when the downstream ASGI
+    app calls receive() the Request instance passed into the dispatch function
+    should get marked as disconnected.
+    The downstream ASGI app should not get a ClientDisconnect raised,
+    instead if should just receive the disconnect message.
+    """
+
+    async def endpoint(scope, receive, send) -> None:
+        msg = await receive()
+        assert msg["type"] == "http.disconnect"
+        await Response()(scope, receive, send)
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            disconnected = await request.is_disconnected()
+            assert disconnected is True
+            return response
+
+    scope = {"type": "http", "method": "POST", "path": "/"}
+
+    async def receive():
+        yield {"type": "http.disconnect"}
+        raise AssertionError("Should not be called, would hang")  # pragma: no cover
+
+    async def send(msg):
+        if msg["type"] == "http.response.start":
+            assert msg["status"] == 200
+
+    app = ConsumingMiddleware(endpoint)
+    rcv = receive()
+    await app(scope, rcv.__anext__, send)
+    await rcv.aclose()
+
+
+@pytest.mark.anyio
+async def test_read_request_disconnected_after_consuming_steam() -> None:
+    async def endpoint(scope, receive, send) -> None:
+        msg = await receive()
+        assert msg.pop("more_body", False) is False
+        assert msg == {"type": "http.request", "body": b"hi"}
+        msg = await receive()
+        assert msg == {"type": "http.disconnect"}
+        await Response()(scope, receive, send)
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            await request.body()
+            disconnected = await request.is_disconnected()
+            assert disconnected is True
+            response = await call_next(request)
+            return response
+
+    scope = {"type": "http", "method": "POST", "path": "/"}
+
+    async def receive():
+        yield {"type": "http.request", "body": b"hi"}
+        yield {"type": "http.disconnect"}
+        raise AssertionError("Should not be called, would hang")  # pragma: no cover
+
+    async def send(msg):
+        if msg["type"] == "http.response.start":
+            assert msg["status"] == 200
+
+    app = ConsumingMiddleware(endpoint)
+    rcv = receive()
+    await app(scope, rcv.__anext__, send)
+    await rcv.aclose()
+
+
+def test_downstream_middleware_modifies_receive(client_factory) -> None:
+    """If a downstream middleware modifies receive() the final ASGI app
+    should see the modified version.
+    """
+
+    async def endpoint(scope, receive, send) -> None:
+        request = Request(scope, receive)
+        body = await request.body()
+        assert body == b"foo foo "
+        await Response()(scope, receive, send)
+
+    class ConsumingMiddleware(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next):
+            logger.debug("test -- 01", request)
+            body = await request.body()
+            assert body == b"foo "
+            return await call_next(request)
+
+    def modifying_middleware(app) -> ASGIApp:
+        async def wrapped_app(scope, receive, send) -> None:
+            async def wrapped_receive() -> Message:
+                msg = await receive()
+                if msg["type"] == "http.request":
+                    msg["body"] = msg["body"] * 2
+                return msg
+
+            await app(scope, wrapped_receive, send)
+
+        return wrapped_app
+
+    client = client_factory(ConsumingMiddleware(modifying_middleware(endpoint)))
+    resp = client.post("/", content=b"foo ")
+    assert resp.status_code == 200
+
+
+from yaa.responses import Response
+from yaa.requests import Request
+from yaa.types import ASGI3App as ASGIApp, Message
+
+CallNext = typing.Callable[[Request], typing.Awaitable[Response]]
+
+
+def test_pr_1519_comment_1236166180_example(client_factory) -> None:
+    """
+    https://github.com/encode/starlette/pull/1519#issuecomment-1236166180
+    """
+    bodies = []
+
+    class LogRequestBodySize(BaseHttpMiddleware):
+        async def dispatch(self, request, call_next) -> Response:
+            return await call_next(request)
+
+    def replace_body_middleware(app) -> ASGIApp:
+        async def wrapped_app(scope, receive, send) -> None:
+            async def wrapped_rcv() -> Message:
+                msg = await receive()
+                msg["body"] += b"-foo"
+                return msg
+
+            await app(scope, wrapped_rcv, send)
+
+        return wrapped_app
+
+    async def endpoint(request) -> Response:
+        body = await request.body()
+        bodies.append(body)
+        return Response()
+
+    app = Yaa(routes=[Route("/", endpoint, methods=["POST"])])
+    app = replace_body_middleware(app)
+    app = LogRequestBodySize(app)
+
+    client = client_factory(app)
+    resp = client.post("/", content=b"Hello, World!")
+    resp.raise_for_status()
+    assert bodies == [b"Hello, World!-foo"]

@@ -111,7 +111,7 @@ class Response(object):
                 "headers": self.raw_headers,
             }
         )
-        if scope["method"] not in ("HEAD"):
+        if scope.get("method", "GET") not in ("HEAD"):
             await send({"type": "http.response.body", "body": self.body})
         else:
             await send({"type": "http.response.body"})
@@ -362,7 +362,7 @@ class StreamingResponse(Response):
                 "headers": self.raw_headers,
             }
         )
-        if scope["method"] not in ("HEAD"):
+        if scope.get("method", "GET") not in ("HEAD"):
             async for chunk in self.body_iter:
                 if not isinstance(chunk, bytes):
                     chunk = chunk.encode(self.charset)

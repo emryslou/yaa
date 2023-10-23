@@ -1,10 +1,12 @@
+import logging
 import typing
 
 import anyio
 
+from yaa._utils import get_logger
 from yaa.background import BackgroundTask
 from yaa.middlewares.core import Middleware
-from yaa.requests import Request
+from yaa.requests import ClientDisconnect, Request
 from yaa.responses import Response, StreamingResponse
 from yaa.types import ASGI3App, ContentStream, Message, Receive, Scope, Send, T
 
@@ -12,6 +14,63 @@ RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
     [Request, RequestResponseEndpoint], typing.Awaitable[Response]
 ]
+
+logger = get_logger(__name__)
+
+
+class _CachedRequest(Request):
+    def __init__(self, scope: Scope, receive: Receive) -> None:
+        super().__init__(scope, receive)
+        self._wrapped_rcv_disconnected = False
+        self._wrapped_rcv_consumed = False
+        self._wrapped_rcv_stream = self.stream()
+
+    async def wrapped_receive(self) -> Message:
+        logger.debug("wrapped_receive calling")
+        if self._wrapped_rcv_disconnected:
+            return {"type": "http.disconnect"}
+
+        if self._wrapped_rcv_consumed:
+            if self._is_disconnected:
+                self._wrapped_rcv_disconnected = True
+                return {"type": "http.disconnect"}
+
+            msg = await self.receive()
+            if msg["type"] != "http.disconnect":
+                raise RuntimeError(
+                    f'Unexpected message receive {msg["type"]}'
+                )  # pragma: no cover
+
+            return msg
+
+        if getattr(self, "_body", None) is not None:
+            self._wrapped_rcv_consumed = True
+            return {
+                "type": "http.request",
+                "body": self._body,
+                "more_body": False,
+            }
+        elif self._stream_consumed:
+            self._wrapped_rcv_consumed = True
+            return {
+                "type": "http.request",
+                "body": b"",
+                "more_body": False,
+            }
+        else:
+            try:
+                stream = self.stream()
+                chunk = await stream.__anext__()
+                self._wrapped_rcv_consumed = self._stream_consumed
+                logger.debug("stream chunk")
+                return {
+                    "type": "http.request",
+                    "body": chunk,
+                    "more_body": not self._stream_consumed,
+                }
+            except ClientDisconnect:
+                self._wrapped_rcv_disconnected = True
+                return {"type": "http.disconnect"}
 
 
 class BaseHttpMiddleware(Middleware):
@@ -29,6 +88,9 @@ class BaseHttpMiddleware(Middleware):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
+
+        request = _CachedRequest(scope, receive=receive)
+        wrapped_receive = request.wrapped_receive
         response_sent = anyio.Event()
 
         async def call_next(req: Request) -> Response:
@@ -46,7 +108,7 @@ class BaseHttpMiddleware(Middleware):
                         return result
 
                     _tg.start_soon(wrap, response_sent.wait)
-                    message = await wrap(req.receive)
+                    message = await wrap(wrapped_receive)
 
                 if response_sent.is_set():
                     return {"type": "http.disconnect"}
@@ -110,9 +172,8 @@ class BaseHttpMiddleware(Middleware):
         # end call_next
 
         async with anyio.create_task_group() as tg:
-            req = Request(scope, receive=receive)
-            res = await self.dispatch_func(req, call_next)
-            await res(scope, receive, send)
+            res = await self.dispatch_func(request, call_next)
+            await res(scope, wrapped_receive, send)
             response_sent.set()
         # end async with
 

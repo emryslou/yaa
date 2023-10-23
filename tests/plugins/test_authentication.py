@@ -17,10 +17,14 @@ from yaa.endpoints import HttpEndPoint
 from yaa.requests import Request
 from yaa.responses import JSONResponse
 from yaa.websockets import WebSocketDisconnect
+from yaa._utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class BasicAuth(AuthenticationBackend):
     async def authenticate(self, request):
+        logger.debug(f"check headers Authorization: {request.headers!r}")
         if "Authorization" not in request.headers:
             return None
 
@@ -37,8 +41,11 @@ class BasicAuth(AuthenticationBackend):
 
 class BasicAuthException(AuthenticationBackend):
     async def authenticate(self, request):
-        if "Authorization" not in request.headers:
-            return None
+        logger.debug(
+            f"check headers Authorization: {self.__class__.__name__} {request.headers!r}"
+        )
+        # if "Authorization" not in request.headers:
+        #     return None
 
         raise Exception("...")
 
@@ -388,7 +395,7 @@ class TestAuthentication:
         @exc_auth_app.route("/")
         @requires("authenticated")
         def _(request):
-            return JSONResponse(
+            return JSONResponse(  # pragma: no cover
                 {
                     "authenticated": request.user.is_authenticated,
                     "user": request.user.display_name,

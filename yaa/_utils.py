@@ -1,5 +1,8 @@
 import asyncio
 import functools
+import logging
+import os
+import sys
 import typing
 from types import TracebackType
 
@@ -77,3 +80,30 @@ class AwaitableOrContextManagerWrapper(typing.Generic[SupportsAsyncCloseType]):
     async def __aexit__(self, *args: typing.Any) -> typing.Union[None, bool]:
         await self.entered.close()
         return None
+
+
+_handler = logging.StreamHandler(sys.stdout)
+_formatter = logging.Formatter("[%(asctime)s][%(levelname)s][%(name)s]%(message)s")
+_logger_cache: typing.Dict[str, logging.Logger] = {}
+
+
+def get_logger(_module: typing.Optional[str] = None) -> logging.Logger:
+    global _logger_cache
+    _module = "yaa" if not _module else _module
+    if _module in _logger_cache:
+        logger = _logger_cache[_module]
+    else:
+        logger = logging.Logger(_module)
+        _logger_cache[_module] = logger
+
+    _env_debug = os.environ.get("DEBUG", "False")
+    debug = _env_debug.title() == "True"
+    if debug:
+        _handler.setLevel(logging.DEBUG)
+    else:
+        _handler.setLevel(logging.ERROR)
+
+    _handler.setFormatter(_formatter)
+    logger.addHandler(_handler)
+
+    return logger

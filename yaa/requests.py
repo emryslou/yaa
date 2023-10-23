@@ -7,11 +7,17 @@ from urllib.parse import unquote
 
 import anyio
 
-from yaa._utils import AwaitableOrContextManager, AwaitableOrContextManagerWrapper
+from yaa._utils import (
+    AwaitableOrContextManager,
+    AwaitableOrContextManagerWrapper,
+    get_logger,
+)
 from yaa.datastructures import URL, Address, FormData, Headers, QueryParams, State
 from yaa.exceptions import HttpException
 from yaa.formparsers import FormParser, MultiPartException, MultiPartParser
 from yaa.types import Message, P, Receive, Scope, Send
+
+logger = get_logger(__name__)
 
 try:
     from multipart.multipart import parse_options_header
@@ -220,15 +226,15 @@ class Request(HttpConnection):
         if self._stream_consumed:
             raise RuntimeError("Stream consumed")
 
-        self._stream_consumed = True
-        while True:
+        while not self._stream_consumed:
             message = await self._receive()
             if message["type"] == "http.request":
                 body = message.get("body", b"")
+                logger.debug("stream _stream_consumed {!r}".format(body))
+                if not message.get("more_body", False):
+                    self._stream_consumed = True
                 if body:
                     yield body
-                if not message.get("more_body", False):
-                    break
             elif message["type"] == "http.disconnect":
                 self._is_disconnected = True
                 raise ClientDisconnect()

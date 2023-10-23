@@ -12,7 +12,7 @@ templates: Jinja2Template = None  # type: ignore[assignment]
 
 def plugin_init(app: Yaa, config: dict = {}) -> None:
     if not config:
-        return
+        return  # pragma: no cover
     global templates
     templates = Jinja2Template(**config)
 
