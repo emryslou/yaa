@@ -465,7 +465,7 @@ def test_read_request_body_in_app_after_middleware_calls_body(client_factory) ->
 
     app = Yaa(
         routes=[Route("/", homepage, methods=["POST"])],
-        middleware=[Middleware(ConsumingMiddleware)],
+        middlewares=[(ConsumingMiddleware, {})],
     )
     client = client_factory(app)
     response = client.post("/", content=b"a")
@@ -490,7 +490,7 @@ def test_read_request_stream_in_dispatch_after_app_calls_stream(client_factory) 
 
     app = Yaa(
         routes=[Route("/", homepage, methods=["POST"])],
-        middleware=[Middleware(ConsumingMiddleware)],
+        middlewares=[(ConsumingMiddleware, {})],
     )
     client = client_factory(app)
     response = client.post("/", content=b"a")
@@ -512,7 +512,7 @@ def test_read_request_stream_in_dispatch_after_app_calls_body(client_factory) ->
 
     app = Yaa(
         routes=[Route("/", homepage, methods=["POST"])],
-        middleware=[Middleware(ConsumingMiddleware)],
+        middlewares=[(ConsumingMiddleware, {})],
     )
     client = client_factory(app)
     response = client.post("/", content=b"a")
@@ -588,7 +588,7 @@ def test_read_request_stream_in_dispatch_after_app_calls_body_with_middleware_ca
 
     app = Yaa(
         routes=[Route("/", homepage, methods=["POST"])],
-        middleware=[Middleware(ConsumingMiddleware)],
+        middlewares=[(ConsumingMiddleware, {})],
     )
     client = client_factory(app)
     response = client.post("/", content=b"a")
@@ -613,7 +613,7 @@ def test_read_request_body_in_dispatch_after_app_calls_body_with_middleware_call
 
     app = Yaa(
         routes=[Route("/", homepage, methods=["POST"])],
-        middleware=[Middleware(ConsumingMiddleware)],
+        middlewares=[(ConsumingMiddleware, {})],
     )
     client = client_factory(app)
     response = client.post("/", content=b"a")
@@ -768,3 +768,72 @@ def test_pr_1519_comment_1236166180_example(client_factory) -> None:
     resp = client.post("/", content=b"Hello, World!")
     resp.raise_for_status()
     assert bodies == [b"Hello, World!-foo"]
+
+
+@pytest.mark.anyio
+async def test_do_not_block_on_background_tasks():
+    from typing import Callable, Awaitable
+
+    request_body_sent = False
+    response_complete = anyio.Event()
+    events: List[Union[str, Message]] = []
+
+    async def sleep_and_set():
+        events.append("Background task started")
+        await anyio.sleep(0.1)
+        events.append("Background task finished")
+
+    async def endpoint_with_background_task(_):
+        logger.debug(f"{__name__}::endpoint_with_background_task")
+        return PlainTextResponse(
+            content="Hello", background=BackgroundTask(sleep_and_set)
+        )
+
+    async def passthrough(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        return await call_next(request)
+
+    app = Yaa(
+        middlewares=[(BaseHttpMiddleware, dict(dispatch=passthrough))],
+        routes=[Route("/", endpoint_with_background_task)],
+    )
+
+    scope = {
+        "type": "http",
+        "version": "3",
+        "method": "GET",
+        "path": "/",
+    }
+
+    async def receive() -> Message:
+        nonlocal request_body_sent
+        if not request_body_sent:
+            request_body_sent = True
+            return {"type": "http.request", "body": b"", "more_body": False}
+        await response_complete.wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message: Message):
+        logger.debug(f"send message: {message!r}")
+        if message["type"] == "http.response.body":
+            events.append(message)
+            if not message.get("more_body", False):
+                response_complete.set()
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(app, scope, receive, send)
+        tg.start_soon(app, scope, receive, send)
+    # Without the fix, the background tasks would start and finish before the
+    # last http.response.body is sent.
+    logger.debug(f"events: {events!r}")
+    assert events == [
+        {"body": b"Hello", "more_body": True, "type": "http.response.body"},
+        {"body": b"", "more_body": False, "type": "http.response.body"},
+        {"body": b"Hello", "more_body": True, "type": "http.response.body"},
+        {"body": b"", "more_body": False, "type": "http.response.body"},
+        "Background task started",
+        "Background task started",
+        "Background task finished",
+        "Background task finished",
+    ]

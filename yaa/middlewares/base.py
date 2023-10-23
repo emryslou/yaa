@@ -40,7 +40,9 @@ class _CachedRequest(Request):
                 raise RuntimeError(
                     f'Unexpected message receive {msg["type"]}'
                 )  # pragma: no cover
-
+            logger.debug(
+                f"{__name__}::{self.__class__.__name__}::wrapped_receive::{self.receive}"
+            )
             return msg
 
         if getattr(self, "_body", None) is not None:
@@ -173,6 +175,7 @@ class BaseHttpMiddleware(Middleware):
 
         async with anyio.create_task_group() as tg:
             res = await self.dispatch_func(request, call_next)
+            logger.debug("{__line_no__}wrapped_receive")
             await res(scope, wrapped_receive, send)
             response_sent.set()
         # end async with
