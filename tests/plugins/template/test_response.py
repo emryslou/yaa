@@ -1,6 +1,8 @@
 import os, pytest
+from unittest import mock
 
 from yaa.applications import Yaa
+from yaa.background import BackgroundTask
 from yaa.middlewares import BaseHttpMiddleware
 from yaa.plugins.template import get_templates, Jinja2Template
 from yaa.plugins.template.responses import TemplateResponse
@@ -55,8 +57,7 @@ def test_template_jinja2_response(tmpdir, client_factory):
     def home(req: Request):
         return get_templates().response(
             "tpl.example.1.html",
-            request=req,
-            context={"hello": req.query_params["hello"]},
+            {"hello": req.query_params["hello"], "request": req},
         )
 
     client = client_factory(app)
@@ -71,7 +72,7 @@ def test_calls_context_processors(tmp_path, client_factory):
     path.write_text("<html>Hello {{ username }}</html>")
 
     async def homepage(request):
-        return get_templates().response("index.html", request=request, context={})
+        return get_templates().response("index.html", context={"request": request})
 
     def hello_world_processor(request):
         return {"username": "World"}
@@ -103,7 +104,7 @@ def test_templates(tmpdir, client_factory):
 
     @app.route("/")
     async def homepage(req):
-        return get_templates().response("index.html", request=req)
+        return get_templates().response("index.html", {"request": req})
 
     client = client_factory(app)
     res = client.get("/")
@@ -116,7 +117,7 @@ def test_template_with_middleware(tmpdir, client_factory):
         file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
 
     async def homepage(request):
-        return get_templates().response("index.html", request=request, context={})
+        return get_templates().response("index.html", context={"request": request})
 
     class CustomMiddleware(BaseHttpMiddleware):
         async def dispatch(self, request, call_next):
@@ -162,3 +163,122 @@ def test_templates_with_environment(tmpdir):
 
     template = templates.get_template("index.html")
     assert template.render({}) == "Hello"
+
+
+
+def test_templates_with_kwargs_only(tmpdir, client_factory):
+    # MAINTAINERS: remove after 1.0
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write("value: {{ a }}")
+    templates = Jinja2Template(directory=str(tmpdir))
+    spy = mock.MagicMock()
+    def page(request):
+        return templates.response(
+            request=request,
+            name="index.html",
+            context={"a": "b"},
+            status_code=201,
+            headers={"x-key": "value"},
+            media_type="text/plain",
+            background=BackgroundTask(func=spy),
+        )
+    app = Yaa(routes=[Route("/", page)])
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.text == "value: b"  # context was rendered
+    assert response.status_code == 201
+    assert response.headers["x-key"] == "value"
+    assert response.headers["content-type"] == "text/plain; charset=utf-8"
+    spy.assert_called()
+
+def test_templates_with_kwargs_only_requires_request_in_context(tmpdir):
+    # MAINTAINERS: remove after 1.0
+    templates = Jinja2Template(directory=str(tmpdir))
+    with pytest.warns(
+        DeprecationWarning,
+        match="requires the `request` argument",
+    ):
+        with pytest.raises(ValueError):
+            templates.response(name="index.html", context={"a": "b"})
+
+def test_templates_with_kwargs_only_warns_when_no_request_keyword(
+    tmpdir, client_factory
+):
+    # MAINTAINERS: remove after 1.0
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write("Hello")
+    templates = Jinja2Template(directory=str(tmpdir))
+    def page(request):
+        return templates.response(
+            name="index.html", context={"request": request}
+        )
+    app = Yaa(routes=[Route("/", page)])
+    client = client_factory(app)
+    with pytest.warns(
+        DeprecationWarning,
+        match="requires the `request` argument",
+    ):
+        client.get("/")
+
+
+def test_templates_with_requires_request_in_context(tmpdir):
+    # MAINTAINERS: remove after 1.0
+    templates = Jinja2Template(directory=str(tmpdir))
+    with pytest.warns(DeprecationWarning):
+        with pytest.raises(ValueError):
+            templates.response("index.html", context={})
+
+
+def test_templates_warns_when_first_argument_isnot_request(tmpdir, client_factory):
+    # MAINTAINERS: remove after 1.0
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write("value: {{ a }}")
+    templates = Jinja2Template(directory=str(tmpdir))
+    spy = mock.MagicMock()
+    def page(request):
+        return templates.response(
+            "index.html",
+            {"a": "b", "request": request},
+            status_code=201,
+            headers={"x-key": "value"},
+            media_type="text/plain",
+            background=BackgroundTask(func=spy),
+        )
+    app = Yaa(routes=[Route("/", page)])
+    client = client_factory(app)
+    with pytest.warns(DeprecationWarning):
+        response = client.get("/")
+    assert response.text == "value: b"  # context was rendered
+    assert response.status_code == 201
+    assert response.headers["x-key"] == "value"
+    assert response.headers["content-type"] == "text/plain; charset=utf-8"
+    spy.assert_called()
+
+def test_templates_when_first_argument_is_request(tmpdir, client_factory):
+    # MAINTAINERS: remove after 1.0
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write("value: {{ a }}")
+    templates = Jinja2Template(directory=str(tmpdir))
+    spy = mock.MagicMock()
+    def page(request):
+        return templates.response(
+            request,
+            "index.html",
+            {"a": "b"},
+            status_code=201,
+            headers={"x-key": "value"},
+            media_type="text/plain",
+            background=BackgroundTask(func=spy),
+        )
+    app = Yaa(routes=[Route("/", page)])
+    client = client_factory(app)
+    response = client.get("/")
+    assert response.text == "value: b"  # context was rendered
+    assert response.status_code == 201
+    assert response.headers["x-key"] == "value"
+    assert response.headers["content-type"] == "text/plain; charset=utf-8"
+
