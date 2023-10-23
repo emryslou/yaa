@@ -1,6 +1,7 @@
 from yaa.applications import Yaa
 from yaa.endpoints import HttpEndPoint
 from yaa.plugins.schema.schemas import OpenAPIResponse, SchemaGenerator
+from yaa.routing import Host, Mount, Router, WebSocketRoute
 
 schemas = SchemaGenerator(
     {"openapi": "3.0.0", "info": {"title": "Example API", "version": "1.0"}}
@@ -110,6 +111,9 @@ def get_user(request):
     pass  # pragma: no cover
 
 
+app.host("sub.domain.com", app=Router(routes=[Mount("/subapp2", sub_app)]))
+
+
 def test_schema_generation():
     schema = schemas.get_schema(routes=app.routes)
     assert schema == {
@@ -167,6 +171,15 @@ def test_schema_generation():
                     }
                 }
             },
+            "/subapp2/endpoint": {
+                "get": {
+                    "responses": {
+                        200: {
+                            "description": "AAAA",
+                        }
+                    }
+                }
+            },
             "/users/{id}": {
                 "get": {
                     "responses": {
@@ -209,6 +222,11 @@ paths:
           examples:
             name: Foo Corp.
   /sub/endpoint:
+    get:
+      responses:
+        200:
+          description: AAAA
+  /subapp2/endpoint:
     get:
       responses:
         200:

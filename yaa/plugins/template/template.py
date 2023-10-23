@@ -21,14 +21,11 @@ from .types import TempleteContextProcessor
 
 
 class Jinja2Template(object):
-
     @typing.overload
     def __init__(
         self,
         directory: typing.Union[
-            str,
-            os.PathLike,
-            typing.Sequence[typing.Union[str, os.PathLike]]
+            str, os.PathLike, typing.Sequence[typing.Union[str, os.PathLike]]
         ],
         *,
         context_processors: typing.Optional[
@@ -48,11 +45,13 @@ class Jinja2Template(object):
         ] = None,
     ) -> None:
         ...
-    
+
     def __init__(
         self,
         directory: typing.Optional[
-            typing.Union[str, os.PathLike, typing.Sequence[typing.Union[str, os.PathLike]]]
+            typing.Union[
+                str, os.PathLike, typing.Sequence[typing.Union[str, os.PathLike]]
+            ]
         ] = None,
         *,
         context_processors: typing.Optional[
@@ -64,14 +63,14 @@ class Jinja2Template(object):
         assert (
             jinja2 is not None
         ), "package `jinja2` must be installed if use jinja2 template"
-        assert directory or env, 'either `directory` or `env` argument must be passed'
+        assert directory or env, "either `directory` or `env` argument must be passed"
 
         self.context_processors = context_processors or []
 
         if env is not None:
             self.env = env
         else:
-            self.env: jinja2.Environment = self.load_env(directory, **env_options)  # type: ignore[arg-type]
+            self.env = self.load_env(directory, **env_options)  # type: ignore[arg-type]
 
     def load_env(
         self, directory: typing.Union[str, os.PathLike], **env_options: typing.Any

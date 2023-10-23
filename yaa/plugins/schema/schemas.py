@@ -9,7 +9,7 @@ except ImportError:  # pragma: no cover
 
 from yaa.requests import Request
 from yaa.responses import Response
-from yaa.routing import BaseRoute, Mount, Route
+from yaa.routing import BaseRoute, Host, Mount, Route
 
 
 class EndPointInfo(typing.NamedTuple):
@@ -51,8 +51,11 @@ class BaseSchemaGenerator(object):
         """
         endpoints_info = []
         for route in routes:
-            if isinstance(route, Mount):
-                path = self.__remove_converter(route.path)
+            if isinstance(route, (Mount, Host)):
+                if isinstance(route, Mount):
+                    path = self.__remove_converter(route.path)
+                else:
+                    path = ""
                 endpoints_info.extend(
                     [
                         EndPointInfo(
@@ -61,7 +64,7 @@ class BaseSchemaGenerator(object):
                             func=sub_endpoint.func,
                         )
                         for sub_endpoint in self.get_endpoints(
-                            routes=(route.routes or [])  # type: ignore[arg-type]
+                            routes=(route.routes or [])  # type: ignore[attr-defined]
                         )
                     ]
                 )

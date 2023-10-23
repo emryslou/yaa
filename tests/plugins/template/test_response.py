@@ -11,7 +11,8 @@ from yaa.routing import Route
 try:
     import jinja2
 except ImportError:  # pragma: no cover
-    pytest.skip('jinja2 not installed, skipped', allow_module_level=Turtle)
+    pytest.skip("jinja2 not installed, skipped", allow_module_level=Turtle)
+
 
 def test_template_response(client_factory):
     class Template:
@@ -140,20 +141,22 @@ def test_templates_require_directory_or_environment():
     ):
         Jinja2Template()
 
+
 def test_templates_with_directory(tmpdir):
     path = os.path.join(tmpdir, "index.html")
     with open(path, "w") as file:
         file.write("Hello")
-    
+
     templates = Jinja2Template(directory=str(tmpdir))
     template = templates.get_template("index.html")
     assert template.render({}) == "Hello"
+
 
 def test_templates_with_environment(tmpdir):
     path = os.path.join(tmpdir, "index.html")
     with open(path, "w") as file:
         file.write("Hello")
-    
+
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(str(tmpdir)))
     templates = Jinja2Template(env=env)
 
