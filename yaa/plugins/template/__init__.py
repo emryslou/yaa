@@ -5,7 +5,7 @@ __name__ = "template"
 
 from yaa.applications import Yaa
 
-from .responses import Jinja2Template
+from .template import Jinja2Template
 
 templates: Jinja2Template = None  # type: ignore[assignment]
 
