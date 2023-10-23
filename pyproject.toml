@@ -20,3 +20,12 @@ ignore = ['E501']
 [tool.ruff.isort]
 # @doc_see: https://docs.astral.sh/
 combine-as-imports = true
+
+[tool.mypy]
+strict = false
+ignore_missing_imports = true
+python_version = "3.10"
+
+[[tool.mypy.overrides]]
+module = "starlette.testclient.*"
+implicit_optional = true

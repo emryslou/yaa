@@ -2,12 +2,27 @@ import io
 import math
 import sys
 import typing
+from contextlib import contextmanager
 
 import anyio
+from anyio.abc import ObjectReceiveStream, ObjectSendStream
+
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup
 
 from yaa.types import ASGI3App, Receive, Scope, Send
 
 from .core import Middleware
+
+
+@contextmanager
+def _convert_excgroups() -> typing.Generator[None, None, None]:
+    try:
+        yield
+    except BaseException as exc:
+        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+            exc = exc.exceptions[0]
+        raise exc
 
 
 def build_environ(scope: Scope, body: bytes) -> dict:
@@ -61,6 +76,9 @@ class WSGIMiddleware(Middleware):
 
 
 class WSGIResponser(object):
+    stream_send: ObjectSendStream[typing.MutableMapping[str, typing.Any]]
+    stream_receive: ObjectReceiveStream[typing.MutableMapping[str, typing.Any]]
+
     def __init__(self, app: ASGI3App) -> None:
         self.app = app
         self.status = None
@@ -80,10 +98,14 @@ class WSGIResponser(object):
             more_body = message.get("more_body", False)
 
         environ = build_environ(scope, body)
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(self.sender, send)
-            async with self.stream_send:
-                await anyio.to_thread.run_sync(self.wsgi, environ, self.start_response)
+
+        with _convert_excgroups():
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(self.sender, send)
+                async with self.stream_send:
+                    await anyio.to_thread.run_sync(
+                        self.wsgi, environ, self.start_response
+                    )
 
         if self.exc_info is not None:
             raise self.exc_info[0].with_traceback(self.exc_info[1], self.exc_info[2])

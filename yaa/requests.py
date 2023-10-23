@@ -169,7 +169,7 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
         ), "`AuthenticationMiddleware` must be installed to access request.user"
         return self._scope["user"]
 
-    def url_for(self, name: str, **path_params: typing.Any) -> URL:
+    def url_for(self, name: str, /, **path_params: typing.Any) -> URL:
         router = self._scope["router"]
 
         url = router.url_path_for(name, **path_params)

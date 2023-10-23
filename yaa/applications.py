@@ -1,9 +1,12 @@
 import typing
 
+from yaa._utils import get_logger
 from yaa.datastructures import State, URLPath
 from yaa.middlewares import BaseHttpMiddleware, Middleware
 from yaa.routing import BaseRoute, Router
 from yaa.types import ASGI3App, Lifespan, Receive, Scope, Send
+
+logger = get_logger(__name__)
 
 
 class Yaa(object):
@@ -220,6 +223,7 @@ class Yaa(object):
         return decorator
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
+        logger.debug(f"{__name__}::{self.__class__.__name__}::url_path_for {name}")
         return self.router.url_path_for(name=name, **path_params)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore

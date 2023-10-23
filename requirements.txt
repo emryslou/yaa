@@ -1,11 +1,12 @@
 # cores
-anyio >= 3.4.0, < 4
+anyio >= 4.0, < 5
 aiofiles
 databases[sqlite]
 httpx
 python-multipart
 types-ujson
 ujson
+trio==0.22.1
 
 # session 
 itsdangerous

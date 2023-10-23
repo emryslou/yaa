@@ -1,7 +1,10 @@
 import logging
+import sys
 import typing
+from contextlib import contextmanager
 
 import anyio
+from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
 from yaa._utils import get_logger
 from yaa.background import BackgroundTask
@@ -10,10 +13,24 @@ from yaa.requests import ClientDisconnect, Request
 from yaa.responses import Response, StreamingResponse
 from yaa.types import ASGI3App, ContentStream, Message, Receive, Scope, Send, T
 
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup
+
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
     [Request, RequestResponseEndpoint], typing.Awaitable[Response]
 ]
+
+
+@contextmanager
+def _convert_excgroups() -> typing.Generator[None, None, None]:
+    try:
+        yield
+    except BaseException as exc:
+        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+            exc = exc.exceptions[0]
+        raise exc
+
 
 logger = get_logger(__name__)
 
@@ -97,7 +114,11 @@ class BaseHttpMiddleware(Middleware):
 
         async def call_next(req: Request) -> Response:
             app_exc: typing.Optional[Exception] = None
-            stream_send, stream_receive = anyio.create_memory_object_stream()
+            stream_send: ObjectSendStream[typing.MutableMapping[str, typing.Any]]
+            stream_receive: ObjectReceiveStream[typing.MutableMapping[str, typing.Any]]
+            stream_send, stream_receive = anyio.create_memory_object_stream[
+                typing.MutableMapping[str, typing.Any]
+            ]()
 
             async def receive_or_disconnect() -> Message:
                 if response_sent.is_set():
@@ -123,7 +144,7 @@ class BaseHttpMiddleware(Middleware):
 
             async def send_no_error(message: Message) -> None:
                 try:
-                    await stream_send.send(message)
+                    await stream_send.send(message)  # type: ignore[arg-type]
                 except anyio.BrokenResourceError:
                     return
 
@@ -172,12 +193,11 @@ class BaseHttpMiddleware(Middleware):
             return res
 
         # end call_next
-
-        async with anyio.create_task_group() as tg:
-            res = await self.dispatch_func(request, call_next)
-            logger.debug("{__line_no__}wrapped_receive")
-            await res(scope, wrapped_receive, send)
-            response_sent.set()
+        with _convert_excgroups():
+            async with anyio.create_task_group() as tg:
+                res = await self.dispatch_func(request, call_next)
+                await res(scope, wrapped_receive, send)
+                response_sent.set()
         # end async with
 
     async def dispatch(

@@ -24,7 +24,7 @@ import sys
 import typing
 from datetime import datetime
 from email.utils import format_datetime, formatdate
-from mimetypes import guess_type as mimetypes_guess_type
+from mimetypes import guess_type
 from urllib.parse import quote
 
 import anyio
@@ -52,17 +52,6 @@ try:
     import ujson  # type: ignore
 except ImportError:  # pragma: nocover
     ujson = None  # type: ignore
-
-
-def guess_type(
-    url: typing.Union[str, "os.PathLike[str]"], strict: bool = True
-) -> typing.Tuple[typing.Optional[str], typing.Optional[str]]:
-    if sys.version_info < (3, 8):  # pragma: no cover
-        url = os.fspath(url)  # pragma: no cover
-    return mimetypes_guess_type(url, strict=strict)
-
-
-http.cookies.Morsel._reserved["samesite"] = "SameSite"  # type: ignore
 
 
 class Response(object):

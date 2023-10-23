@@ -16,7 +16,7 @@ import httpx
 from anyio.streams.stapled import StapledObjectStream
 
 from yaa._utils import is_async_callable
-from yaa.types import P, Receive, Scope, Send
+from yaa.types import Message, P, Receive, Scope, Send
 from yaa.websockets import WebSocketDisconnect
 
 ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
@@ -71,8 +71,8 @@ class WebSocketTestSession(object):
 
         self.portal_factory = portal_factory
 
-        self._receive_queue: queue.Queue = queue.Queue()
-        self._send_queue: queue.Queue = queue.Queue()
+        self._receive_queue: queue.Queue[typing.Any] = queue.Queue(maxsize=100)
+        self._send_queue: queue.Queue[typing.Any] = queue.Queue(maxsize=100)
 
         self.extra_headers = None
 
@@ -152,7 +152,7 @@ class WebSocketTestSession(object):
     def receive_text(self) -> str:
         message = self.receive()
         self._raise_on_close(message)
-        return message["text"]
+        return str(message["text"])
 
     def receive_bytes(self) -> bytes:
         message = self.receive()
@@ -192,21 +192,21 @@ class _TestClientTransport(httpx.BaseTransport):
         query = request.url.query.decode(encoding="ascii")
 
         default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[str(scheme)]
-
+        port: int
         if ":" in netloc:
-            host, port = netloc.split(":", 1)  # type: ignore[arg-type]
-            port = int(port)  # type: ignore[assignment]
+            host, _port = netloc.split(":", 1)
+            port = int(_port)
         else:
             host = netloc
-            port = default_port  # type: ignore[assignment]
+            port = int(default_port)
 
         # Include the 'host' header.
         if "host" in request.headers:
             headers = []
         elif port == default_port:
-            headers = [[b"host", host.encode()]]  # type: ignore
+            headers = [[b"host", host.encode()]]
         else:
-            headers = [[b"host", (f"{host}:{port}").encode()]]  # type: ignore
+            headers = [[b"host", (f"{host}:{port}").encode()]]
 
         # Include other request headers.
         headers += [
@@ -225,10 +225,10 @@ class _TestClientTransport(httpx.BaseTransport):
             scope = {
                 "type": "websocket",
                 "path": unquote(path),
-                "raw_path": raw_path,  # type: ignore
+                "raw_path": raw_path,
                 "root_path": self.root_path,
                 "scheme": scheme,
-                "query_string": query.encode(),  # type: ignore
+                "query_string": query.encode(),
                 "headers": headers,
                 "client": ["testclient", 50000],
                 "server": [host, port],
@@ -243,14 +243,14 @@ class _TestClientTransport(httpx.BaseTransport):
             "http_version": "1.1",
             "method": request.method,
             "path": unquote(path),
-            "raw_path": raw_path,  # type: ignore
+            "raw_path": raw_path,
             "root_path": self.root_path,
             "scheme": scheme,
-            "query_string": query.encode(),  # type: ignore
+            "query_string": query.encode(),
             "headers": headers,
             "client": ["testclient", 50000],
             "server": [host, port],
-            "extensions": {"http.response.template": {}, "http.response.debug": {}},  # type: ignore[dict-item]
+            "extensions": {"http.response.template": {}, "http.response.debug": {}},
             "state": self.app_state.copy(),
         }
 
@@ -261,7 +261,7 @@ class _TestClientTransport(httpx.BaseTransport):
         template = None
         context = None
 
-        async def receive() -> dict:
+        async def receive() -> typing.Mapping[str, typing.Any]:
             nonlocal request_complete
             if request_complete:
                 if not response_complete.is_set():
@@ -291,7 +291,7 @@ class _TestClientTransport(httpx.BaseTransport):
             request_complete = True
             return {"type": "http.request", "body": body_bytes}
 
-        async def send(message: dict) -> None:
+        async def send(message: Message) -> None:
             nonlocal raw_kwargs, response_started
             nonlocal template, context
             if message["type"] == "http.response.start":
@@ -360,7 +360,7 @@ class TestClient(httpx.Client):
 
     portal: typing.Optional[anyio.abc.BlockingPortal] = None
 
-    async_backend: dict = {
+    async_backend: typing.Mapping[str, typing.Any] = {
         "backend": "asyncio",
         "backend_options": {},
     }
@@ -374,13 +374,13 @@ class TestClient(httpx.Client):
         raise_server_exceptions: bool = True,
         root_path: str = "",
         backend: str = "asyncio",
-        backend_options: dict = {},
-        cookies: typing.Optional[httpx._client.CookieTypes] = None,
+        backend_options: typing.Mapping[str, typing.Any] = {},
+        cookies: typing.Optional[httpx._client.CookieTypes] = None,  # type: ignore[name-defined]
         headers: typing.Optional[typing.Dict[str, str]] = None,
         follow_redirects: bool = True,
     ) -> None:
-        self.async_backend["backend"] = backend
-        self.async_backend["backend_options"] = backend_options
+        self.async_backend["backend"] = backend  # type: ignore[index]
+        self.async_backend["backend_options"] = backend_options  # type: ignore[index]
 
         if _is_asgi3(app):
             app = typing.cast(ASGI3App, app)
@@ -418,7 +418,9 @@ class TestClient(httpx.Client):
         if self.portal is not None:
             yield self.portal
         else:
-            with anyio.from_thread.start_blocking_portal(**self.async_backend) as portal:  # type: ignore[arg-type]
+            with anyio.from_thread.start_blocking_portal(
+                **self.async_backend
+            ) as portal:
                 # self.portal = portal
                 yield portal
 
@@ -466,10 +468,11 @@ class TestClient(httpx.Client):
         follow_redirects: typing.Optional[bool] = None,
         allow_redirects: typing.Optional[bool] = None,
         timeout: typing.Union[
-            httpx._client.TimeoutTypes, httpx._client.UseClientDefault
+            httpx._client.TimeoutTypes,
+            httpx._client.UseClientDefault,
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
-    ) -> httpx.Response:  # type: ignore
+    ) -> httpx.Response:
         url = urljoin(self.base_url, url)  # type: ignore
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().request(
@@ -501,7 +504,8 @@ class TestClient(httpx.Client):
         follow_redirects: typing.Optional[bool] = None,
         allow_redirects: typing.Optional[bool] = None,
         timeout: typing.Union[
-            httpx._client.TimeoutTypes, httpx._client.UseClientDefault
+            httpx._client.TimeoutTypes,  # type: ignore[name-defined]
+            httpx._client.UseClientDefault,  # type: ignore[name-defined]
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
@@ -747,10 +751,10 @@ class TestClient(httpx.Client):
 
             self.stream_send = StapledObjectStream(
                 *anyio.create_memory_object_stream(math.inf)
-            )
+            )  # type: ignore[var-annotated]
             self.stream_receive = StapledObjectStream(
                 *anyio.create_memory_object_stream(math.inf)
-            )
+            )  # type: ignore[var-annotated]
 
             self.task = portal.start_task_soon(self.lifespan)
             portal.call(self.wait_startup)

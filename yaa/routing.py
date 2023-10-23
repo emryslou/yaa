@@ -564,7 +564,7 @@ class Router(object):
     def url_path_for(self, name: str, **path_params: P.kwargs) -> URLPath:  # type: ignore
         for route in self.routes:
             try:
-                return route.url_path_for(name, **path_params)
+                return route.url_path_for(name=name, **path_params)
             except NoMatchFound:
                 pass
 
