@@ -6,7 +6,7 @@ import types
 import typing
 import warnings
 
-from yaa._utils import is_async_callable
+from yaa._utils import get_logger, is_async_callable
 from yaa.routing import BaseRoute, Match, Router
 from yaa.types import Lifespan as LifespanType, Receive, Scope, Send, StatelessLifespan
 
@@ -14,6 +14,7 @@ from .types import EventType
 
 _T = typing.TypeVar("_T")
 _TDefaultLifespan = typing.TypeVar("_TDefaultLifespan", bound="_DefaultLifespan")
+logger = get_logger(__name__)
 
 
 class _AsyncLiftContextManager(typing.AsyncContextManager[_T]):
@@ -97,14 +98,16 @@ class Lifespan(BaseRoute):
         started = False
         app = scope.get("app")
 
-        state = scope.get("state", None)
         await receive()
         lifespan_needs_state = len(inspect.signature(self.context).parameters) == 2
-        server_supports_state = state is not None
-        if lifespan_needs_state and not server_supports_state:
+        if lifespan_needs_state and "state" not in scope:
+            logger.debug(
+                f'The server does not support "state" in the lifespan scope {scope}'
+            )
             raise RuntimeError(
                 'The server does not support "state" in the lifespan scope'
             )
+        state = scope.get("state")
 
         try:
             context: LifespanType

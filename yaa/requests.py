@@ -87,6 +87,7 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
         user: 授权用户信息，需要启用 Authentication 扩展和，和其中的 Authentication 中间件
         state: 状态数据
     """
+
     __eq__ = object.__eq__
     __hash__ = object.__hash__
 
@@ -94,13 +95,13 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
         """Http连接对象
         Args:
             scope: ASGI http 请求上下文
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
 
         """
@@ -217,13 +218,13 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
         Args:
             name: 路由名称
             **path_params: 路由路径参数
-        
+
         Returns:
             URL
-        
+
         Raises:
             None
-        
+
         Examples:
             http_connection = HttpConnect(...)
             http_connection.url_for(name='foo', some_foo=.., some_boo=...)
@@ -241,6 +242,7 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
 
 class ClientDisconnect(Exception):
     """Http Client 端口连接异常"""
+
     pass
 
 
@@ -251,6 +253,7 @@ class Request(HttpConnection):
         relative_url: URL 请求 path + query_params, 类似: /path/to?foo=..&bar=...
         receive: 请求数据接收方法
     """
+
     _form: typing.Optional[FormData]
 
     def __init__(
@@ -261,13 +264,13 @@ class Request(HttpConnection):
             scope: 请求上下文
             receive: 请求数据接收方法
             send: 响应数据发送方法
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             # None
         """
@@ -307,14 +310,14 @@ class Request(HttpConnection):
         """请求数据流
         Args:
             None
-        
+
         Returns:
             typing.AsyncIterator[bytes]
 
         Raises:
             RuntimeError: 请求流已结束后再次获取数据时出发，
             ClientDisconnect: 客户端主动关闭后
-        
+
         Examples:
             ...
             async for chunk in request.stream():
@@ -349,14 +352,14 @@ class Request(HttpConnection):
         """请求数据
         Args:
             None
-        
+
         Returns:
             bytes
 
         Raises:
             RuntimeError: 请求流已结束后再次获取数据时出发，
             ClientDisconnect: 客户端主动关闭后
-        
+
         Examples:
             ...
             body = await request.body()
@@ -374,7 +377,7 @@ class Request(HttpConnection):
         """请求数据JSON对象
         Args:
             None
-        
+
         Returns:
             object
 
@@ -382,7 +385,7 @@ class Request(HttpConnection):
             RuntimeError: 请求流已结束后再次获取数据时出发，
             ClientDisconnect: 客户端主动关闭后
             JSONDecodeError: JSON 解析失败
-        
+
         Examples:
             ...
             body = await request.json()
@@ -438,13 +441,13 @@ class Request(HttpConnection):
         Args:
             max_files: 最大文件数量
             max_fields: 最大字段数量
-        
+
         Returns:
             AwaitableOrContextManager[FormData]
-        
+
         Raises:
             MultiPartException: Form 字段超过 max_fields，或者 文件数量 > max_files
-        
+
         Examples:
             ...
             data = await request.form()
@@ -459,8 +462,7 @@ class Request(HttpConnection):
         )
 
     async def close(self) -> None:
-        """关闭 form 对象
-        """
+        """关闭 form 对象"""
         if self._form is not None:
             await self._form.close()
 
@@ -478,16 +480,16 @@ class Request(HttpConnection):
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
-        """ http2 push 资源
+        """http2 push 资源
         Args:
             path: 推送的资源路径
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """

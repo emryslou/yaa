@@ -24,7 +24,7 @@ app = Yaa(
             "secret_key": 'test'
         },
         'template': {
-            'template_directory': 'demo/templates'
+            'directory': 'demo/templates'
         },
         'database': {
             "enable_db_types": [{"db_type": "mysql"}],
@@ -44,7 +44,7 @@ app = Yaa(
 
 
 app.mount('/static', StaticFiles(directory='demo/static'))
-app.mount('/docs', StaticFiles(directory='demo/docs', html=True))
+# app.mount('/docs', StaticFiles(directory='../.temp/docs', html=True))
 
 @app.route('/')
 async def links(req) -> Response:

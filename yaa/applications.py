@@ -47,10 +47,10 @@ class Yaa(object):
             debug: 是否开启调试，默认 False
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             # for routes
             app = Yaa(
@@ -111,9 +111,9 @@ class Yaa(object):
             else:
                 self.config["plugins"][_k] = _cfg  # type: ignore
         if len(kwargs) > 0:
-            logger.debug(f'kwargs: {kwargs!r}')
-            _arg_keys = ','.join(kwargs.keys())
-            raise ParameterException(f'Unknown Params {_arg_keys!r}')
+            logger.debug(f"kwargs: {kwargs!r}")
+            _arg_keys = ",".join(kwargs.keys())
+            raise ParameterException(f"Unknown Params {_arg_keys!r}")
         self._init_plugins(self.config.get("plugins", {}))
         self.build_middleware_stack()
 
@@ -240,10 +240,10 @@ class Yaa(object):
 
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa(...)
             app.mount('/static', StaticFiles(directory='demo/static'))
@@ -261,14 +261,14 @@ class Yaa(object):
 
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             #todo
         """
-        
+
         assert app != self
         self.router.host(host, app=app, name=name)
 
@@ -287,13 +287,13 @@ class Yaa(object):
             methods: HTTP请求方式: GET, POST, ...
             name: 路由名称
             include_in_schema: 是否创建 OpenAPI 文档
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa(...)
             app.add_route('/path/to', Route(...))
@@ -309,13 +309,13 @@ class Yaa(object):
         Args:
             path: URL 路径
             route: 业务方法，或者路由对象
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa(...)
             app.add_route_ws('/path/to', yaa.endpoints.WebSocketEndpoint(...))
@@ -331,13 +331,13 @@ class Yaa(object):
         Args:
             middleware_class_or_func: 中间件对象
             **kwargs: 中间件对象初始化所需参数
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa(...)
             app.add_middleware(MyMiddleware)
@@ -360,13 +360,13 @@ class Yaa(object):
             methods: HTTP请求方式: GET, POST, ...
             name: 路由名称
             include_in_schema: 是否创建 OpenAPI 文档
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa(...)
             @app.`route`('/path/to/foo')
@@ -400,6 +400,7 @@ class Yaa(object):
                 await session.send_text("Hello, world!")
                 await session.close()
         """
+
         def decorator(func: typing.Callable) -> typing.Callable:
             self.router.add_route_ws(path, func, name=name)
             return func
@@ -410,13 +411,13 @@ class Yaa(object):
         """添加中间件装饰器
         Args:
             middleware_type: 中间件类型，目前仅支持 `http`
-        
+
         Returns:
             typing.Callable
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa()
             @app.middleware('http')
@@ -442,13 +443,13 @@ class Yaa(object):
         Args:
             name: 生成路由`name` url path
             path_params: 路由参数, 例如: url_path_for(..., int=12, str='12')
-        
+
         Returns:
             URLPath
-        
+
         Raises:
             NoMatchFound: 当 路由`name`不匹配 时
-        
+
         Examples:
             app = Yaa()
             app.url_path_for(name=..., some_int=12, some_str='1234')

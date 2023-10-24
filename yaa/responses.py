@@ -55,12 +55,13 @@ except ImportError:  # pragma: nocover
 
 
 class Response(object):
-    """ 请求响应对象
+    """请求响应对象
     Attrs:
         media_type: 响应媒介类型
         charset: 响应编码
         headers: http 响应头
     """
+
     media_type = None
     charset = "utf-8"
 
@@ -85,7 +86,7 @@ class Response(object):
 
         Raises:
             None
-        
+
         Examples:
             ...
             Response(...)
@@ -125,7 +126,7 @@ class Response(object):
 
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -262,20 +263,20 @@ class Response(object):
 
 
 class HTMLResponse(Response):
-    """HTML 响应
-    """
+    """HTML 响应"""
+
     media_type = "text/html"
 
 
 class PlainTextResponse(Response):
-    """文本 响应
-    """
+    """文本 响应"""
+
     media_type = "text/plain"
 
 
 class JSONResponse(Response):
-    """JSON 响应
-    """
+    """JSON 响应"""
+
     media_type = "application/json"
 
     def __init__(
@@ -299,8 +300,8 @@ class JSONResponse(Response):
 
 
 class UJSONResponse(JSONResponse):
-    """UJSON 响应
-    """
+    """UJSON 响应"""
+
     def render(self, content: typing.Any) -> bytes:
         assert (
             ujson is not None
@@ -522,8 +523,8 @@ class FileResponse(Response):
 
 
 class RedirectResponse(Response):
-    """ 重定向
-    """
+    """重定向"""
+
     def __init__(
         self,
         url: typing.Union[str, URL],
