@@ -1,3 +1,15 @@
+"""
+module: Requests
+title: 请求对象
+description:
+    请求对象
+author: emryslou@gmail.com
+examples: test_requests.py
+exposes:
+    - HttpConnection
+    - ClientDisconnect
+    - Request
+"""
 import http.cookies
 import json
 import typing
@@ -58,10 +70,41 @@ async def empty_send(message: Message) -> None:
 
 
 class HttpConnection(typing.Mapping[str, typing.Any]):
+    """Http 连接对象
+    Attrs:
+        url: 返回 URL 对象
+        base_url: 返回 url 属性的 path = / 的 URL 对象
+        app: scope['app'] 对象
+        scope: http 请求上下文 scope
+        headers: 请求头
+        query_params: http url 请求参数
+        path_params: url path 中参数
+        cookies: cookie
+        client: http 请求上下文 scope.get('client')
+        session: 会话，需要启用 Session 扩展，和其中的 中间件
+        database: 数据库操作对象，需要启用 Database 扩展，和其中的 DataBase 中间件
+        auth: 请求授权，需要启用 Authentication 扩展和，和其中的 Authentication 中间件
+        user: 授权用户信息，需要启用 Authentication 扩展和，和其中的 Authentication 中间件
+        state: 状态数据
+    """
     __eq__ = object.__eq__
     __hash__ = object.__hash__
 
     def __init__(self, scope: Scope, *args: P.args, **kwargs: P.kwargs) -> None:
+        """Http连接对象
+        Args:
+            scope: ASGI http 请求上下文
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+
+        """
+
         self._scope = scope  # type: ignore
         self._scope.setdefault("state", {})  # type: ignore
 
@@ -169,7 +212,27 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
         ), "`AuthenticationMiddleware` must be installed to access request.user"
         return self._scope["user"]
 
-    def url_for(self, name: str, /, **path_params: typing.Any) -> URL:
+    def url_for(self, name: str, **path_params: typing.Any) -> URL:
+        """获取 URL
+        Args:
+            name: 路由名称
+            **path_params: 路由路径参数
+        
+        Returns:
+            URL
+        
+        Raises:
+            None
+        
+        Examples:
+            http_connection = HttpConnect(...)
+            http_connection.url_for(name='foo', some_foo=.., some_boo=...)
+            # 说明：在实际场景，一般是 Request 对象中，使用样例如下
+            def some(request: Request):
+                ...
+                request.url_for(name='foo', some_foo=.., some_boo=...)
+                ...
+        """
         router = self._scope["router"]
 
         url = router.url_path_for(name, **path_params)
@@ -177,15 +240,38 @@ class HttpConnection(typing.Mapping[str, typing.Any]):
 
 
 class ClientDisconnect(Exception):
+    """Http Client 端口连接异常"""
     pass
 
 
 class Request(HttpConnection):
+    """请求对象
+    Attrs:
+        method: Http 请求方法
+        relative_url: URL 请求 path + query_params, 类似: /path/to?foo=..&bar=...
+        receive: 请求数据接收方法
+    """
     _form: typing.Optional[FormData]
 
     def __init__(
         self, scope: Scope, receive: Receive = empty_receive, send: Send = empty_send
-    ):
+    ) -> None:
+        """初始化
+        Args:
+            scope: 请求上下文
+            receive: 请求数据接收方法
+            send: 响应数据发送方法
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            # None
+        """
+
         super().__init__(scope=scope)
         self._receive = receive
         self._send = send
@@ -218,6 +304,24 @@ class Request(HttpConnection):
         return self._receive
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
+        """请求数据流
+        Args:
+            None
+        
+        Returns:
+            typing.AsyncIterator[bytes]
+
+        Raises:
+            RuntimeError: 请求流已结束后再次获取数据时出发，
+            ClientDisconnect: 客户端主动关闭后
+        
+        Examples:
+            ...
+            async for chunk in request.stream():
+                ...
+            ...
+        """
+
         if hasattr(self, "_body"):
             yield self._body
             yield b""
@@ -242,6 +346,23 @@ class Request(HttpConnection):
         yield b""
 
     async def body(self) -> bytes:
+        """请求数据
+        Args:
+            None
+        
+        Returns:
+            bytes
+
+        Raises:
+            RuntimeError: 请求流已结束后再次获取数据时出发，
+            ClientDisconnect: 客户端主动关闭后
+        
+        Examples:
+            ...
+            body = await request.body()
+            ...
+        """
+
         if not hasattr(self, "_body"):
             chunks: "typing.List[bytes]" = []
             async for chunk in self.stream():
@@ -250,6 +371,24 @@ class Request(HttpConnection):
         return self._body
 
     async def json(self) -> typing.Any:
+        """请求数据JSON对象
+        Args:
+            None
+        
+        Returns:
+            object
+
+        Raises:
+            RuntimeError: 请求流已结束后再次获取数据时出发，
+            ClientDisconnect: 客户端主动关闭后
+            JSONDecodeError: JSON 解析失败
+        
+        Examples:
+            ...
+            body = await request.json()
+            ...
+        """
+
         if not hasattr(self, "_json"):
             body = await self.body()
             self._json = json.loads(body)
@@ -295,28 +434,63 @@ class Request(HttpConnection):
         max_files: typing.Union[int, float] = 1000,
         max_fields: typing.Union[int, float] = 1000,
     ) -> AwaitableOrContextManager[FormData]:
+        """Form 请求对象
+        Args:
+            max_files: 最大文件数量
+            max_fields: 最大字段数量
+        
+        Returns:
+            AwaitableOrContextManager[FormData]
+        
+        Raises:
+            MultiPartException: Form 字段超过 max_fields，或者 文件数量 > max_files
+        
+        Examples:
+            ...
+            data = await request.form()
+            ...
+            # 或者
+            ...
+            async with request.form() as form:
+                ...
+        """
         return AwaitableOrContextManagerWrapper(
             self._get_form(max_files=max_files, max_fields=max_fields)
         )
 
     async def close(self) -> None:
+        """关闭 form 对象
+        """
         if self._form is not None:
             await self._form.close()
 
     async def is_disconnected(self) -> bool:
+        """请求是否断开"""
         if not self._is_disconnected:
             message: Message = {}
             with anyio.CancelScope() as cs:
                 cs.cancel()
                 message = await self._receive()
 
-            # todo: may raise KeyError
             if message.get("type") == "http.disconnect":
                 self._is_disconnected = True
 
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
+        """ http2 push 资源
+        Args:
+            path: 推送的资源路径
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
         if "http.response.push" in self.scope.get("extensions", {}):
             raw_headers: "typing.List[typing.Tuple[bytes, bytes]]" = []
             for name in SERVER_PUSH_HEADERS_TO_COPY:

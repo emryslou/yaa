@@ -1,3 +1,11 @@
+"""
+module: Application
+title: 框架初始化和启动
+description:
+    框架初始化和启动
+author: emryslou@gmail.com
+examples: test_applications.py
+"""
 import typing
 
 from yaa._utils import get_logger
@@ -11,6 +19,8 @@ logger = get_logger(__name__)
 
 
 class Yaa(object):
+    """Yaa"""
+
     def __init__(
         self,
         routes: typing.Optional[typing.List[BaseRoute]] = None,
@@ -81,6 +91,7 @@ class Yaa(object):
                 ...
             )
         """
+
         self._debug = debug
         self.state = State()
         self.router = Router(routes=routes)
@@ -234,7 +245,8 @@ class Yaa(object):
             None
         
         Examples:
-            #todo
+            app = Yaa(...)
+            app.mount('/static', StaticFiles(directory='demo/static'))
         """
 
         assert app != self
