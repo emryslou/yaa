@@ -31,11 +31,14 @@ setup(
     },
     extras_requires = {
         'standard': [
-            'requests',
-            'aiofiles',
-            'ujson',
-            'python-multipart',
-            'itsdangerous',
+            "anyio >= 4.0, < 5",
+            "aiofiles",
+            "databases[sqlite]",
+            "httpx",
+            "python-multipart",
+            "types-ujson",
+            "ujson",
+            "trio==0.22.1",
         ],
         'db': [
             'sqlalchemy >= 1.0, < 2.0.0',
@@ -47,6 +50,10 @@ setup(
         'mysql': [
             'aiomysql',
             'pymysql',
+            'cryptography',
+        ],
+        'itsdangerous': [
+            'itsdangerous',
         ],
         'template': [
             'jinja2',
@@ -59,16 +66,24 @@ setup(
             'pyyaml',
         ],
         'test': [
-            'pytest',
-            'pytest-cov',
-            'pytest-timeout',
+            "coverage >= 5.3",
+            "mypy",
+            "importlib-metadata",
+            "pytest",
+            "pytest-asyncio",
+            "pytest-benchmark",
+            "pytest-timeout",
+            "types-contextvars==2.4.7",
+            "types-dataclasses==0.6.6",
+            "types-PyYAML==6.0.4",
+            "types-requests==2.26.3",
+            "typing_extensions==4.2.0",
         ],
         'dev': [
-            'black',
-            'isort',
-            'mkdocs',
-            'mkdocs-material',
-            'flake8',
+            "bandit",
+            "black",
+            "pylint",
+            "ruff",
         ],
     },
     classifiers=[

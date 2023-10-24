@@ -123,14 +123,23 @@ class YaWs(object):
 app.add_route_ws('/yaws', route=YaWs)
 app.add_route('/demo', route=Route('/', endpoint=Demo))
 
+import cProfile, pstats, io
+from pstats import SortKey
+
+pr = cProfile.Profile()
+
 @app.on_event('startup')
 def run_startup():
-    print('startup')
-
+    pr.enable()
 
 @app.on_event('shutdown')
 def run_cleanup():
-    print('cleanup')
+    pr.disable()
+    s = io.StringIO()
+    sort_by = SortKey.CUMULATIVE
+    ps = pstats.Stats(pr, stream=s).sort_stats(sort_by)
+    ps.print_stats(10)
+    print(s.getvalue())
 
 
 """
