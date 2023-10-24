@@ -32,7 +32,7 @@ from yaa.websockets import WebSocket, WebSocketClose
 
 class NoMatchFound(Exception):
     """
-    由 `.url_for(name, **path_params)` 和 `.url_path_for(name, **path_params)` 抛出的异常
+    由 `.url_path_for(name, **path_params)` 抛出的异常
     原因: 没有匹配到 `route`
     """
 
@@ -96,15 +96,20 @@ class BaseRoute(object):
     """路由基本类，所有的路由类的实现必须是其的子类"""
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
+        """匹配路由"""
         raise NotImplementedError()
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
+        """生成URL"""
         raise NotImplementedError()
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """路由处理方法"""
         raise NotImplementedError()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """路由处理逻辑，在匹配路由后，转交处理权限给 handle
+        """
         match, child_scope = self.matches(scope)
         if match == Match.NONE:
             if scope["type"] == "http":
@@ -235,6 +240,26 @@ class WebSocketRoute(BaseRoute):
     def __init__(
         self, path: str, endpoint: typing.Callable, *, name: typing.Optional[str] = None
     ) -> None:
+        """WebSocket 路由
+        Args:
+            path: URL 路径
+            endpoint: 路由处理端点，通常是业务处理方法
+            name: 路由名称
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            async def ws_endpoint(ss):
+                await ss.accept()
+                ...
+                await ss.close()
+            
+            WebSocketRoute("/ws", endpoint=ws_endpoint),
+        """
         assert path.startswith("/"), 'Routed paths must be always start "/"'
         self.path = path
         self.endpoint = endpoint
@@ -265,6 +290,26 @@ class WebSocketRoute(BaseRoute):
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
+        """WebSocket URL
+        Args:
+            name: 生成路由`name` url path
+            path_params: 路由参数, 例如: url_path_for(name=..., int=12, str='12')
+
+        Returns:
+            URLPath
+
+        Raises:
+            NoMatchFound: 当 路由`name`不匹配 时
+
+        Examples:
+            async def ws_endpoint(ss):
+                await ss.accept()
+                ...
+                await ss.close()
+            
+            wsr = WebSocketRoute("/ws", endpoint=ws_endpoint)
+            wsr.url_path_for(name='foo', foo_int=1, foo_str='foo')
+        """
         seen_params = set(path_params.keys())
         expected_params = set(self.param_convertors.keys())
         if name != self.name or seen_params != expected_params:
@@ -307,11 +352,15 @@ class Mount(BaseRoute):
             routes: 挂载 route 列表
             name: route name
             middleware: 处理中间件列表
+        
         Returns:
             None
 
         Raises:
             None
+        
+        Examples:
+
         """
         assert path == "" or path.startswith("/"), 'Routed paths must always start "/"'
         assert (
@@ -363,6 +412,22 @@ class Mount(BaseRoute):
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
+        """Mount URL
+        Args:
+            name: 生成路由`name` url path
+            **path_params: 路由参数, 例如: url_path_for(name=..., int=12, str='12')
+
+        Returns:
+            URLPath
+
+        Raises:
+            NoMatchFound: 当 路由`name`不匹配 时
+
+        Examples:
+            m = Mount(...)
+            m.url_path_for(name='foo', foo_int=1, foo_str='foo')
+        """
+
         if self.name is not None and name == self.name and "path" in path_params:
             path_params["path"] = path_params["path"].lstrip("/")
             path, remaining_params = replace_params(
@@ -415,6 +480,25 @@ class Host(BaseRoute):
     def __init__(
         self, host: str, app: ASGI3App, name: typing.Optional[str] = None
     ) -> None:
+        """其他子域名挂载
+        Args:
+            host: 域名
+            app: ASGI 应用
+            name: 挂载点名称
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            Host(
+                "www.example.org",
+                app=Router([Route(...), Route(...),]),
+            )
+        """
+
         self.host = host
         self.app = app
         self.name = name
@@ -442,6 +526,21 @@ class Host(BaseRoute):
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
+        """Host URL
+        Args:
+            name: 生成路由`name` url path
+            **path_params: 路由参数, 例如: url_path_for(name=..., int=12, str='12')
+
+        Returns:
+            URLPath
+
+        Raises:
+            NoMatchFound: 当 路由`name`不匹配 时
+
+        Examples:
+            m = Host(...)
+            m.url_path_for(name='foo', foo_int=1, foo_str='foo')
+        """
         if self.name is not None and name == self.name and "path" in path_params:
             path = path_params.pop("path")
             host, remaining_params = replace_params(
@@ -488,6 +587,18 @@ class Router(object):
         redirect_slashes: typing.Optional[bool] = True,
         default: typing.Optional[ASGIApp] = None,
     ) -> None:
+        """路由分组
+        Args:
+            routes: 路由列表
+            redirect_slashes: 是否处理多余的 ‘/’
+            default: 404 处理器
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        """
         self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
         self.default = self.not_found if default is None else default
@@ -496,10 +607,16 @@ class Router(object):
     def mount(
         self, path: str, app: ASGI3App, name: typing.Optional[str] = None
     ) -> None:
+        """
+        @see app.mount
+        """
         prefix = Mount(path, app=app, name=name)
         self.routes.append(prefix)
 
     def host(self, host: str, app: ASGI3App, name: typing.Optional[str] = None) -> None:
+        """
+        @see app.host
+        """
         route = Host(host, app=app, name=name)
         self.routes.append(route)
 
@@ -510,6 +627,9 @@ class Router(object):
         name: typing.Optional[str] = None,
         include_in_schema: typing.Optional[bool] = True,
     ) -> typing.Callable:
+        """
+        @see app.route
+        """
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route(
                 path,
@@ -523,6 +643,9 @@ class Router(object):
         return decorator
 
     def route_ws(self, path: str, name: typing.Optional[str] = None) -> typing.Callable:
+        """
+        @see app.ws_route
+        """
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route_ws(path, func, name=name)
             return func
@@ -537,6 +660,9 @@ class Router(object):
         name: typing.Optional[str] = None,
         include_in_schema: typing.Optional[bool] = True,
     ) -> None:
+        """
+        @see app.add_route
+        """
         instance = Route(
             path,
             endpoint=endpoint,
@@ -549,6 +675,9 @@ class Router(object):
     def add_route_ws(
         self, path: str, route: typing.Callable, name: typing.Optional[str] = None
     ) -> None:
+        """
+        @see app.add_route_ws
+        """
         instance = WebSocketRoute(path, name=name, endpoint=route)
         self.routes.append(instance)
 
