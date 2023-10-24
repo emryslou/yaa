@@ -55,6 +55,12 @@ except ImportError:  # pragma: nocover
 
 
 class Response(object):
+    """ 请求响应对象
+    Attrs:
+        media_type: 响应媒介类型
+        charset: 响应编码
+        headers: http 响应头
+    """
     media_type = None
     charset = "utf-8"
 
@@ -69,13 +75,9 @@ class Response(object):
         """Response
         Args:
             content: 响应内容
-
             status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-
             headers: 响应头
-
             media_type: 媒体类型，响应数据类型
-
             background: 响应后，后台执行的任务
 
         Returns:
@@ -83,6 +85,11 @@ class Response(object):
 
         Raises:
             None
+        
+        Examples:
+            ...
+            Response(...)
+            ...
         """
 
         self.status_code = status_code
@@ -118,6 +125,9 @@ class Response(object):
 
         Raises:
             None
+        
+        Examples:
+            # todo: none
         """
         if content is None:
             content = b""
@@ -252,14 +262,20 @@ class Response(object):
 
 
 class HTMLResponse(Response):
+    """HTML 响应
+    """
     media_type = "text/html"
 
 
 class PlainTextResponse(Response):
+    """文本 响应
+    """
     media_type = "text/plain"
 
 
 class JSONResponse(Response):
+    """JSON 响应
+    """
     media_type = "application/json"
 
     def __init__(
@@ -283,6 +299,8 @@ class JSONResponse(Response):
 
 
 class UJSONResponse(JSONResponse):
+    """UJSON 响应
+    """
     def render(self, content: typing.Any) -> bytes:
         assert (
             ujson is not None
@@ -504,6 +522,8 @@ class FileResponse(Response):
 
 
 class RedirectResponse(Response):
+    """ 重定向
+    """
     def __init__(
         self,
         url: typing.Union[str, URL],
