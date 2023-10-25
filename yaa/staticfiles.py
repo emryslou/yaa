@@ -80,7 +80,7 @@ class StaticFiles(object):
 
         Raises:
             RuntimeError: check_dir = True 且 directory 不是目录
-        
+
         Examples:
             app = Yaa(routes=[Route('/path/to/static', app=StaticFiles(directory=...))])
             # or

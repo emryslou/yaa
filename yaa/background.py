@@ -32,7 +32,7 @@ class BackgroundTask(object):
             func: 异步任务执行方法
             args: 异步任务参数
             kwargs: 异步任务参数
-        
+
         Examples:
             def func():
                 ...
@@ -43,7 +43,7 @@ class BackgroundTask(object):
             BackgroundTask(func=func, arg1, arg2)
             BackgroundTask(func=func, arg1=..., arg2=...)
         """
-        
+
         self.func = func
         self.args = args
         self.kwargs = kwargs
@@ -66,7 +66,7 @@ class BackgroundTasks(BackgroundTask):
         """初始化
         Args:
             tasks: 后台任务列表
-        
+
         Examples:
             def func():
                 ...
@@ -91,16 +91,16 @@ class BackgroundTasks(BackgroundTask):
             func: 异步任务执行方法
             args: 异步任务参数
             kwargs: 异步任务参数
-        
+
         Examples:
             bgs = BackgroundTasks(...)
 
             def func():
                 ...
-            
+
             def func(arg1, arg2):
                 ...
-            
+
             bgs.add_task(func)
             bgs.add_task(func, arg1, arg2)
         """

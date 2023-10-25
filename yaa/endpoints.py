@@ -55,10 +55,11 @@ class _Endpoint(object):
 
 
 class HttpEndPoint(_Endpoint):
-    """ Http 端点
+    """Http 端点
     Attrs:
         _type: 端点类型，固定: http
     """
+
     _type = "http"
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -70,17 +71,17 @@ class HttpEndPoint(_Endpoint):
 
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             class SomeHttpEndPoint(HttpEndPoint):
                 # for http method: get
                 def get(request: Request) -> Response:
                     ...
                     return Response(...)
-                
+
                 # for http method: post
                 async def post(request: Request) -> Response:
                     ...
@@ -106,12 +107,13 @@ class HttpEndPoint(_Endpoint):
 
 
 class WebSocketEndpoint(_Endpoint):
-    """ WebSocket 终端
+    """WebSocket 终端
     Attrs:
         _type: 端点类型，固定: websocket
         encoding: 接收数据类型: text, bytes, json, 实现子类是必须定义， 不能为 None
         ws: WebSocket 对象，dispatch 方法会自动初始化
     """
+
     _type = "websocket"
     encoding = None  # 'text', 'bytes', 'json'
     ws: WebSocket
@@ -125,10 +127,10 @@ class WebSocketEndpoint(_Endpoint):
 
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             class MyWebSocketEndpoint(WebSocketEndpoint):
                 encoding = "json"

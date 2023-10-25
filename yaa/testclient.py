@@ -368,8 +368,9 @@ class TestClient(httpx.Client):
         __test__: 是否开启测试，暂时没有用到
         user_agent: 请求 user_agent
         base_url: 请求 url 前缀
-    
+
     """
+
     __test__ = False
 
     user_agent: str = "testclient"
@@ -407,13 +408,13 @@ class TestClient(httpx.Client):
             cookie: 请求cookie
             headers: headers
             follow_redirects: 是否重定向
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             app = Yaa(...)
             client = TestClient(app=app)
@@ -783,13 +784,13 @@ class TestClient(httpx.Client):
             url: WebSocket URL Path
             subprotocols: 子协议
             **kwargs: 其他请求参数
-        
+
         Returns:
             WebSocketTestSession
-        
+
         Raises:
             None
-        
+
         Examples:
             client = TestClient(...)
             with client.wsconnect('/path') as ws:

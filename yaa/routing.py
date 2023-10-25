@@ -108,8 +108,7 @@ class BaseRoute(object):
         raise NotImplementedError()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """路由处理逻辑，在匹配路由后，转交处理权限给 handle
-        """
+        """路由处理逻辑，在匹配路由后，转交处理权限给 handle"""
         match, child_scope = self.matches(scope)
         if match == Match.NONE:
             if scope["type"] == "http":
@@ -156,7 +155,7 @@ class Route(BaseRoute):
 
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -190,13 +189,13 @@ class Route(BaseRoute):
         """路由匹配
         Args:
             scope: 请求上下文
-        
+
         Returns:
             tuple(Match, Scope)
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -213,8 +212,8 @@ class Route(BaseRoute):
                 if self.methods and scope["method"] not in self.methods:
                     return Match.PARTIAL, child_scope
                 return Match.FULL, child_scope
-            #end if
-        #end if
+            # end if
+        # end if
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
@@ -260,19 +259,19 @@ class WebSocketRoute(BaseRoute):
             path: URL 路径
             endpoint: 路由处理端点，通常是业务处理方法
             name: 路由名称
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             async def ws_endpoint(ss):
                 await ss.accept()
                 ...
                 await ss.close()
-            
+
             WebSocketRoute("/ws", endpoint=ws_endpoint),
         """
         assert path.startswith("/"), 'Routed paths must be always start "/"'
@@ -321,7 +320,7 @@ class WebSocketRoute(BaseRoute):
                 await ss.accept()
                 ...
                 await ss.close()
-            
+
             wsr = WebSocketRoute("/ws", endpoint=ws_endpoint)
             wsr.url_path_for(name='foo', foo_int=1, foo_str='foo')
         """
@@ -368,13 +367,13 @@ class Mount(BaseRoute):
             routes: 挂载 route 列表
             name: route name
             middleware: 处理中间件列表
-        
+
         Returns:
             None
 
         Raises:
             None
-        
+
         Examples:
 
         """
@@ -501,13 +500,13 @@ class Host(BaseRoute):
             host: 域名
             app: ASGI 应用
             name: 挂载点名称
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             Host(
                 "www.example.org",
@@ -608,10 +607,10 @@ class Router(object):
             routes: 路由列表
             redirect_slashes: 是否处理多余的 ‘/’
             default: 404 处理器
-        
+
         Returns:
             None
-        
+
         Raises:
             None
         """
@@ -646,6 +645,7 @@ class Router(object):
         """
         @see app.route
         """
+
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route(
                 path,
@@ -662,6 +662,7 @@ class Router(object):
         """
         @see app.ws_route
         """
+
         def decorator(func: typing.Callable) -> typing.Callable:
             self.add_route_ws(path, func, name=name)
             return func

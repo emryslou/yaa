@@ -22,10 +22,10 @@ def plugin_init(app: Yaa, config: dict = {}) -> None:
     Args:
         app: Yaa 对象
         config: plugin 配置
-    
+
     Returns:
         None
-    
+
     Examples:
         plugin_init(..., config={})
     """
@@ -44,13 +44,13 @@ def get_templates() -> Jinja2Template:
     """获取 Jinja2Template 初始化对象
     Args:
         None
-    
+
     Returns:
         Jinja2Template
-    
+
     Raises:
         None
-    
+
     Examples:
         # todo: none
     """

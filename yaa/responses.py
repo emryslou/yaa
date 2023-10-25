@@ -197,7 +197,7 @@ class Response(object):
             secure: 是否仅 https 使用
             httponly: 是否禁止 JS 访问
             samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
-        
+
         Returns:
             None
 
@@ -245,7 +245,7 @@ class Response(object):
             secure: 是否仅 https 使用
             httponly: 是否禁止 JS 访问
             samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
-        
+
         Returns:
             None
 
@@ -306,13 +306,13 @@ class JSONResponse(Response):
             headers: 自定义的 http 响应头
             media_type: 响应媒体
             background: 异步任务
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -322,13 +322,13 @@ class JSONResponse(Response):
         """渲染响应内容
         Args:
             content: 响应内容
-        
+
         Returns:
             bytes
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -349,13 +349,13 @@ class UJSONResponse(JSONResponse):
         """渲染响应内容
         Args:
             content: 响应内容
-        
+
         Returns:
             bytes
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -416,13 +416,13 @@ class StreamingResponse(Response):
         """等待关闭信息
         Args:
             receive: 数据接收器
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -437,13 +437,13 @@ class StreamingResponse(Response):
         Args:
             send: 数据发送器
             scope: 请求上下文
-        
+
         Returns:
             None
-        
+
         Raises:
             None
-        
+
         Examples:
             # todo: none
         """
@@ -624,7 +624,7 @@ class RedirectResponse(Response):
         Raises:
             None
         """
-        
+
         super().__init__(
             b"", status_code=status_code, headers=headers, background=background
         )
