@@ -4,7 +4,7 @@ title: 请求对象
 description:
     请求对象
 author: emryslou@gmail.com
-examples: test_requests.py
+examples: @(file):test_requests.py
 exposes:
     - HttpConnection
     - ClientDisconnect

@@ -4,7 +4,7 @@ title: 路由控制模块
 description:
     Http 响应对象
 author: emryslou@gmail.com
-examples: test_responses.py
+examples: @(file):test_responses.py
 exposes:
     - Response: 响应对象基础类，所有响应对象的实现必须继承该对象
     - HTMLResponse: html 响应对象
@@ -15,6 +15,7 @@ exposes:
     - FileResponse: 文件响应
     - RedirectResponse: 重定向
 """
+
 import functools
 import http.cookies
 import json
@@ -73,7 +74,7 @@ class Response(object):
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
-        """Response
+        """请求响应对象
         Args:
             content: 响应内容
             status_code: http 响应码, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
@@ -130,6 +131,7 @@ class Response(object):
         Examples:
             # todo: none
         """
+
         if content is None:
             content = b""
         if isinstance(content, bytes):
@@ -142,6 +144,7 @@ class Response(object):
         """设置响应头
         param: headers: 响应头
         """
+
         if headers is None:
             raw_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
             missing_content_length = True
@@ -181,34 +184,27 @@ class Response(object):
         domain: typing.Optional[str] = None,
         secure: typing.Optional[bool] = False,
         httponly: typing.Optional[bool] = False,
-        samesite: typing.Optional[SameSiteEnum] = "lax",
+        samesite: SameSiteEnum = "lax",
     ) -> None:
         """添加cookie
         Args:
             key: cookie 键
-
             value: cookie 值
-
             max_age: cookie 存活时间，单位: 秒(second)，负数或者 0 则立即失效
-
             expires: cookie 存活时间戳，单位: 秒(second), 注意: max_age 和 expires 同时设置，则 以 max_age 优先
-
             path: cookie 可访问 URL path
-
             domain: 可访问域名
-
             secure: 是否仅 https 使用
-
             httponly: 是否禁止 JS 访问
-
-            samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`,
-            更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+            samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+        
         Returns:
             None
 
         Raises:
             None
         """
+
         cookie: "http.cookies.BaseCookie[str]" = http.cookies.SimpleCookie()
         cookie[key] = value  # type: ignore[assignment]
         if max_age is not None:
@@ -242,8 +238,21 @@ class Response(object):
         samesite: SameSiteEnum = "lax",
     ) -> None:
         """删除 cookie
-        @see self.set_cookie
+        Args:
+            key: cookie 键
+            path: cookie 可访问 URL path
+            domain: 可访问域名
+            secure: 是否仅 https 使用
+            httponly: 是否禁止 JS 访问
+            samesite: 控制 cookie 访问策略，可选类型: `strict`, `lax`, `none`, 更多 @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+        
+        Returns:
+            None
+
+        Raises:
+            None
         """
+
         self.set_cookie(
             key,
             expires=0,
@@ -275,7 +284,10 @@ class PlainTextResponse(Response):
 
 
 class JSONResponse(Response):
-    """JSON 响应"""
+    """JSON 响应
+    Attrs:
+        media_type: http 媒体类型
+    """
 
     media_type = "application/json"
 
@@ -287,9 +299,40 @@ class JSONResponse(Response):
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
     ) -> None:
+        """JSON 响应
+        Args:
+            content: 响应数据
+            status_code: http 响应码
+            headers: 自定义的 http 响应头
+            media_type: 响应媒体
+            background: 异步任务
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
         super().__init__(content, status_code, headers, media_type, background)
 
     def render(self, content: typing.Any) -> bytes:
+        """渲染响应内容
+        Args:
+            content: 响应内容
+        
+        Returns:
+            bytes
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
+
         return json.dumps(
             content,
             ensure_ascii=False,
@@ -303,6 +346,20 @@ class UJSONResponse(JSONResponse):
     """UJSON 响应"""
 
     def render(self, content: typing.Any) -> bytes:
+        """渲染响应内容
+        Args:
+            content: 响应内容
+        
+        Returns:
+            bytes
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
+
         assert (
             ujson is not None
         ), "`usjon` must be required for `UJSONResponse`, maybe try `pip install ujson`"
@@ -314,10 +371,8 @@ class UJSONResponse(JSONResponse):
 
 class StreamingResponse(Response):
     """数据流响应对象
-
     Attrs:
         body_iter: 响应体
-
     """
 
     body_iter: AsyncContentStream
@@ -333,13 +388,9 @@ class StreamingResponse(Response):
         """数据流响应对象
         Args:
             content: 数据流
-
             status_code: http 响应码
-
             headers: http 自定义响应头部{key:value}
-
             media_type: 数据流类型
-
             background: 响应后后台任务
 
         Return:
@@ -348,7 +399,10 @@ class StreamingResponse(Response):
         Raises:
             None
 
+        Examples:
+            # todo: none
         """
+
         if isinstance(content, typing.AsyncIterable):
             self.body_iter = content
         else:
@@ -359,12 +413,41 @@ class StreamingResponse(Response):
         self.init_headers(headers)
 
     async def listen_for_disconnect(self, receive: Receive) -> None:
+        """等待关闭信息
+        Args:
+            receive: 数据接收器
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
+
         while True:
             message = await receive()
             if message["type"] == "http.disconnect":
                 break
 
     async def response(self, send: Send, scope: Scope) -> None:
+        """响应数据
+        Args:
+            send: 数据发送器
+            scope: 请求上下文
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
+
         await send(
             {
                 "type": "http.response.start",
@@ -418,19 +501,12 @@ class FileResponse(Response):
         """文件响应
         Args:
             path: 需要响应的文件路径
-
             status_code: http 响应码
-
             headers: 响应头部字典 {key:value}
-
             media_type: 响应文件类型
-
             background: 响应完成后后台任务
-
             filename: 响应文件名
-
             stat_result: 文件存储信息
-
             content_disposition_type: # `inline` or `attachment` @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
 
         Returns:
@@ -439,8 +515,12 @@ class FileResponse(Response):
         Raises:
             None
 
+        Examples:
+            # todo: none
         """
+
         assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
+
         self.path = path
         self.status_code = status_code
         self.filename = filename
@@ -535,9 +615,7 @@ class RedirectResponse(Response):
         """重定向
         Args:
             url: 重定向URL
-
             status_code: http code, 默认 307
-
             headers: 自定义的 http header {key:value}
 
         Returns:
@@ -546,6 +624,7 @@ class RedirectResponse(Response):
         Raises:
             None
         """
+        
         super().__init__(
             b"", status_code=status_code, headers=headers, background=background
         )

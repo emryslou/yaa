@@ -1,3 +1,14 @@
+"""
+module: Endpoints
+title: 端点
+description: 提供了 Http 和 WebSocket 请求处理的基础类模版
+author: emryslou@gmail.com
+examples: @(file):test_endpoints.py
+exposes:
+    - HttpEndPoint: Http 端点，可为 http 请求自动转发 不同 method 的请求
+    - WebSocketEndpoint: WebSocket 端点，可自动处理不同类型的数据接收和发送
+"""
+
 import typing
 
 import yaa.status as status
@@ -44,9 +55,37 @@ class _Endpoint(object):
 
 
 class HttpEndPoint(_Endpoint):
+    """ Http 端点
+    Attrs:
+        _type: 端点类型，固定: http
+    """
     _type = "http"
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Http 端点初始化
+        Args:
+            scope: 请求上下文
+            receive: 数据接收器
+            send: 数据发送器
+
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            class SomeHttpEndPoint(HttpEndPoint):
+                # for http method: get
+                def get(request: Request) -> Response:
+                    ...
+                    return Response(...)
+                
+                # for http method: post
+                async def post(request: Request) -> Response:
+                    ...
+                    return Response(...)
+        """
         super().__init__(scope, receive, send)
 
     async def dispatch(self) -> None:
@@ -65,19 +104,42 @@ class HttpEndPoint(_Endpoint):
 
         await res(self._scope, self._receive, self._send)
 
-    async def method_not_allowed(self, req: Request) -> Response:
-        headers = {"Allow": ", ".join(self._allow_methods)}
-        if "app" in self._scope:
-            raise HttpException(status_code=405, headers=headers)  # pragma: nocover
-        return PlainTextResponse("Method Not Allowed", 405, headers=headers)
-
 
 class WebSocketEndpoint(_Endpoint):
+    """ WebSocket 终端
+    Attrs:
+        _type: 端点类型，固定: websocket
+        encoding: 接收数据类型: text, bytes, json, 实现子类是必须定义， 不能为 None
+        ws: WebSocket 对象，dispatch 方法会自动初始化
+    """
     _type = "websocket"
     encoding = None  # 'text', 'bytes', 'json'
     ws: WebSocket
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """WebSocket 终端初始化
+        Args:
+            scope: 请求上下文
+            receive: 数据接收器
+            send: 数据发送器
+
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            class MyWebSocketEndpoint(WebSocketEndpoint):
+                encoding = "json"
+
+                async def on_receive(self, data) -> None:
+                    await self.send(data, send_type="json")
+                    ...
+
+                async def on_disconnect(self, code: int) -> None:
+                    ...
+        """
         super().__init__(scope, receive, send)
 
     async def dispatch(self) -> None:

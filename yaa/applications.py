@@ -4,7 +4,9 @@ title: 框架初始化和启动
 description:
     框架初始化和启动
 author: emryslou@gmail.com
-examples: test_applications.py
+examples: @(file):test_applications.py
+exposes:
+    - Yaa
 """
 import typing
 

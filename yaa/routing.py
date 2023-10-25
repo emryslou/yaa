@@ -4,7 +4,7 @@ title: 路由控制模块
 description:
     路由相关控制模块
 author: emryslou@gmail.com
-examples: test_routing.py
+examples: @(file):test_routing.py
 exposes:
     - BaseRoute
     - Route
@@ -146,13 +146,9 @@ class Route(BaseRoute):
         """API 路由
         Args:
             path: 要挂载的 url path
-
             endpoint: url path 匹配的路由方法
-
             methods: http 请求方法，默认 ['GET']
-
             name: 路由名称
-
             include_in_schema: 是否要生成 OpenAPI 文档
 
         Returns:
@@ -160,7 +156,11 @@ class Route(BaseRoute):
 
         Raises:
             None
+        
+        Examples:
+            # todo: none
         """
+
         assert path.startswith("/"), 'Routed paths must always start "/"'
         self.path = path
         self.endpoint = endpoint
@@ -187,6 +187,19 @@ class Route(BaseRoute):
         (self.path_regex, self.path_format, self.param_convertors) = compile_path(path)
 
     def matches(self, scope: Scope) -> typing.Tuple[Match, Scope]:
+        """路由匹配
+        Args:
+            scope: 请求上下文
+        
+        Returns:
+            tuple(Match, Scope)
+        
+        Raises:
+            None
+        
+        Examples:
+            # todo: none
+        """
         if scope["type"] == "http":
             match = self.path_regex.match(scope["path"])
 
@@ -200,6 +213,8 @@ class Route(BaseRoute):
                 if self.methods and scope["method"] not in self.methods:
                     return Match.PARTIAL, child_scope
                 return Match.FULL, child_scope
+            #end if
+        #end if
         return Match.NONE, {}
 
     def url_path_for(self, name: str, **path_params: str) -> URLPath:
@@ -310,6 +325,7 @@ class WebSocketRoute(BaseRoute):
             wsr = WebSocketRoute("/ws", endpoint=ws_endpoint)
             wsr.url_path_for(name='foo', foo_int=1, foo_str='foo')
         """
+
         seen_params = set(path_params.keys())
         expected_params = set(self.param_convertors.keys())
         if name != self.name or seen_params != expected_params:

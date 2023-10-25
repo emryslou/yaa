@@ -1,3 +1,13 @@
+"""
+module: TestClient
+title: 测试客户端
+description:
+    用于测试 asgi http 请求 
+author: emryslou@gmail.com
+examples: @(file):test_client.py
+exposes:
+    - TestClient
+"""
 import contextlib
 import http
 import inspect
@@ -353,6 +363,13 @@ class _TestClientTransport(httpx.BaseTransport):
 
 
 class TestClient(httpx.Client):
+    """测试客户端
+    Attrs:
+        __test__: 是否开启测试，暂时没有用到
+        user_agent: 请求 user_agent
+        base_url: 请求 url 前缀
+    
+    """
     __test__ = False
 
     user_agent: str = "testclient"
@@ -379,6 +396,29 @@ class TestClient(httpx.Client):
         headers: typing.Optional[typing.Dict[str, str]] = None,
         follow_redirects: bool = True,
     ) -> None:
+        """测试客户端
+        Args:
+            app: ASGI 应用程序
+            base_url: 请求基础URL, 例如: 请求 path = `/path/to`, 则完整的请求URL为`{base_url}/path/to`
+            raise_server_exceptions: 是需要抛出异常
+            root_path: 请求根path，请求 path = `/path/to`, 则完整的请求URL为`{base_url}/{root_path}/path/to`
+            backend: anyio 启动配置
+            backend_options: anyio 启动配置
+            cookie: 请求cookie
+            headers: headers
+            follow_redirects: 是否重定向
+        
+        Returns:
+            None
+        
+        Raises:
+            None
+        
+        Examples:
+            app = Yaa(...)
+            client = TestClient(app=app)
+            client.get(...)
+        """
         self.async_backend["backend"] = backend  # type: ignore[index]
         self.async_backend["backend_options"] = backend_options  # type: ignore[index]
 
@@ -473,6 +513,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:
+        """发起 HTTP 请求"""
+
         url = urljoin(self.base_url, url)  # type: ignore
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().request(
@@ -509,6 +551,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: get"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().get(
             url,
@@ -538,6 +582,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: option"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().options(
             url,
@@ -567,6 +613,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: head"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().head(
             url,
@@ -600,6 +648,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: post"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().post(
             url,
@@ -637,6 +687,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: put"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().put(
             url,
@@ -674,6 +726,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: put"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().patch(
             url,
@@ -707,6 +761,8 @@ class TestClient(httpx.Client):
         ] = httpx._client.USE_CLIENT_DEFAULT,
         extensions: typing.Optional[dict] = None,
     ) -> httpx.Response:  # type: ignore
+        """发起 HTTP 请求: delete"""
+
         redirect = self._choose_redirect_arg(follow_redirects, allow_redirects)
         return super().delete(
             url,
@@ -722,6 +778,34 @@ class TestClient(httpx.Client):
     def wsconnect(
         self, url: str, subprotocols: typing.Optional[str] = None, **kwargs: typing.Any
     ) -> WebSocketTestSession:
+        """创建 WebSocket 连接
+        Args:
+            url: WebSocket URL Path
+            subprotocols: 子协议
+            **kwargs: 其他请求参数
+        
+        Returns:
+            WebSocketTestSession
+        
+        Raises:
+            None
+        
+        Examples:
+            client = TestClient(...)
+            with client.wsconnect('/path') as ws:
+                msg = 'some message'
+                ws.send_bytes(msg.encode("utf-8"))
+                ws.receive_bytes() == (f"Received msg is {msg}").encode("utf-8")
+            # 说明:
+            # ws.send -- 发送数据
+            # ws.send_text -- 发送文本
+            # ws.send_bytes -- 发送字节
+            # ws.send_json  -- 发送JSON
+            # ws.receive -- 接收数据
+            # ws.receive_text -- 接收文本
+            # ws.receive_bytes -- 接收字节
+            # ws.receive_json  -- 接收JSON
+        """
         url = urljoin("ws://testserver", url)
         headers = kwargs.get("headers", {})
         headers.setdefault("connection", "upgrade")
