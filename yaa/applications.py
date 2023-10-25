@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 class Yaa(object):
-    """Yaa"""
+    """Yaa 框架初始化对象"""
 
     def __init__(
         self,
@@ -47,6 +47,7 @@ class Yaa(object):
             on_shutdown: 服务关闭前回调方法列表
             lifespan: 服务开始前后回调对象, lifespan or on_startup/on_shutdown 而选其一
             debug: 是否开启调试，默认 False
+        
         Returns:
             None
 
@@ -185,7 +186,8 @@ class Yaa(object):
                 init_fn(self, plugin_cfg)
 
     def build_middleware_stack(self) -> None:
-        """重建中间件调用堆栈"""
+        """重建中间件调用堆栈
+        """
         app = self.app
         from yaa.plugins import plugin_middlewares as pmw
 
