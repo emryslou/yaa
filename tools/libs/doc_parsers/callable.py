@@ -1,7 +1,6 @@
 import inspect, os
 
 class Parser(object):
-
     def __init__(self, root_path: str, callable_obj) -> None:
         self._callable = callable_obj
         self._doc = callable_obj.__doc__
@@ -51,19 +50,21 @@ class Parser(object):
         try:
             sig = inspect.signature(self._callable)
             args = []
-            for _doc in _raw_docs:
-
-                _name, _desc = _doc.strip().split(':', 1)
-                arg = {
-                    'name': _name,
-                    'desc': _desc,
-                    'type': sig.parameters[_name].annotation,
-                    'deault': sig.parameters[_name].default
-                }
-                args.append(arg)
+            if _raw_docs:
+                for _doc in _raw_docs:
+                    if _doc.strip().title() == 'None':
+                        continue
+                    _name, _desc = _doc.strip().split(':', 1)
+                    arg = { 'name': _name, 'desc': _desc, }
+                    _name = _name.strip('*')
+                    arg.update({
+                        'type': str(sig.parameters[_name].annotation),
+                        'deault': sig.parameters[_name].default
+                    })
+                    args.append(arg)
             return args
         except BaseException as exc:
-            print(f'exc: {exc}')
+            raise
         return []
 
     def handle_default(self, _raw_docs) -> str:

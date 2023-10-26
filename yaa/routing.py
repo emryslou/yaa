@@ -366,7 +366,7 @@ class Mount(BaseRoute):
             app: ASGI3App 处理回调函数
             routes: 挂载 route 列表
             name: route name
-            middleware: 处理中间件列表
+            middlewares: 处理中间件列表
 
         Returns:
             None

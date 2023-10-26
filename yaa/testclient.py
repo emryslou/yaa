@@ -405,7 +405,7 @@ class TestClient(httpx.Client):
             root_path: 请求根path，请求 path = `/path/to`, 则完整的请求URL为`{base_url}/{root_path}/path/to`
             backend: anyio 启动配置
             backend_options: anyio 启动配置
-            cookie: 请求cookie
+            cookies: 请求cookie
             headers: headers
             follow_redirects: 是否重定向
 

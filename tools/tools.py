@@ -14,10 +14,10 @@ class Tools(object):
         import yaa
         package_names = [
             attr for attr in yaa.__dir__()
-            if not attr.startswith('_') and attr == 'applications'
+            if not attr.startswith('_')
         ]
         docs = self.get_docs(package_names)
-
+        
     def get_docs(self, package_names):
         import yaa
         import inspect
@@ -26,9 +26,8 @@ class Tools(object):
             package = getattr(yaa, package_name)
             if package.__doc__ is None or not inspect.ismodule(package):
                 continue
-            docs['package_name'] = self._parse_module_doc(package)
+            docs[package_name] = self._parse_module_doc(package)
         
-        print(docs)
         return docs
 
     def _parse_module_doc(self, package):
@@ -37,11 +36,13 @@ class Tools(object):
 
         module_doc_exposes = []
         for exposes in module_doc.get('exposes', []):
-            sub_exposes = {}
+            sub_exposes = exposes
             for method, callable_obj in exposes.get('exposes', {}).items():
-                sub_exposes[method] = self._parse_callable_doc(callable_obj)
+                sub_exposes['exposes'][method] = self._parse_callable_doc(callable_obj)
             module_doc_exposes.append(sub_exposes)
+        
         module_doc['exposes'] = module_doc_exposes
+        
         return module_doc
     
     def _parse_callable_doc(self, callable_obj):

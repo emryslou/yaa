@@ -1,20 +1,19 @@
 import inspect, os
 
 class Parser(object):
-    _raw_doc: dict = {
-        'module': [],
-        'title': [],
-        'description': [],
-        'author': [],
-        'examples': [],
-        'exposes': [],
-    }
-
     def __init__(self, root_path: str, package) -> None:
         self._package = package
         self._doc = package.__doc__
         self._root_path = root_path
         self._doc_info: dict = {}
+        self._raw_doc: dict = {
+            'module': [],
+            'title': [],
+            'description': [],
+            'author': [],
+            'examples': [],
+            'exposes': [],
+        }
     
     def __call__(self) -> dict:
         self.handle()
@@ -73,6 +72,7 @@ class Parser(object):
                     if (
                             obj_attr in ('__init__', '__call__') or not obj_attr.startswith('_')
                         ) and
+                        inspect.isfunction(getattr(obj, obj_attr)) and
                         getattr(obj, obj_attr).__doc__
                 }
                 
