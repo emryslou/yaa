@@ -18,6 +18,7 @@
 17. allow using Request.form() as a context manager
 18. Support lifespan state
 19. Reuse Request's body buffer for call_next in BaseHTTPMiddleware
+20. websockets interact
 
 # v0.2.5
 1. Opt: Add ImmutableMultiDict, Auth: Request -> HttpConnection, graphql: executor_class

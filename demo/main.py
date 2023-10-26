@@ -1,4 +1,5 @@
 import graphene
+import json
 
 from yaa import Yaa
 from yaa.responses import Response, FileResponse, RedirectResponse, HTMLResponse, PlainTextResponse, JSONResponse
@@ -8,7 +9,7 @@ from yaa.endpoints import HttpEndPoint, WebSocketEndpoint
 from yaa.routing import Route
 from yaa.websockets import WebSocket, WebSocketDisconnect
 from yaa.middlewares import BaseHttpMiddleware
-from yaa.plugins.template import templates
+from yaa.plugins.template import get_templates
 
 
 class Query(graphene.ObjectType):
@@ -57,15 +58,17 @@ async def links(req) -> Response:
 
     return PlainTextResponse(links_text)
 
-@app.route('/home')
+@app.route('/home/{user:str}')
 async def home(request: Request) -> Response:
     from random import randint
     await request.send_push_promise('/static/js/ws.js')
     await request.send_push_promise('/static/css/ws_css.css')
-    res = templates.response('home.html', request=request, context={
+    res = get_templates().response('home.html', context={
+        'request': request,
         'greeting': 'template',
-        'ws_host': 'localhost:5505/ws',
-        'js_version': randint(0, 1000)
+        'ws_host': '192.168.71.2:5505/ws/{}'.format(request.path_params['user']),
+        'js_version': randint(0, 1000),
+        'user': request.path_params['user'],
     })
     return res
     
@@ -78,11 +81,35 @@ class Demo(HttpEndPoint):
     def get(self, request: Request, **kwargs):
         return HTMLResponse('Demo')
 
-@app.ws_route('/ws')
+@app.ws_route('/ws/{user:str}')
 class WsApp(WebSocketEndpoint):
     encoding = 'text'
     async def on_receive(self, data):
-        await self.send('data received ' + data, 'text')
+        try:
+            msg_body = json.loads(data)
+        except Exception as exc:
+            print('exc:', exc)
+            msg_body = {}
+        if msg_body:
+            if msg_body['to_user'] == '':
+                await self.ws.notify_others('`{}` from user [{}]'.format(msg_body['msg'], self.ws.path_params['user']))
+            else:
+                await self.ws._agent.send_to(
+                    msg_body['to_user'],
+                    'send_text',
+                    data='`{}` from user [{}]'.format(msg_body['msg'], self.ws.path_params['user'])
+                )
+
+    async def on_connect(self):
+        await super().on_connect()
+        await self.send('login, quid:' + self.ws.quid, 'text')
+        data = 'user[{}:{}] on line'.format(self.ws.path_params['user'], self.ws.quid)
+        await self.ws.notify_others(data)
+    
+    async def on_disconnect(self, close_code):
+        data = 'user[{}:{}] off line'.format(self.ws.path_params['user'], self.ws.quid)
+        await self.ws.notify_others(data)
+
 
 @app.route('/aa')
 def aa(req):

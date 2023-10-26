@@ -5,15 +5,6 @@
     let msg_container = document.querySelector('#receive_msg')
     ws.onopen = function () {
         ws.send('send data ... ')
-        let i = 0
-        let timer = setInterval(() => {
-            ws.send('hello hahah > ' + i)
-            i++
-            if (i >= 3) {
-                clearInterval(timer)
-                setTimeout(() => ws.close(), 0)
-            }
-        }, 1000)
     }
     ws.onmessage = function (evt) {
         let data = evt.data
@@ -24,10 +15,28 @@
     }
     ws.onclose = function () {
         console.log('ws closed')
+        document.querySelector('#msg').setAttribute('placeholder', '连接断开')
     }
-    ws.onclose = function (e) {
-        console.log('err', e)
+    ws.onerror = function (ev) {
+        console.log(ev)
     }
-    ws.onerror = function (ev) { }
-    console.log('ws ....')
+    
+    document.querySelector('#send_msg').addEventListener('click', () => {
+        let to_user = document.querySelector('#to_user').value
+        let msg = document.querySelector('#msg').value
+        console.log({'to_user': to_user, 'msg': msg})
+        if (ws.readyState == ws.CLOSING || ws.readyState == ws.CLOSED) {
+            document.querySelector('#msg').setAttribute('placeholder', '消息发送失败，因为与无法连接服务器')
+        } else {
+            ws.send(JSON.stringify({
+                'msg': msg,
+                'to_user': to_user
+            }))
+            document.querySelector('#msg').value = ''
+            document.querySelector('#msg').setAttribute('placeholder', '发送成功')
+        }
+        setTimeout(() => {
+            document.querySelector('#msg').setAttribute('placeholder', '请输入')
+        }, 500)
+    })
 })(window)

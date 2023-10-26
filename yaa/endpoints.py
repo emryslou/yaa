@@ -166,8 +166,7 @@ class WebSocketEndpoint(_Endpoint):
             await self.on_disconnect(close_code)
 
     async def send(self, data: typing.Any, send_type: str = "bytes") -> None:
-        fn = getattr(self.ws, "send_" + send_type)
-        await fn(data)
+        await getattr(self.ws, "send_" + send_type)(data)
 
     async def decode(self, message: Message) -> typing.Any:
         if self.encoding is not None:

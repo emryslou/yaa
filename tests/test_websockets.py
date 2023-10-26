@@ -1,7 +1,12 @@
 import pytest
 
 import yaa.status as status
-from yaa.websockets import WebSocket, WebSocketDisconnect, WebSocketState
+from yaa.websockets import (
+    WebSocket,
+    WebSocketAgent,
+    WebSocketDisconnect,
+    WebSocketState,
+)
 
 
 def test_websocket_url(client_factory):
@@ -485,3 +490,40 @@ def test_raise_exc(client_factory):
             "code": status.WS_1013_TRY_AGAIN_LATER,
             "reason": "",
         }
+
+
+class TestWebSocketAgent(object):
+    def test_base(self):
+        ws = WebSocket(scope={"type": "websocket"})
+        assert hasattr(ws, "quid")
+        assert ws.quid.startswith("ws-")
+        assert len(ws.quid) > 3
+
+        ws = WebSocket(scope={"type": "websocket", "quid": "app-12345"})
+        assert ws.quid == "app-12345"
+
+    def test_connect(self):
+        wsa = WebSocketAgent()
+        ws1 = WebSocket(scope={"type": "websocket"})
+        wsa.connect(ws1)
+
+        assert ws1.quid in wsa.active_connections
+        assert ws1 in wsa.active_connections.values()
+
+        ws2 = WebSocket(scope={"type": "websocket"})
+        wsa.connect(ws2)
+        assert ws2.quid in wsa.active_connections
+        assert ws2 in wsa.active_connections.values()
+
+        assert len(wsa.active_connections) == 2
+
+    def test_disconnect(self):
+        wsa = WebSocketAgent()
+        ws1 = WebSocket(scope={"type": "websocket"})
+        ws2 = WebSocket(scope={"type": "websocket"})
+        wsa.connect(ws1)
+        wsa.connect(ws2)
+
+        wsa.disconnect(ws1)
+        assert not (ws1.quid in wsa.active_connections)
+        assert ws2.quid in wsa.active_connections

@@ -2,6 +2,8 @@ import enum
 import json
 import typing
 
+import anyio
+
 from yaa.requests import HttpConnection
 from yaa.types import Message, Receive, Scope, Send
 
@@ -18,6 +20,45 @@ class WebSocketDisconnect(Exception):
         self.reason = reason or ""
 
 
+class WebSocketAgent(object):
+    def __init__(self) -> None:
+        self.active_connections: typing.Mapping[str, "WebSocket"] = {}
+
+    def connect(self, websocket: "WebSocket") -> None:
+        self.active_connections[websocket.quid] = websocket  # type: ignore[index]
+
+    def disconnect(self, websocket: "WebSocket") -> None:
+        if websocket.quid in self.active_connections:
+            del self.active_connections[websocket.quid]  # type: ignore[attr-defined]
+
+    async def send_to(
+        self, ws_quid: str, send_fn: str, **send_kwargs: typing.Any
+    ) -> None:
+        try:
+            ws = self.active_connections[ws_quid]
+            await getattr(ws, send_fn)(**send_kwargs)
+        except KeyError:
+            raise
+
+    async def broadcast(self, send_fn: str, **send_kwargs: typing.Any) -> None:
+        try:
+            for _, ws in self.active_connections.items():
+                await getattr(ws, send_fn)(**send_kwargs)
+        except BaseException:
+            raise
+
+    async def broadcast_skip(
+        self, skip_quids: list, send_fn: str, **send_kwargs: typing.Any
+    ) -> None:
+        try:
+            for _quid, ws in self.active_connections.items():
+                if len(skip_quids) > 0 and _quid in skip_quids:
+                    continue
+                await getattr(ws, send_fn)(**send_kwargs)
+        except KeyError:
+            raise
+
+
 class WebSocket(HttpConnection):
     def __init__(
         self,
@@ -26,11 +67,21 @@ class WebSocket(HttpConnection):
         send: typing.Optional[Send] = None,
     ) -> None:
         assert scope["type"] == "websocket"
+
+        self._quid = None
         self._scope = scope
+        if "quid" in scope:
+            self._quid = scope["quid"]
+
         self._receive = receive
         self._send = send
         self.client_state = WebSocketState.CONNECTING
         self.application_state = WebSocketState.CONNECTING
+        if "app" in self._scope:
+            self._agent = self._scope["app"].websocket_agent  # type: WebSocketAgent
+            self._agent.connect(self)
+        else:
+            self._agent = WebSocketAgent() # todo: 临时方案
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:
@@ -101,9 +152,8 @@ class WebSocket(HttpConnection):
         )
 
     def _raise_on_disconnect(self, message: Message) -> None:
-        if message is None:
-            raise RuntimeError("Message is None")  # pragma: nocover
         if message["type"] == "websocket.disconnect":
+            self._agent.disconnect(self)
             raise WebSocketDisconnect(message["code"], message.get("reason", ""))
 
     async def receive_text(self) -> str:
@@ -164,9 +214,25 @@ class WebSocket(HttpConnection):
     async def close(
         self, code: int = 1000, reason: typing.Optional[str] = None
     ) -> None:
+        self._agent.disconnect(self)
         await self.send(
             {"type": "websocket.close", "code": code, "reason": reason or ""}
         )
+
+    async def broadcast(self, message):
+        await self._agent.broadcast("send_text", data=message)
+
+    async def notify_others(self, message):
+        await self._agent.broadcast_skip([self.quid], "send_text", data=message)
+
+    @property
+    def quid(self) -> str:
+        if self._quid is None:
+            import uuid
+
+            self._quid = f"ws-{uuid.uuid4()}"
+
+        return self._quid
 
 
 class WebSocketClose(object):

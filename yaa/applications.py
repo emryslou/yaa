@@ -9,6 +9,7 @@ exposes:
     - Yaa
 """
 import typing
+import uuid
 
 from yaa._utils import get_logger
 from yaa.datastructures import State, URLPath
@@ -16,6 +17,7 @@ from yaa.exceptions import ParameterException
 from yaa.middlewares import BaseHttpMiddleware, Middleware
 from yaa.routing import BaseRoute, Router
 from yaa.types import ASGI3App, Lifespan, Receive, Scope, Send
+from yaa.websockets import WebSocketAgent
 
 logger = get_logger(__name__)
 
@@ -47,7 +49,7 @@ class Yaa(object):
             on_shutdown: 服务关闭前回调方法列表
             lifespan: 服务开始前后回调对象, lifespan or on_startup/on_shutdown 而选其一
             debug: 是否开启调试，默认 False
-        
+
         Returns:
             None
 
@@ -119,6 +121,7 @@ class Yaa(object):
             raise ParameterException(f"Unknown Params {_arg_keys!r}")
         self._init_plugins(self.config.get("plugins", {}))
         self.build_middleware_stack()
+        self.websocket_agent = WebSocketAgent()
 
     def _init_config(
         self,
@@ -186,8 +189,7 @@ class Yaa(object):
                 init_fn(self, plugin_cfg)
 
     def build_middleware_stack(self) -> None:
-        """重建中间件调用堆栈
-        """
+        """重建中间件调用堆栈"""
         app = self.app
         from yaa.plugins import plugin_middlewares as pmw
 
@@ -463,4 +465,5 @@ class Yaa(object):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore
         scope["app"] = self  # type: ignore
+        scope["quid"] = f"app-{uuid.uuid4()}"  # type: ignore[index]
         await self.middleware_app(scope, receive, send)
