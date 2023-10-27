@@ -4,7 +4,21 @@ import logging
 import os
 import sys
 import typing
+
+from contextlib import contextmanager
 from types import TracebackType
+
+if sys.version_info >= (3, 10):
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
+
+has_exceptiongroups = True
+if sys.version_info < (3, 11):
+    try:
+        from exceptiongroup import BaseExceptionGroup
+    except ImportError:
+        has_exceptiongroups = False
 
 
 def get_plugin_middlewares(package: str, root_path: str = "") -> typing.Dict[str, type]:
@@ -81,6 +95,15 @@ class AwaitableOrContextManagerWrapper(typing.Generic[SupportsAsyncCloseType]):
         await self.entered.close()
         return None
 
+@contextmanager
+def collapse_excgroups() -> typing.Generator[None, None, None]:
+    try:
+        yield
+    except BaseException as exc:
+        if has_exceptiongroups:
+            while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+                exc = exc.exceptions[0]
+        raise exc
 
 _handler = logging.StreamHandler(sys.stdout)
 _formatter = logging.Formatter("[%(asctime)s][%(levelname)s][%(name)s]%(message)s")

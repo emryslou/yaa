@@ -102,7 +102,7 @@ body {
     z-index: -1;
 }
 
-#chat-input {
+.chat-input-item {
     background: #f4f7f9;
     width: 100%;
     position: relative;
@@ -126,22 +126,22 @@ body {
     margin-bottom: 0;
 }
 
-#chat-input::-webkit-input-placeholder {
+.chat-input-item::-webkit-input-placeholder {
     /* Chrome/Opera/Safari */
     color: #ccc;
 }
 
-#chat-input::-moz-placeholder {
+.chat-input-item::-moz-placeholder {
     /* Firefox 19+ */
     color: #ccc;
 }
 
-#chat-input:-ms-input-placeholder {
+.chat-input-item:-ms-input-placeholder {
     /* IE 10+ */
     color: #ccc;
 }
 
-#chat-input:-moz-placeholder {
+.chat-input-item:-moz-placeholder {
     /* Firefox 18- */
     color: #ccc;
 }

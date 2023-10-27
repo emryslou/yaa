@@ -26,13 +26,15 @@ $(function () {                                �
         if (msg.trim() == '') {
             return false;
         }
-        ws.send(JSON.stringify({
-            'to_user': '',
-            'msg': msg,
-        }))
         setTimeout(function () {
             generate_message(msg, 'self');
-        }, 100)
+            setTimeout(() => {
+                ws.send(JSON.stringify({
+                    'to_user': $('#input-user').val(),
+                    'msg': msg,
+                }))
+            }, 0)
+        }, 0)
 
     })
     function generate_message(msg, type) {

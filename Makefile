@@ -57,7 +57,7 @@ precommit: test_temp
 	python -m coverage report -m --precision=4 --skip-covered --sort=cover
 
 http:
-	python -m uvicorn demo.main:app --port 5505 --lifespan on --reload
+	python -m uvicorn demo.main:app --host 0.0.0.0 --port 5505 --lifespan on --reload
 
 http2:
 	python -m hypercorn --keyfile demo/key.pem --certfile demo/cert.pem demo.main:app --bind 0.0.0.0:5505 --reload

@@ -6,32 +6,18 @@ from contextlib import contextmanager
 import anyio
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
-from yaa._utils import get_logger
+from yaa._utils import get_logger, collapse_excgroups
 from yaa.background import BackgroundTask
 from yaa.middlewares.core import Middleware
 from yaa.requests import ClientDisconnect, Request
 from yaa.responses import Response, StreamingResponse
 from yaa.types import ASGI3App, ContentStream, Message, Receive, Scope, Send, T
 
-if sys.version_info < (3, 11):
-    from exceptiongroup import BaseExceptionGroup
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
     [Request, RequestResponseEndpoint], typing.Awaitable[Response]
 ]
-
-
-@contextmanager
-def _convert_excgroups() -> typing.Generator[None, None, None]:
-    try:
-        yield
-    except BaseException as exc:
-        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
-            exc = exc.exceptions[0]
-        raise exc
-
-
 logger = get_logger(__name__)
 
 
@@ -193,7 +179,7 @@ class BaseHttpMiddleware(Middleware):
             return res
 
         # end call_next
-        with _convert_excgroups():
+        with collapse_excgroups():
             async with anyio.create_task_group() as tg:
                 res = await self.dispatch_func(request, call_next)
                 await res(scope, wrapped_receive, send)
