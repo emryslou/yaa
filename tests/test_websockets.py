@@ -527,3 +527,131 @@ class TestWebSocketAgent(object):
         wsa.disconnect(ws1)
         assert not (ws1.quid in wsa.active_connections)
         assert ws2.quid in wsa.active_connections
+
+    def test_broadcast(self):
+        import anyio, functools
+
+        class _App(object):
+            def __init__(self):
+                self.websocket_agent = WebSocketAgent()
+
+        msgs_pools = []
+
+        def send(quid):
+            async def _inner(msg):
+                nonlocal msgs_pools
+                if msg["type"] == "websocket.send":
+                    msgs_pools.append(msg["text"] + "-" + quid)
+
+            return _inner
+
+        app = _App()
+
+        ws_size = 5
+        for _idx in range(0, ws_size):
+            quid = f"app-{_idx}"
+            WebSocket(
+                scope={"type": "websocket", "app": app, "quid": quid},
+                send=send(quid=quid),
+            )
+
+        async def ws_accept():
+            for _, ws in app.websocket_agent.active_connections.items():
+                ws.client_state = WebSocketState.CONNECTED
+                await ws.accept()
+
+        keys = app.websocket_agent.active_connections.keys()
+        fn = app.websocket_agent.active_connections["app-0"].broadcast
+        anyio.run(ws_accept)
+        anyio.run(fn, "hello")
+        assert msgs_pools == ["hello" + "-" + _key for _key in keys]
+
+    def test_broadcast_skip(self):
+        import anyio, functools, random
+
+        class _App(object):
+            def __init__(self):
+                self.websocket_agent = WebSocketAgent()
+
+        msgs_pools = []
+
+        def send(quid):
+            async def _inner(msg):
+                nonlocal msgs_pools
+                if msg["type"] == "websocket.send":
+                    msgs_pools.append(msg["text"] + "-" + quid)
+
+            return _inner
+
+        app = _App()
+
+        ws_size = 5
+        for _idx in range(0, ws_size):
+            WebSocket(
+                scope={"type": "websocket", "app": app, "quid": f"app-{_idx}"},
+                send=send(quid=f"app-{_idx}"),
+            )
+
+        async def ws_accept():
+            for _, ws in app.websocket_agent.active_connections.items():
+                ws.client_state = WebSocketState.CONNECTED
+                await ws.accept()
+
+        keys = app.websocket_agent.active_connections.keys()
+
+        sample_size = random.randint(1, ws_size - 1)
+        random_keys = random.sample(keys, sample_size)
+        fn = app.websocket_agent.active_connections[random_keys[0]].notify_others
+        anyio.run(ws_accept)
+        anyio.run(fn, "hello")
+
+        assert msgs_pools == [
+            "hello" + "-" + _key for _key in keys if _key != random_keys[0]
+        ]
+
+    def test_send_to(self):
+        import anyio, functools, random
+
+        class _App(object):
+            def __init__(self):
+                self.websocket_agent = WebSocketAgent()
+
+        msgs_pools = []
+
+        def send(quid):
+            async def _inner(msg):
+                nonlocal msgs_pools
+                if msg["type"] == "websocket.send":
+                    msgs_pools.append(msg["text"] + "-" + quid)
+
+            return _inner
+
+        app = _App()
+
+        ws_size = 5
+        for _idx in range(0, ws_size):
+            WebSocket(
+                scope={"type": "websocket", "app": app, "quid": f"app-{_idx}"},
+                send=send(quid=f"app-{_idx}"),
+            )
+
+        async def ws_accept():
+            for _, ws in app.websocket_agent.active_connections.items():
+                ws.client_state = WebSocketState.CONNECTED
+                await ws.accept()
+
+        async def send_to(ws_quid: str, data):
+            await app.websocket_agent.send_to(
+                ws_quid=ws_quid, send_fn="send_text", **{"data": data}
+            )
+
+        keys = app.websocket_agent.active_connections.keys()
+
+        random_key = random.sample(keys, 1)[0]
+
+        anyio.run(ws_accept)
+        anyio.run(send_to, random_key, "hello")
+
+        assert msgs_pools == [
+            "hello" + "-" + _key for _key in keys if _key == random_key
+        ]

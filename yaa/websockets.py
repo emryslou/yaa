@@ -1,6 +1,7 @@
 import enum
 import json
 import typing
+import warnings
 
 import anyio
 
@@ -37,15 +38,19 @@ class WebSocketAgent(object):
         try:
             ws = self.active_connections[ws_quid]
             await getattr(ws, send_fn)(**send_kwargs)
-        except KeyError:
-            raise
+        except KeyError as exc:  # pragma: no cover
+            warnings.warn(
+                f"send error, {ws_quid!r} may offline, msg: {exc}"
+            )  # pragma: no cover
 
     async def broadcast(self, send_fn: str, **send_kwargs: typing.Any) -> None:
         try:
             for _, ws in self.active_connections.items():
                 await getattr(ws, send_fn)(**send_kwargs)
-        except BaseException:
-            raise
+        except BaseException as exc:  # pragma: no cover
+            warnings.warn(
+                f"some error happens, but we ignore it, msg: {exc}"
+            )  # pragma: no cover
 
     async def broadcast_skip(
         self, skip_quids: list, send_fn: str, **send_kwargs: typing.Any
@@ -55,8 +60,10 @@ class WebSocketAgent(object):
                 if len(skip_quids) > 0 and _quid in skip_quids:
                     continue
                 await getattr(ws, send_fn)(**send_kwargs)
-        except KeyError:
-            raise
+        except BaseException as exc:  # pragma: no cover
+            warnings.warn(
+                f"some error happens, but we ignore it, msg: {exc}"
+            )  # pragma: no cover
 
 
 class WebSocket(HttpConnection):
@@ -80,8 +87,6 @@ class WebSocket(HttpConnection):
         if "app" in self._scope:
             self._agent = self._scope["app"].websocket_agent  # type: WebSocketAgent
             self._agent.connect(self)
-        else:
-            self._agent = WebSocketAgent() # todo: 临时方案
 
     async def receive(self) -> Message:
         if self.client_state == WebSocketState.CONNECTING:
@@ -153,7 +158,8 @@ class WebSocket(HttpConnection):
 
     def _raise_on_disconnect(self, message: Message) -> None:
         if message["type"] == "websocket.disconnect":
-            self._agent.disconnect(self)
+            if hasattr(self, "_agent"):
+                self._agent.disconnect(self)  # pragma: no cover
             raise WebSocketDisconnect(message["code"], message.get("reason", ""))
 
     async def receive_text(self) -> str:
@@ -214,16 +220,19 @@ class WebSocket(HttpConnection):
     async def close(
         self, code: int = 1000, reason: typing.Optional[str] = None
     ) -> None:
-        self._agent.disconnect(self)
+        if hasattr(self, "_agent"):
+            self._agent.disconnect(self)
         await self.send(
             {"type": "websocket.close", "code": code, "reason": reason or ""}
         )
 
     async def broadcast(self, message):
-        await self._agent.broadcast("send_text", data=message)
+        if hasattr(self, "_agent"):
+            await self._agent.broadcast("send_text", data=message)
 
     async def notify_others(self, message):
-        await self._agent.broadcast_skip([self.quid], "send_text", data=message)
+        if hasattr(self, "_agent"):
+            await self._agent.broadcast_skip([self.quid], "send_text", data=message)
 
     @property
     def quid(self) -> str:
