@@ -65,8 +65,8 @@ async def home(request: Request) -> Response:
     await request.send_push_promise('/static/css/ws_css.css')
     res = get_templates().response('home.html', context={
         'request': request,
-        'greeting': 'template',
-        'ws_host': '192.168.71.2:5505/ws/{}'.format(request.path_params['user']),
+        'greeting': 'WebSocket',
+        'ws_path': '/ws/{}'.format(request.path_params['user']),
         'js_version': randint(0, 1000),
         'user': request.path_params['user'],
     })

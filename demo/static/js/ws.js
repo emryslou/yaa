@@ -1,42 +1,76 @@
-(function (window) {
-    let host = document.querySelector('#ws_host').getAttribute('value')
-    let protocal = window.location.protocol == 'https:' ? 'wss': 'ws'
+$(function () {                                                                                      
+    let ws_path = $('#ws_path').val()
+    let host = window.location.host + ws_path
+    let protocal = window.location.protocol == 'https:' ? 'wss' : 'ws'
     let ws = new window.WebSocket(protocal + '://' + host)
-    let msg_container = document.querySelector('#receive_msg')
+                          
     ws.onopen = function () {
-        ws.send('send data ... ')
+        $("#chat-circle").click()
     }
     ws.onmessage = function (evt) {
         let data = evt.data
-        let msg_item = document.createElement('li')
-        msg_item.innerHTML = data
-        msg_container.appendChild(msg_item)
-        console.log('receive data', data)
+        generate_message(data, 'user');
     }
-    ws.onclose = function () {
-        console.log('ws closed')
-        document.querySelector('#msg').setAttribute('placeholder', '连接断开')
+    ws.onclose = function (e) {
+        console.log('err', e)
+        $("#chat-circle").click()
     }
     ws.onerror = function (ev) {
-        console.log(ev)
+        
     }
-    
-    document.querySelector('#send_msg').addEventListener('click', () => {
-        let to_user = document.querySelector('#to_user').value
-        let msg = document.querySelector('#msg').value
-        console.log({'to_user': to_user, 'msg': msg})
-        if (ws.readyState == ws.CLOSING || ws.readyState == ws.CLOSED) {
-            document.querySelector('#msg').setAttribute('placeholder', '消息发送失败，因为与无法连接服务器')
-        } else {
-            ws.send(JSON.stringify({
-                'msg': msg,
-                'to_user': to_user
-            }))
-            document.querySelector('#msg').value = ''
-            document.querySelector('#msg').setAttribute('placeholder', '发送成功')
+
+    var INDEX = 0;
+    $("#chat-submit").click(function (e) {
+        e.preventDefault();
+        var msg = $("#chat-input").val();
+        if (msg.trim() == '') {
+            return false;
         }
-        setTimeout(() => {
-            document.querySelector('#msg').setAttribute('placeholder', '请输入')
-        }, 500)
+        ws.send(JSON.stringify({
+            'to_user': '',
+            'msg': msg,
+        }))
+        setTimeout(function () {
+            generate_message(msg, 'self');
+        }, 100)
+
     })
-})(window)
+    function generate_message(msg, type) {
+        INDEX++;
+        img = '1'
+        if (type == 'user') img = '2'
+        var str = "";
+        str += "<div id='cm-msg-" + INDEX + "' class=\"chat-msg " + type + "\">";
+        str += "          <span class=\"msg-avatar\">";
+        str += "            <img src=\"\/static\/imgs\/" + img + ".jpg.png\">";
+        str += "          <\/span>";
+        str += "          <div class=\"cm-msg-text\">";
+        str += msg;
+        str += "          <\/div>";
+        str += "        <\/div>";
+        $(".chat-logs").append(str);
+        $("#cm-msg-" + INDEX).hide().fadeIn(300);
+        if (type == 'self') {
+            $("#chat-input").val('');
+        }
+        $(".chat-logs").stop().animate({ scrollTop: $(".chat-logs")[0].scrollHeight }, 1000);
+    }
+
+    $(document).delegate(".chat-btn", "click", function () {
+        var value = $(this).attr("chat-value");
+        var name = $(this).html();
+        $("#chat-input").attr("disabled", false);
+        generate_message(name, 'self');
+    })
+
+    $("#chat-circle").click(function () {
+        $("#chat-circle").toggle('scale');
+        $(".chat-box").toggle('scale');
+    })
+
+    $(".chat-box-toggle").click(function () {
+        $("#chat-circle").toggle('scale');
+        $(".chat-box").toggle('scale');
+    })
+
+})
